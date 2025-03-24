@@ -1,0 +1,12 @@
+# Build output
+dist/
+out/
+node_modules/
+.vscode-test/
+*.vsix
+.DS_Store
+package-lock.json
+tmp
+*.js.map
+pnpm-lock.yaml
+.autogenignore

@@ -1,0 +1,60 @@
+/* Add this after the @import statements */
+
+:root {
+	/* Base colors */
+	--primary-color: var(--vscode-button-background);
+	--primary-hover: var(--vscode-button-hoverBackground);
+	--text-color: var(--vscode-foreground);
+	--background-color: var(--vscode-editor-background);
+	--border-color: var(--vscode-input-border);
+}
+
+/* Base styles */
+body {
+	background-color: var(--background-color);
+	color: var(--text-color);
+	font-family: var(--vscode-font-family);
+	font-size: var(--vscode-font-size);
+}
+
+/* Typography */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+	color: var(--text-color);
+	margin-bottom: 1rem;
+}
+
+a {
+	color: var(--primary-color);
+	text-decoration: none;
+}
+
+a:hover {
+	color: var(--primary-hover);
+	text-decoration: underline;
+}
+
+/* Form elements */
+input,
+textarea {
+	background: var(--vscode-input-background);
+	border: 1px solid var(--border-color);
+	color: var(--text-color);
+	padding: 0.5rem;
+}
+
+button {
+	background: var(--primary-color);
+	border: none;
+	color: var(--vscode-button-foreground);
+	padding: 0.5rem 1rem;
+	cursor: pointer;
+}
+
+button:hover {
+	background: var(--primary-hover);
+}
