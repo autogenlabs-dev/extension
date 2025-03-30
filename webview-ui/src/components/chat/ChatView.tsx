@@ -817,7 +817,14 @@ const ChatView = ({ isHidden, showAnnouncement, hideAnnouncement, showHistoryVie
 									}}
 								/>
 								<div>
-									<h2 style={{ margin: 4 }}>What can I do for you?</h2>
+									<h2 style={{ 
+										margin: 4, 
+										fontSize: '22px',
+										fontWeight: 500,
+										color: 'var(--vscode-foreground)',
+										letterSpacing: '-0.3px',
+										lineHeight: 1.3
+									}}>What can I do for you?</h2>
 									<span style={{
 										fontSize: '14px',
 										color: 'var(--vscode-descriptionForeground)',

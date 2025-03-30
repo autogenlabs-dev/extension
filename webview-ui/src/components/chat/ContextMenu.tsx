@@ -51,7 +51,22 @@ const ContextMenu: React.FC<ContextMenuProps> = ({
 			case ContextMenuOptionType.Terminal:
 				return <span>Terminal</span>
 			case ContextMenuOptionType.URL:
-				return <span>Paste URL to fetch contents</span>
+				return (
+					<div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+						<span style={{ lineHeight: "1.2" }}>Paste URL to fetch contents</span>
+						<span
+							style={{
+								fontSize: "0.85em",
+								opacity: 0.7,
+								whiteSpace: "nowrap",
+								overflow: "hidden",
+								textOverflow: "ellipsis",
+								lineHeight: "1.2",
+							}}>
+							Add a link to fetch webpage content
+						</span>
+					</div>
+				)
 			case ContextMenuOptionType.NoResults:
 				return <span>No results found</span>
 			case ContextMenuOptionType.Git:
@@ -110,12 +125,12 @@ const ContextMenu: React.FC<ContextMenuProps> = ({
 				return "warning"
 			case ContextMenuOptionType.Terminal:
 				return "terminal"
-			case ContextMenuOptionType.URL:
-				return "link"
-			case ContextMenuOptionType.Git:
-				return "git-commit"
-			case ContextMenuOptionType.NoResults:
-				return "info"
+			// case ContextMenuOptionType.URL:
+			// 	return "link"
+			// case ContextMenuOptionType.Git:
+			// 	return "git-commit"
+			// case ContextMenuOptionType.NoResults:
+			// 	return "info"
 			default:
 				return "file"
 		}
@@ -138,29 +153,30 @@ const ContextMenu: React.FC<ContextMenuProps> = ({
 			<div
 				ref={menuRef}
 				style={{
-					backgroundColor: "#111827", // Updated from var(--vscode-dropdown-background)
+					backgroundColor: "#111827", // Dark background matching the rest of the UI
 					border: "1px solid #4b5563",
-					borderRadius: "3px",
-					boxShadow: "0 4px 10px rgba(0, 0, 0, 0.25)",
+					borderRadius: "6px", // Slightly more rounded corners
+					boxShadow: "0 4px 12px rgba(0, 0, 0, 0.35)", // Enhanced shadow
 					zIndex: 1000,
 					display: "flex",
 					flexDirection: "column",
-					maxHeight: "200px",
+					maxHeight: "250px", // Slightly larger max height
 					overflowY: "auto",
 				}}>
 				{/* Can't use virtuoso since it requires fixed height and menu height is dynamic based on # of items */}
 				{filteredOptions.map((option, index) => (
 					<div
+						className={`context-menu-item ${index === selectedIndex && isOptionSelectable(option) ? 'selected' : ''}`}
 						key={`${option.type}-${option.value || index}`}
 						onClick={() => isOptionSelectable(option) && onSelect(option.type, option.value)}
 						style={{
-							padding: "8px 12px",
+							padding: "10px 12px", // More vertical padding
 							cursor: isOptionSelectable(option) ? "pointer" : "default",
 							color:
 								index === selectedIndex && isOptionSelectable(option)
 									? "var(--vscode-quickInputList-focusForeground)"
-									: "",
-							borderBottom: "1px solid var(--vscode-editorGroup-border)",
+									: "var(--vscode-foreground)",
+							borderBottom: index < filteredOptions.length - 1 ? "1px solid rgba(75, 85, 99, 0.4)" : "none", // Lighter border
 							display: "flex",
 							alignItems: "center",
 							justifyContent: "space-between",
@@ -168,6 +184,9 @@ const ContextMenu: React.FC<ContextMenuProps> = ({
 								index === selectedIndex && isOptionSelectable(option)
 									? "var(--vscode-quickInputList-focusBackground)"
 									: "",
+							transition: "all 0.12s ease", // Smooth hover transition
+							userSelect: "none", // Prevent text selection
+							opacity: isOptionSelectable(option) ? 1 : 0.6, // Dimmer appearance for non-selectable items
 						}}
 						onMouseEnter={() => isOptionSelectable(option) && setSelectedIndex(index)}>
 						<div

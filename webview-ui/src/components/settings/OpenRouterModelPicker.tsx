@@ -239,7 +239,7 @@ const OpenRouterModelPicker: React.FC<OpenRouterModelPickerProps> = ({ isPopup }
 						Sort underlying provider routing
 					</VSCodeCheckbox>
 
-					{providerSortingSelected && (
+					{/* {providerSortingSelected && (
 						<div style={{ marginBottom: -6 }}>
 							<DropdownContainer className="dropdown-container" zIndex={OPENROUTER_MODEL_PICKER_Z_INDEX - 3}>
 								<VSCodeDropdown
@@ -275,7 +275,7 @@ const OpenRouterModelPicker: React.FC<OpenRouterModelPickerProps> = ({ isPopup }
 						isDescriptionExpanded={isDescriptionExpanded}
 						setIsDescriptionExpanded={setIsDescriptionExpanded}
 						isPopup={isPopup}
-					/>
+					/> */}
 				</>
 			) : (
 				<p

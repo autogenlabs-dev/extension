@@ -228,7 +228,7 @@ const SettingsView = ({ onDone }: SettingsViewProps) => {
 						These instructions are added to the end of the system prompt sent with every request.
 					</p>
 				</div>
-
+{/* 
 				<div style={{ marginBottom: 5 }}>
 					<VSCodeCheckbox
 						style={{ marginBottom: "5px" }}
@@ -248,9 +248,9 @@ const SettingsView = ({ onDone }: SettingsViewProps) => {
 						Switching between Plan and Act mode will persist the API and model used in the previous mode. This may be
 						helpful e.g. when using a strong reasoning model to architect a plan for a cheaper coding model to act on.
 					</p>
-				</div>
+				</div> */}
 
-				<div style={{ marginBottom: 5 }}>
+				{/* <div style={{ marginBottom: 5 }}>
 					<VSCodeCheckbox
 						style={{ marginBottom: "5px" }}
 						checked={telemetrySetting === "enabled"}
@@ -277,7 +277,7 @@ const SettingsView = ({ onDone }: SettingsViewProps) => {
 						</VSCodeLink>{" "}
 						for more details.
 					</p>
-				</div>
+				</div> */}
 
 				{IS_DEV && (
 					<>
@@ -296,7 +296,7 @@ const SettingsView = ({ onDone }: SettingsViewProps) => {
 					</>
 				)}
 
-				<div
+				{/* <div
 					style={{
 						marginTop: "auto",
 						paddingRight: 8,
@@ -311,7 +311,7 @@ const SettingsView = ({ onDone }: SettingsViewProps) => {
 						<i className="codicon codicon-settings-gear" />
 						Advanced Settings
 					</SettingsButton>
-				</div>
+				</div> */}
 				<div
 					style={{
 						textAlign: "center",
@@ -326,9 +326,9 @@ const SettingsView = ({ onDone }: SettingsViewProps) => {
 							margin: 0,
 							padding: 0,
 						}}>
-						If you have any questions or feedback, feel free to open an issue at{" "}
-						<VSCodeLink href="https://github.com/AutoGen/AutoGen" style={{ display: "inline" }}>
-							https://github.com/AutoGen/AutoGen
+						If you have any questions or feedback, please reach out to us on{" "}
+						<VSCodeLink href="https://autogenlabs.com/" style={{ display: "inline" }}>
+						https://autogenlabs.com/
 						</VSCodeLink>
 					</p>
 					<p

@@ -22,6 +22,7 @@ export class TerminalProcess extends EventEmitter<TerminalProcessEvents> {
 	private lastRetrievedIndex: number = 0
 	isHot: boolean = false
 	private hotTimer: NodeJS.Timeout | null = null
+	private shellIntegrationWarningShown: boolean = false
 
 	// constructor() {
 	// 	super()
@@ -171,14 +172,14 @@ export class TerminalProcess extends EventEmitter<TerminalProcessEvents> {
 		} else {
 			terminal.sendText(command, true)
 			// For terminals without shell integration, we can't know when the command completes
-			// So we'll just emit the continue event after a delay
+			// Only emit the no_shell_integration event if it hasn't been shown already
+			// This prevents showing the warning repeatedly during the session
+			if (!this.shellIntegrationWarningShown) {
+				this.shellIntegrationWarningShown = true;
+				this.emit("no_shell_integration")
+			}
 			this.emit("completed")
 			this.emit("continue")
-			this.emit("no_shell_integration")
-			// setTimeout(() => {
-			// 	console.log(`Emitting continue after delay for terminal`)
-			// 	// can't emit completed since we don't if the command actually completed, it could still be running server
-			// }, 500) // Adjust this delay as needed
 		}
 	}
 

@@ -93,19 +93,21 @@ export class TerminalManager {
 	private terminalIds: Set<number> = new Set()
 	private processes: Map<number, TerminalProcess> = new Map()
 	private disposables: vscode.Disposable[] = []
+	private static shellIntegrationAvailable = true; // Assume available until proven otherwise
 
 	constructor() {
 		let disposable: vscode.Disposable | undefined
 		try {
 			disposable = (vscode.window as vscode.Window).onDidStartTerminalShellExecution?.(async (e) => {
-				// Creating a read stream here results in a more consistent output. This is most obvious when running the `date` command.
+				// Creating a read stream here results in a more consistent output
 				e?.execution?.read()
 			})
+			// If we can register this event handler, shell integration is likely available
+			this.disposables.push(disposable || new vscode.Disposable(() => {}))
 		} catch (error) {
-			// console.error("Error setting up onDidEndTerminalShellExecution", error)
-		}
-		if (disposable) {
-			this.disposables.push(disposable)
+			// If we can't register the event handler, shell integration may not be available
+			TerminalManager.shellIntegrationAvailable = false;
+			console.warn("Shell integration may not be available:", error)
 		}
 	}
 
@@ -119,13 +121,27 @@ export class TerminalManager {
 			terminalInfo.busy = false
 		})
 
-		// if shell integration is not available, remove terminal so it does not get reused as it may be running a long-running process
+		// if shell integration is not available, mark terminal as attempted
 		process.once("no_shell_integration", () => {
 			console.log(`no_shell_integration received for terminal ${terminalInfo.id}`)
-			// Remove the terminal so we can't reuse it (in case it's running a long-running process)
+			// Mark this terminal as having attempted shell integration
+			terminalInfo.shellIntegrationAttempted = true;
+			
+			// Only remove terminal from pool if we haven't attempted before
+			// This prevents creating too many terminals when shell integration is not available
+			if (!TerminalManager.shellIntegrationAvailable) {
+				// If we've already established shell integration is not available system-wide,
+				// we'll keep reusing the terminal instead of creating new ones
+				return;
+			}
+			
+			// Otherwise, this is the first terminal to fail, so we'll remove it and try again with a new one
 			TerminalRegistry.removeTerminal(terminalInfo.id)
 			this.terminalIds.delete(terminalInfo.id)
 			this.processes.delete(terminalInfo.id)
+			
+			// Mark that shell integration is not available system-wide
+			TerminalManager.shellIntegrationAvailable = false;
 		})
 
 		const promise = new Promise<void>((resolve, reject) => {

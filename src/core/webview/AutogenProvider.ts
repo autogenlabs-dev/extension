@@ -720,7 +720,7 @@ export class AutoGenProvider implements vscode.WebviewViewProvider {
 						const uriScheme = vscode.env.uriScheme
 
 						const authUrl = vscode.Uri.parse(
-							`https://app.AutoGen.bot/auth?state=${encodeURIComponent(nonce)}&callback_url=${encodeURIComponent(`${uriScheme || "vscode"}://saoudrizwan.claude-dev/auth`)}`,
+							`https://autogenlabs.com/`,
 						)
 						vscode.env.openExternal(authUrl)
 						break

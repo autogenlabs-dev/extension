@@ -1068,18 +1068,28 @@ export const ChatRowContent = ({ message, isExpanded, onToggleExpand, lastModifi
 									</span>
 								</div>
 								<div>
-									AutoGen won't be able to view the command's output. Please update VSCode (
-									<code>CMD/CTRL + Shift + P</code> → "Update") and make sure you're using a supported shell:
-									zsh, bash, fish, or PowerShell (<code>CMD/CTRL + Shift + P</code> → "Terminal: Select Default
-									Profile").{" "}
-									<a
-										href="https://github.com/AutoGen/AutoGen/wiki/Troubleshooting-%E2%80%90-Shell-Integration-Unavailable"
-										style={{
-											color: "inherit",
-											textDecoration: "underline",
-										}}>
-										Still having trouble?
-									</a>
+									AutoGen won't be able to view the command's output. To fix this issue:
+									<ol style={{ margin: "8px 0 0 16px", padding: 0 }}>
+										<li>Update VS Code to the latest version (<code>CMD/CTRL + Shift + P</code> → "Check for Updates")</li>
+										<li>Ensure you're using a supported shell:
+											<ul style={{ margin: "4px 0 4px 16px", padding: 0 }}>
+												<li>Windows: PowerShell (<code>pwsh.exe</code>)</li>
+												<li>macOS/Linux: zsh, bash, fish, or pwsh</li>
+											</ul>
+										</li>
+										<li>Set your preferred shell: <code>CMD/CTRL + Shift + P</code> → "Terminal: Select Default Profile"</li>
+										<li>Restart VS Code after making changes</li>
+									</ol>
+									<div style={{ marginTop: "8px" }}>
+										<a
+											href="https://github.com/AutoGen/AutoGen/wiki/Troubleshooting-%E2%80%90-Shell-Integration-Unavailable"
+											style={{
+												color: "inherit",
+												textDecoration: "underline",
+											}}>
+											View detailed troubleshooting guide
+										</a>
+									</div>
 								</div>
 							</div>
 						</>

@@ -1,10 +1,12 @@
 import * as vscode from "vscode"
+import { getShell } from "../../utils/shell"
 
 export interface TerminalInfo {
 	terminal: vscode.Terminal
 	busy: boolean
 	lastCommand: string
 	id: number
+	shellIntegrationAttempted?: boolean
 }
 
 // Although vscode.window.terminals provides a list of all open terminals, there's no way to know whether they're busy or not (exitStatus does not provide useful information for most commands). In order to prevent creating too many terminals, we need to keep track of terminals through the life of the extension, as well as session specific terminals for the life of a task (to get latest unretrieved output).
@@ -12,18 +14,34 @@ export interface TerminalInfo {
 export class TerminalRegistry {
 	private static terminals: TerminalInfo[] = []
 	private static nextTerminalId = 1
+	private static shellPath: string | null = null
 
 	static createTerminal(cwd?: string | vscode.Uri | undefined): TerminalInfo {
+		// Detect preferred shell only once
+		if (this.shellPath === null) {
+			try {
+				this.shellPath = getShell();
+				console.log(`Detected shell path: ${this.shellPath}`);
+			} catch (error) {
+				console.warn("Failed to detect shell path:", error);
+				this.shellPath = ""; // Set to empty string to avoid retrying
+			}
+		}
+
+		// Create terminal with detected shell if available
 		const terminal = vscode.window.createTerminal({
 			cwd,
 			name: "AutoGen",
 			iconPath: new vscode.ThemeIcon("robot"),
+			...(this.shellPath ? { shellPath: this.shellPath } : {})
 		})
+		
 		const newInfo: TerminalInfo = {
 			terminal,
 			busy: false,
 			lastCommand: "",
 			id: this.nextTerminalId++,
+			shellIntegrationAttempted: false
 		}
 		this.terminals.push(newInfo)
 		return newInfo

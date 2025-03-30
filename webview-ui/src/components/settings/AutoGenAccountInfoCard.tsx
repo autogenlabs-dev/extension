@@ -6,6 +6,7 @@ export const AutoGenAccountInfoCard = () => {
 	const { user, handleSignOut } = useFirebaseAuth()
 
 	const handleLogin = () => {
+		window.open('https://autogenlabs.com/', '_blank')
 		vscode.postMessage({ type: "accountLoginClicked" })
 	}
 
