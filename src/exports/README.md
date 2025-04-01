@@ -7,7 +7,7 @@ The AutoGen extension exposes an API that can be used by other extensions. To us
 3. Get access to the API with the following code:
 
     ```ts
-    const autogenExtension = vscode.extensions.getExtension<AutoGenAPI>("saoudrizwan.claude-dev")
+    const autogenExtension = vscode.extensions.getExtension<AutoGenAPI>("autogenlabs")
 
     if (!autogenExtension?.isActive) {
     	throw new Error("AutoGen extension is not activated")
@@ -44,11 +44,11 @@ The AutoGen extension exposes an API that can be used by other extensions. To us
     }
     ```
 
-    **Note:** To ensure that the `saoudrizwan.claude-dev` extension is activated before your extension, add it to the `extensionDependencies` in your `package.json`:
+    **Note:** To ensure that the `autogenlabs` extension is activated before your extension, add it to the `extensionDependencies` in your `package.json`:
 
     ```json
     "extensionDependencies": [
-        "saoudrizwan.claude-dev"
+        "autogenlabs"
     ]
     ```
 

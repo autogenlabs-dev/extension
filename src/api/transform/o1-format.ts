@@ -10,7 +10,7 @@ ${systemPrompt}
 
 You must respond to the user's request by using at least one tool call. When formulating your response, follow these guidelines:
 
-1. Begin your response with normal text, explaining your thoughts, analysis, or plan of action.
+1. Begin your response with normal text, explaining your thoughts, analysis, or chat of action.
 2. If you need to use any tools, place ALL tool calls at the END of your message, after your normal text explanation.
 3. You can use multiple tool calls if needed, but they should all be grouped together at the end of your message.
 4. After placing the tool calls, do not add any additional normal text. The tool calls should be the final content in your message.

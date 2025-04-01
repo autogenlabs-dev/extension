@@ -754,10 +754,10 @@ export class AutoGenProvider implements vscode.WebviewViewProvider {
 					}
 					case "downloadMcp": {
 						if (message.mcpId) {
-							// 1. Toggle to act mode if we are in plan mode
+							// 1. Toggle to Agent mode if we are in chat mode
 							const { chatSettings } = await this.getStateToPostToWebview()
-							if (chatSettings.mode === "plan") {
-								await this.togglePlanActModeWithChatSettings({ mode: "act" })
+							if (chatSettings.mode === "chat") {
+								await this.togglePlanActModeWithChatSettings({ mode: "Agent" })
 							}
 
 							// 2. Enable MCP settings if disabled
@@ -878,7 +878,7 @@ export class AutoGenProvider implements vscode.WebviewViewProvider {
 						const settingsFilter = message.text || ""
 						await vscode.commands.executeCommand(
 							"workbench.action.openSettings",
-							`@ext:saoudrizwan.claude-dev ${settingsFilter}`.trim(), // trim whitespace if no settings filter
+							`@ext:autogenlabs ${settingsFilter}`.trim(), // trim whitespace if no settings filter
 						)
 						break
 					}
@@ -920,7 +920,7 @@ export class AutoGenProvider implements vscode.WebviewViewProvider {
 							await this.updateTelemetrySetting(message.telemetrySetting)
 						}
 
-						// plan act setting
+						// chat Agent setting
 						await this.updateGlobalState("planActSeparateModelsSetting", message.planActSeparateModelsSetting)
 
 						// after settings are updated, post state to webview
@@ -952,7 +952,7 @@ export class AutoGenProvider implements vscode.WebviewViewProvider {
 	}
 
 	async togglePlanActModeWithChatSettings(chatSettings: ChatSettings, chatContent?: ChatContent) {
-		const didSwitchToActMode = chatSettings.mode === "act"
+		const didSwitchToActMode = chatSettings.mode === "Agent"
 
 		// Capture mode switch telemetry | Capture regardless of if we know the taskId
 		telemetryService.captureModeSwitch(this.AutoGen?.taskId ?? "0", chatSettings.mode)
@@ -2129,7 +2129,7 @@ Here is the project's README to help you get started:\n\n${mcpDetails.readmeCont
 
 		const mcpMarketplaceEnabled = vscode.workspace.getConfiguration("AutoGen").get<boolean>("mcpMarketplace.enabled", true)
 
-		// Plan/Act separate models setting is a boolean indicating whether the user wants to use different models for plan and act. Existing users expect this to be enabled, while we want new users to opt in to this being disabled by default.
+		// Plan/Act separate models setting is a boolean indicating whether the user wants to use different models for chat and Agent. Existing users expect this to be enabled, while we want new users to opt in to this being disabled by default.
 		// On win11 state sometimes initializes as empty string instead of undefined
 		let planActSeparateModelsSetting: boolean | undefined = undefined
 		if (planActSeparateModelsSettingRaw === true || planActSeparateModelsSettingRaw === false) {

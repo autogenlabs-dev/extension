@@ -1,12 +1,6 @@
 import React, { useState } from "react"
 import styled from "styled-components"
-import {
-	getAsVar,
-	VSC_DESCRIPTION_FOREGROUND,
-	VSC_SIDEBAR_BACKGROUND,
-	VSC_INPUT_PLACEHOLDER_FOREGROUND,
-	VSC_INPUT_BORDER,
-} from "../../utils/vscStyles"
+import { getAsVar, VSCodeStyles } from "../../utils/vscStyles"
 
 interface TooltipProps {
 	visible: boolean
@@ -16,26 +10,42 @@ interface TooltipProps {
 	style?: React.CSSProperties
 }
 
-// add styled component for tooltip
-const TooltipBody = styled.div<Pick<TooltipProps, "style">>`
+const TooltipContainer = styled.div`
+	position: relative;
+	display: inline-block;
+`
+
+const TooltipContent = styled.div<{ isVisible: boolean }>`
+	visibility: ${(props) => (props.isVisible ? "visible" : "hidden")};
 	position: absolute;
-	background-color: ${getAsVar(VSC_SIDEBAR_BACKGROUND)};
-	color: ${getAsVar(VSC_DESCRIPTION_FOREGROUND)};
-	padding: 5px;
-	border-radius: 5px;
-	bottom: 100%;
-	left: -180%;
-	z-index: ${(props) => props.style?.zIndex ?? 10};
-	white-space: wrap;
-	max-width: 200px;
-	border: 1px solid ${getAsVar(VSC_INPUT_BORDER)};
-	pointer-events: none;
-	font-size: 0.9em;
+	z-index: 1000;
+	bottom: 125%;
+	left: 50%;
+	transform: translateX(-50%);
+	padding: 8px;
+	border-radius: 4px;
+	background-color: ${() => getAsVar(VSCodeStyles.VSC_SIDEBAR_BACKGROUND)};
+	color: ${() => getAsVar(VSCodeStyles.VSC_DESCRIPTION_FOREGROUND)};
+	text-align: center;
+	font-size: 12px;
+	white-space: nowrap;
+	border: 1px solid ${() => getAsVar(VSCodeStyles.VSC_INPUT_BORDER)};
+
+	&::after {
+		content: "";
+		position: absolute;
+		top: 100%;
+		left: 50%;
+		margin-left: -5px;
+		border-width: 5px;
+		border-style: solid;
+		border-color: ${() => getAsVar(VSCodeStyles.VSC_INPUT_PLACEHOLDER_FOREGROUND)} transparent transparent transparent;
+	}
 `
 
 const Hint = styled.div`
 	font-size: 0.8em;
-	color: ${getAsVar(VSC_INPUT_PLACEHOLDER_FOREGROUND)};
+	color: ${() => getAsVar(VSCodeStyles.VSC_INPUT_PLACEHOLDER_FOREGROUND)};
 	opacity: 0.8;
 	margin-top: 2px;
 `
@@ -45,10 +55,10 @@ const Tooltip: React.FC<TooltipProps> = ({ visible, tipText, hintText, children,
 		<div style={{ position: "relative", display: "inline-block" }}>
 			{children}
 			{visible && (
-				<TooltipBody style={style}>
+				<TooltipContent isVisible={visible}>
 					{tipText}
 					{hintText && <Hint>{hintText}</Hint>}
-				</TooltipBody>
+				</TooltipContent>
 			)}
 		</div>
 	)

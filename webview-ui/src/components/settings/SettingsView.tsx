@@ -6,8 +6,10 @@ import {
 	VSCodePanels,
 	VSCodePanelTab,
 	VSCodePanelView,
+	VSCodeTextField,
 } from "@vscode/webview-ui-toolkit/react"
 import { memo, useCallback, useEffect, useState } from "react"
+import styled from "styled-components"
 import { useExtensionState } from "../../context/ExtensionStateContext"
 import { validateApiConfiguration, validateModelId } from "../../utils/validate"
 import { vscode } from "../../utils/vscode"
@@ -16,11 +18,126 @@ import ApiOptions from "./ApiOptions"
 import { TabButton } from "../mcp/McpView"
 import { useEvent } from "react-use"
 import { ExtensionMessage } from "../../../../src/shared/ExtensionMessage"
+import { getAsVar, VSCodeStyles } from "../../utils/vscStyles"
+import AutoApproveSettings from "./AutoApproveSettings"
 const { IS_DEV } = process.env
 
 type SettingsViewProps = {
 	onDone: () => void
 }
+
+const SettingsContainer = styled.div`
+	height: 100%;
+	display: flex;
+	flex-direction: column;
+	animation: fadeIn 0.3s ease-in-out;
+	padding: 0;
+	overflow-y: auto;
+
+	@keyframes fadeIn {
+		from {
+			opacity: 0;
+			transform: translateY(10px);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
+	}
+
+	& > vscode-panels {
+		flex: 1;
+		overflow-y: auto;
+		padding: 0 16px;
+	}
+`
+
+const PanelContent = styled.div`
+	max-width: 800px;
+	margin: 0 auto;
+`
+
+const SettingsSection = styled.div`
+	border: 1px solid ${() => getAsVar(VSCodeStyles.VSC_TITLEBAR_INACTIVE_FOREGROUND)};
+	border-radius: 6px;
+	padding: 20px;
+	margin-bottom: 20px;
+	transition: all 0.2s ease-in-out;
+	background: var(--vscode-editor-background);
+
+	&:hover {
+		border-color: ${() => getAsVar(VSCodeStyles.VSC_FOREGROUND)};
+		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+	}
+`
+
+const SectionTitle = styled.h3`
+	margin-top: 0;
+	margin-bottom: 16px;
+	color: ${() => getAsVar(VSCodeStyles.VSC_FOREGROUND)};
+`
+
+const Description = styled.div`
+	color: ${() => getAsVar(VSCodeStyles.VSC_DESCRIPTION_FOREGROUND)};
+	margin-top: 8px;
+`
+
+const ButtonContainer = styled.div`
+	margin-top: auto;
+	padding: 16px;
+	display: flex;
+	align-items: center;
+	background: var(--vscode-editor-background);
+	border-top: 1px solid var(--vscode-widget-border);
+	position: sticky;
+	bottom: 0;
+	z-index: 10;
+
+	& > vscode-button {
+		min-width: 120px;
+		margin-right: 8px;
+		transition: all 0.2s ease;
+	}
+
+	& > vscode-button:last-child {
+		margin-right: 0;
+	}
+
+	& > vscode-button::part(control) {
+		padding: 4px 12px;
+		border-radius: 4px;
+	}
+
+	& > vscode-button[appearance="primary"]::part(control) {
+		background: var(--vscode-button-background);
+		color: var(--vscode-button-foreground);
+		border: none;
+	}
+
+	& > vscode-button[appearance="primary"]:hover::part(control) {
+		background: var(--vscode-button-hoverBackground);
+	}
+
+	& > vscode-button[appearance="secondary"]::part(control) {
+		border: 1px solid var(--vscode-button-background);
+		background: transparent;
+		color: var(--vscode-button-background);
+	}
+
+	& > vscode-button[appearance="secondary"]:hover::part(control) {
+		background: var(--vscode-button-background);
+		color: var(--vscode-button-foreground);
+		opacity: 0.8;
+	}
+`
+
+const VersionText = styled.div`
+	margin-left: auto;
+	color: ${() => getAsVar(VSCodeStyles.VSC_DESCRIPTION_FOREGROUND)};
+	opacity: 0.7;
+	font-size: 11px;
+	letter-spacing: 0.5px;
+`
 
 const SettingsView = ({ onDone }: SettingsViewProps) => {
 	const {
@@ -37,14 +154,11 @@ const SettingsView = ({ onDone }: SettingsViewProps) => {
 	} = useExtensionState()
 	const [apiErrorMessage, setApiErrorMessage] = useState<string | undefined>(undefined)
 	const [modelIdErrorMessage, setModelIdErrorMessage] = useState<string | undefined>(undefined)
-	const [pendingTabChange, setPendingTabChange] = useState<"plan" | "act" | null>(null)
+	const [pendingTabChange, setPendingTabChange] = useState<"chat" | "Agent" | null>(null)
 
 	const handleSubmit = (withoutDone: boolean = false) => {
 		const apiValidationResult = validateApiConfiguration(apiConfiguration)
 		const modelIdValidationResult = validateModelId(apiConfiguration, openRouterModels)
-
-		// setApiErrorMessage(apiValidationResult)
-		// setModelIdErrorMessage(modelIdValidationResult)
 
 		let apiConfigurationToSubmit = apiConfiguration
 		if (!apiValidationResult && !modelIdValidationResult) {
@@ -85,19 +199,6 @@ const SettingsView = ({ onDone }: SettingsViewProps) => {
 		setModelIdErrorMessage(undefined)
 	}, [apiConfiguration])
 
-	// validate as soon as the component is mounted
-	/*
-    useEffect will use stale values of variables if they are not included in the dependency array. 
-    so trying to use useEffect with a dependency array of only one value for example will use any 
-    other variables' old values. In most cases you don't want this, and should opt to use react-use 
-    hooks.
-    
-        // uses someVar and anotherVar
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [someVar])
-	If we only want to run code once on mount we can use react-use's useEffectOnce or useMount
-    */
-
 	const handleMessage = useCallback(
 		(event: MessageEvent) => {
 			const message: ExtensionMessage = event.data
@@ -124,7 +225,7 @@ const SettingsView = ({ onDone }: SettingsViewProps) => {
 		vscode.postMessage({ type: "resetState" })
 	}
 
-	const handleTabChange = (tab: "plan" | "act") => {
+	const handleTabChange = (tab: "chat" | "Agent") => {
 		if (tab === chatSettings.mode) {
 			return
 		}
@@ -133,216 +234,65 @@ const SettingsView = ({ onDone }: SettingsViewProps) => {
 	}
 
 	return (
-		<div
-			style={{
-				position: "fixed",
-				top: 0,
-				left: 0,
-				right: 0,
-				bottom: 0,
-				padding: "10px 0px 0px 20px",
-				display: "flex",
-				flexDirection: "column",
-				overflow: "hidden",
-			}}>
-			<div
-				style={{
-					display: "flex",
-					justifyContent: "space-between",
-					alignItems: "center",
-					marginBottom: "13px",
-					paddingRight: 17,
-				}}>
-				<h3 style={{ color: "var(--vscode-foreground)", margin: 0 }}>Settings</h3>
-				<VSCodeButton onClick={() => handleSubmit(false)}>Done</VSCodeButton>
-			</div>
-			<div
-				style={{
-					flexGrow: 1,
-					overflowY: "scroll",
-					paddingRight: 8,
-					display: "flex",
-					flexDirection: "column",
-				}}>
-				{/* Tabs container */}
-				{planActSeparateModelsSetting ? (
-					<div
-						style={{
-							border: "1px solid var(--vscode-panel-border)",
-							borderRadius: "4px",
-							padding: "10px",
-							marginBottom: "20px",
-							background: "var(--vscode-panel-background)",
-						}}>
-						<div
-							style={{
-								display: "flex",
-								gap: "1px",
-								marginBottom: "10px",
-								marginTop: -8,
-								borderBottom: "1px solid var(--vscode-panel-border)",
-							}}>
-							<TabButton isActive={chatSettings.mode === "plan"} onClick={() => handleTabChange("plan")}>
-								Plan Mode
-							</TabButton>
-							<TabButton isActive={chatSettings.mode === "act"} onClick={() => handleTabChange("act")}>
-								Act Mode
-							</TabButton>
-						</div>
+		<SettingsContainer>
+			<VSCodePanels>
+				<VSCodePanelTab id="api">API</VSCodePanelTab>
+				<VSCodePanelTab id="auto-approve">Auto-approve</VSCodePanelTab>
+				<VSCodePanelTab id="custom-instructions">Custom Instructions</VSCodePanelTab>
+				<VSCodePanelTab id="telemetry">Telemetry</VSCodePanelTab>
 
-						{/* Content container */}
-						<div style={{ marginBottom: -12 }}>
-							<ApiOptions
-								key={chatSettings.mode}
-								showModelOptions={true}
-								apiErrorMessage={apiErrorMessage}
-								modelIdErrorMessage={modelIdErrorMessage}
+				<VSCodePanelView id="api">
+					<ApiOptions showModelOptions={true} />
+				</VSCodePanelView>
+
+				<VSCodePanelView id="auto-approve">
+					<AutoApproveSettings />
+				</VSCodePanelView>
+
+				<VSCodePanelView id="custom-instructions">
+					<PanelContent>
+						<SettingsSection>
+							<SectionTitle>Custom Instructions</SectionTitle>
+							<VSCodeTextArea
+								value={customInstructions}
+								onChange={(e) => {
+									setCustomInstructions((e.target as HTMLTextAreaElement).value)
+								}}
+								style={{ width: "600px", height: "auto" }}
 							/>
-						</div>
-					</div>
-				) : (
-					<ApiOptions
-						key={"single"}
-						showModelOptions={true}
-						apiErrorMessage={apiErrorMessage}
-						modelIdErrorMessage={modelIdErrorMessage}
-					/>
-				)}
+						</SettingsSection>
+					</PanelContent>
+				</VSCodePanelView>
 
-				<div style={{ marginBottom: 5 }}>
-					<VSCodeTextArea
-						value={customInstructions ?? ""}
-						style={{ width: "100%" }}
-						resize="vertical"
-						rows={4}
-						placeholder={'e.g. "Run unit tests at the end", "Use TypeScript with async/await", "Speak in Spanish"'}
-						onInput={(e: any) => setCustomInstructions(e.target?.value ?? "")}>
-						<span style={{ fontWeight: "500" }}>Custom Instructions</span>
-					</VSCodeTextArea>
-					<p
-						style={{
-							fontSize: "12px",
-							marginTop: "5px",
-							color: "var(--vscode-descriptionForeground)",
-						}}>
-						These instructions are added to the end of the system prompt sent with every request.
-					</p>
-				</div>
-{/* 
-				<div style={{ marginBottom: 5 }}>
-					<VSCodeCheckbox
-						style={{ marginBottom: "5px" }}
-						checked={planActSeparateModelsSetting}
-						onChange={(e: any) => {
-							const checked = e.target.checked === true
-							setPlanActSeparateModelsSetting(checked)
-						}}>
-						Use different models for Plan and Act modes
-					</VSCodeCheckbox>
-					<p
-						style={{
-							fontSize: "12px",
-							marginTop: "5px",
-							color: "var(--vscode-descriptionForeground)",
-						}}>
-						Switching between Plan and Act mode will persist the API and model used in the previous mode. This may be
-						helpful e.g. when using a strong reasoning model to architect a plan for a cheaper coding model to act on.
-					</p>
-				</div> */}
+				<VSCodePanelView id="telemetry">
+					<PanelContent>
+						<SettingsSection>
+							<SectionTitle>Telemetry</SectionTitle>
+							<VSCodeCheckbox
+								checked={telemetrySetting === "enabled"}
+								onChange={(e) => {
+									setTelemetrySetting((e.target as HTMLInputElement).checked ? "enabled" : "disabled")
+								}}>
+								Enable telemetry
+							</VSCodeCheckbox>
+							<Description>
+								We collect anonymous usage data to help improve AutoGen. No personal information or code is ever
+								collected.
+							</Description>
+						</SettingsSection>
+					</PanelContent>
+				</VSCodePanelView>
+			</VSCodePanels>
 
-				{/* <div style={{ marginBottom: 5 }}>
-					<VSCodeCheckbox
-						style={{ marginBottom: "5px" }}
-						checked={telemetrySetting === "enabled"}
-						onChange={(e: any) => {
-							const checked = e.target.checked === true
-							setTelemetrySetting(checked ? "enabled" : "disabled")
-						}}>
-						Allow anonymous error and usage reporting
-					</VSCodeCheckbox>
-					<p
-						style={{
-							fontSize: "12px",
-							marginTop: "5px",
-							color: "var(--vscode-descriptionForeground)",
-						}}>
-						Help improve AutoGen by sending anonymous usage data and error reports. No code, prompts, or personal
-						information are ever sent. See our{" "}
-						<VSCodeLink href="https://docs.AutoGen.bot/more-info/telemetry" style={{ fontSize: "inherit" }}>
-							telemetry overview
-						</VSCodeLink>{" "}
-						and{" "}
-						<VSCodeLink href="https://AutoGen.bot/privacy" style={{ fontSize: "inherit" }}>
-							privacy policy
-						</VSCodeLink>{" "}
-						for more details.
-					</p>
-				</div> */}
-
-				{IS_DEV && (
-					<>
-						<div style={{ marginTop: "10px", marginBottom: "4px" }}>Debug</div>
-						<VSCodeButton onClick={handleResetState} style={{ marginTop: "5px", width: "auto" }}>
-							Reset State
-						</VSCodeButton>
-						<p
-							style={{
-								fontSize: "12px",
-								marginTop: "5px",
-								color: "var(--vscode-descriptionForeground)",
-							}}>
-							This will reset all global state and secret storage in the extension.
-						</p>
-					</>
-				)}
-
-				{/* <div
-					style={{
-						marginTop: "auto",
-						paddingRight: 8,
-						display: "flex",
-						justifyContent: "center",
-					}}>
-					<SettingsButton
-						onClick={() => vscode.postMessage({ type: "openExtensionSettings" })}
-						style={{
-							margin: "0 0 16px 0",
-						}}>
-						<i className="codicon codicon-settings-gear" />
-						Advanced Settings
-					</SettingsButton>
-				</div> */}
-				<div
-					style={{
-						textAlign: "center",
-						color: "var(--vscode-descriptionForeground)",
-						fontSize: "12px",
-						lineHeight: "1.2",
-						padding: "0 8px 15px 0",
-					}}>
-					<p
-						style={{
-							wordWrap: "break-word",
-							margin: 0,
-							padding: 0,
-						}}>
-						If you have any questions or feedback, please reach out to us on{" "}
-						<VSCodeLink href="https://autogenlabs.com/" style={{ display: "inline" }}>
-						https://autogenlabs.com/
-						</VSCodeLink>
-					</p>
-					<p
-						style={{
-							fontStyle: "italic",
-							margin: "10px 0 0 0",
-							padding: 0,
-						}}>
-						v{version}
-					</p>
-				</div>
-			</div>
-		</div>
+			<ButtonContainer>
+				<VSCodeButton appearance="primary" onClick={() => handleSubmit()}>
+					Done
+				</VSCodeButton>
+				<VSCodeButton onClick={handleResetState}>Reset All Settings</VSCodeButton>
+				<VersionText>Version: {version}</VersionText>
+			</ButtonContainer>
+		</SettingsContainer>
 	)
 }
 
-export default memo(SettingsView)
+export default SettingsView

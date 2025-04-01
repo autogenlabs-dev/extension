@@ -21,7 +21,6 @@ import { vscode } from "../../utils/vscode"
 import HistoryPreview from "../history/HistoryPreview"
 import { normalizeApiConfiguration } from "../settings/ApiOptions"
 import Announcement from "./Announcement"
-import AutoApproveMenu from "./AutoApproveMenu"
 import BrowserSessionRow from "./BrowserSessionRow"
 import ChatRow from "./ChatRow"
 import ChatTextArea from "./ChatTextArea"
@@ -795,7 +794,7 @@ const ChatView = ({ isHidden, showAnnouncement, hideAnnouncement, showHistoryVie
 					}}>
 					{telemetrySetting === "unset" && <TelemetryBanner />}
 
-					{showAnnouncement && <Announcement version={version} hideAnnouncement={hideAnnouncement} />}
+					{/* 		{showAnnouncement && <Announcement version={version} hideAnnouncement={hideAnnouncement} />} */}
 
 					<div style={{ padding: "0 20px", flexShrink: 0 }}>
 						<div style={{
@@ -808,11 +807,12 @@ const ChatView = ({ isHidden, showAnnouncement, hideAnnouncement, showHistoryVie
 						}}>
 							<div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
 								{/* Use the VS Code codicon instead of the image */}
-								<span
-									className="codicon codicon-hubot"
+								<img
+									src="https://ik.imagekit.io/rowzblbre/icon.png?updatedAt=1743414492953"
+									alt="Chatbot Icon"
 									style={{
-										fontSize: "32px",
-										color: "var(--vscode-foreground)",
+										width: "42px",
+										height: "42px",
 										opacity: 0.8
 									}}
 								/>
@@ -824,14 +824,14 @@ const ChatView = ({ isHidden, showAnnouncement, hideAnnouncement, showHistoryVie
 										color: 'var(--vscode-foreground)',
 										letterSpacing: '-0.3px',
 										lineHeight: 1.3
-									}}>What can I do for you?</h2>
+									}}>How can I assist you today?</h2>
 									<span style={{
 										fontSize: '14px',
 										color: 'var(--vscode-descriptionForeground)',
 										marginTop: '5px',
 										display: 'block'
 									}}>
-										Support for AutoGen now available - create autonomous AI agents for complex tasks
+										Unlock the power of AutoGen - create autonomous AI agents for complex tasks
 									</span>
 								</div>
 							</div>
@@ -846,31 +846,6 @@ const ChatView = ({ isHidden, showAnnouncement, hideAnnouncement, showHistoryVie
 					</div>
 					{taskHistory.length > 0 && <HistoryPreview showHistoryView={showHistoryView} />}
 				</div>
-			)}
-
-			{/* 
-			// Flex layout explanation:
-			// 1. Content div above uses flex: "1 1 0" to:
-			//    - Grow to fill available space (flex-grow: 1) 
-			//    - Shrink when AutoApproveMenu needs space (flex-shrink: 1)
-			//    - Start from zero size (flex-basis: 0) to ensure proper distribution
-			//    minHeight: 0 allows it to shrink below its content height
-			//
-			// 2. AutoApproveMenu uses flex: "0 1 auto" to:
-			//    - Not grow beyond its content (flex-grow: 0)
-			//    - Shrink when viewport is small (flex-shrink: 1) 
-			//    - Use its content size as basis (flex-basis: auto)
-			//    This ensures it takes its natural height when there's space
-			//    but becomes scrollable when the viewport is too small
-			*/}
-			{!task && (
-				<AutoApproveMenu
-					style={{
-						marginBottom: -2,
-						flex: "0 1 auto", // flex-grow: 0, flex-shrink: 1, flex-basis: auto
-						minHeight: 0,
-					}}
-				/>
 			)}
 
 			{task && (
@@ -905,7 +880,6 @@ const ChatView = ({ isHidden, showAnnouncement, hideAnnouncement, showHistoryVie
 							initialTopMostItemIndex={groupedMessages.length - 1}
 						/>
 					</div>
-					<AutoApproveMenu />
 					{showScrollToBottom ? (
 						<div
 							style={{

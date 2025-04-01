@@ -22,7 +22,7 @@ class PostHogClient {
 			CONVERSATION_TURN: "task.conversation_turn",
 			// Tracks token consumption for cost and usage analysis
 			TOKEN_USAGE: "task.tokens",
-			// Tracks switches between plan and act modes
+			// Tracks switches between chat and Agent modes
 			MODE_SWITCH: "task.mode",
 			// Tracks usage of the git-based checkpoint system (shadow_git_initialized, commit_created, branch_created, branch_deleted_active, branch_deleted_inactive, restored)
 			CHECKPOINT_USED: "task.checkpoint_used",
@@ -220,11 +220,11 @@ class PostHogClient {
 	}
 
 	/**
-	 * Records when a task switches between plan and act modes
+	 * Records when a task switches between chat and Agent modes
 	 * @param taskId Unique identifier for the task
-	 * @param mode The mode being switched to (plan or act)
+	 * @param mode The mode being switched to (chat or Agent)
 	 */
-	public captureModeSwitch(taskId: string, mode: "plan" | "act") {
+	public captureModeSwitch(taskId: string, mode: "chat" | "Agent") {
 		this.capture({
 			event: PostHogClient.EVENTS.TASK.MODE_SWITCH,
 			properties: {

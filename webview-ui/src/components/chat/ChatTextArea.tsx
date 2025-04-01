@@ -707,7 +707,7 @@ const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 				changeModeDelay = 250;
 			}
 			setTimeout(() => {
-				const newMode = chatSettings.mode === "plan" ? "act" : "plan"
+				const newMode = chatSettings.mode === "chat" ? "Agent" : "chat"
 				vscode.postMessage({
 					type: "togglePlanActMode",
 					chatSettings: {
@@ -1065,7 +1065,7 @@ const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 							flex: 1,
 							zIndex: 1,
 							outline: isTextAreaFocused
-								? `2px solid ${chatSettings.mode === "plan" ? PLAN_MODE_COLOR : "#0078D4"}`
+								? `2px solid ${chatSettings.mode === "chat" ? PLAN_MODE_COLOR : "#0078D4"}`
 								: "none",
 						}}
 						onScroll={() => updateHighlights()}
@@ -1127,10 +1127,10 @@ const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 					</div>
 					{/* Add inline controls at the top of the text area */}
 					<InlineControls>
-						<InlineToggle onClick={onModeToggle} title={`Toggle mode (${metaKeyChar}+Shift+A)`} style={{ borderColor: chatSettings.mode === "plan" ? PLAN_MODE_COLOR : "#0078D4" }}>
-							<ActiveIndicator isPlan={chatSettings.mode === "plan"} />
+						<InlineToggle onClick={onModeToggle} title={`Toggle mode (${metaKeyChar}+Shift+A)`} style={{ borderColor: chatSettings.mode === "chat" ? PLAN_MODE_COLOR : "#0078D4" }}>
+							<ActiveIndicator isPlan={chatSettings.mode === "chat"} />
 							<span style={{ fontWeight: "500" }}>
-								{chatSettings.mode === "plan" ? "Plan" : "Act"}
+								{chatSettings.mode === "chat" ? "Plan" : "Agent"}
 							</span>
 						</InlineToggle>
 

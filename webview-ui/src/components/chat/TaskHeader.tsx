@@ -147,7 +147,6 @@ const TaskHeader: React.FC<TaskHeaderProps> = ({
 							flexShrink: 0, // Prevents shrinking
 						}}>
 						<span style={{ fontWeight: "bold" }}>
-							{/* {windowWidth > 280 && windowWidth < 310 ? "Context:" : "Context Window:"} */}
 							Context Window:
 						</span>
 					</div>
@@ -197,365 +196,168 @@ const TaskHeader: React.FC<TaskHeaderProps> = ({
 			<div
 				style={{
 					backgroundColor: "#374151", // Updated to match the bot-message background
-					color: "#ffffff",
-					borderRadius: "8px", // Updated to match the message border-radius
-					padding: "12px 14px",
-					display: "flex",
-					flexDirection: "column",
-					gap: 8,
+					borderRadius: "8px",
+					padding: "10px",
+					color: "var(--vscode-foreground)",
 					position: "relative",
-					zIndex: 1,
-					boxShadow: "0 1px 3px rgba(0, 0, 0, 0.15)",
 				}}>
-				<div
-					style={{
-						display: "flex",
-						justifyContent: "space-between",
-						alignItems: "center",
-					}}>
-					<div
-						style={{
-							display: "flex",
-							alignItems: "center",
-							cursor: "pointer",
-							marginLeft: -2,
-							userSelect: "none",
-							WebkitUserSelect: "none",
-							MozUserSelect: "none",
-							msUserSelect: "none",
-							flexGrow: 1,
-							minWidth: 0, // This allows the div to shrink below its content size
-						}}
-						onClick={() => setIsTaskExpanded(!isTaskExpanded)}>
-						<div
-							style={{
-								display: "flex",
-								alignItems: "center",
-								flexShrink: 0,
-							}}>
-							<span className={`codicon codicon-chevron-${isTaskExpanded ? "down" : "right"}`}></span>
-						</div>
-						<div
-							style={{
-								marginLeft: 6,
-								whiteSpace: "nowrap",
-								overflow: "hidden",
-								textOverflow: "ellipsis",
-								flexGrow: 1,
-								minWidth: 0, // This allows the div to shrink below its content size
-							}}>
-							<span style={{ fontWeight: "bold" }}>
-								Task
-								{!isTaskExpanded && ":"}
-							</span>
-							{!isTaskExpanded && <span style={{ marginLeft: 4 }}>{highlightMentions(task.text, false)}</span>}
-						</div>
-					</div>
-					{!isTaskExpanded && isCostAvailable && (
-						<div
-							style={{
-								marginLeft: 10,
-								backgroundColor: "#2563eb", // Updated to match user-message blue
-								color: "#ffffff",
-								padding: "2px 6px",
-								borderRadius: "4px",
-								fontSize: "11px",
-								fontWeight: 500,
-								display: "inline-block",
-								flexShrink: 0,
-							}}>
-							${totalCost?.toFixed(4)}
-						</div>
-					)}
-					<VSCodeButton appearance="icon" onClick={showSettings} style={{ marginLeft: 6, flexShrink: 0 }}>
-						<span className="codicon codicon-gear"></span>
-					</VSCodeButton>
-					<VSCodeButton appearance="icon" onClick={onClose} style={{ marginLeft: 6, flexShrink: 0 }}>
-						<span className="codicon codicon-close"></span>
-					</VSCodeButton>
-				</div>
-				{isTaskExpanded && (
-					<>
-						<div
-							ref={textContainerRef}
-							style={{
-								marginTop: -2,
-								fontSize: "var(--vscode-font-size)",
-								overflowY: isTextExpanded ? "auto" : "hidden",
-								wordBreak: "break-word",
-								overflowWrap: "anywhere",
-								position: "relative",
-							}}>
-							<div
-								ref={textRef}
-								style={{
-									display: "-webkit-box",
-									WebkitLineClamp: isTextExpanded ? "unset" : 3,
-									WebkitBoxOrient: "vertical",
-									overflow: "hidden",
-									whiteSpace: "pre-wrap",
-									wordBreak: "break-word",
-									overflowWrap: "anywhere",
-								}}>
-								{highlightMentions(task.text, false)}
-							</div>
-							{!isTextExpanded && showSeeMore && (
-								<div
-									style={{
-										position: "absolute",
-										right: 0,
-										bottom: 0,
-										display: "flex",
-										alignItems: "center",
-									}}>
-									<div
-										style={{
-											width: 30,
-											height: "1.2em",
-											background: "linear-gradient(to right, transparent, var(--vscode-badge-background))",
-										}}
-									/>
-									<div
-										style={{
-											cursor: "pointer",
-											color: "var(--vscode-textLink-foreground)",
-											paddingRight: 0,
-											paddingLeft: 3,
-											backgroundColor: "var(--vscode-badge-background)",
-										}}
-										onClick={() => setIsTextExpanded(!isTextExpanded)}>
-										See more
-									</div>
-								</div>
-							)}
-						</div>
-						{isTextExpanded && showSeeMore && (
-							<div
-								style={{
-									cursor: "pointer",
-									color: "var(--vscode-textLink-foreground)",
-									marginLeft: "auto",
-									textAlign: "right",
-									paddingRight: 2,
-								}}
-								onClick={() => setIsTextExpanded(!isTextExpanded)}>
-								See less
-							</div>
-						)}
-						{task.images && task.images.length > 0 && <Thumbnails images={task.images} />}
-						<div
-							style={{
-								display: "flex",
-								flexDirection: "column",
-								gap: "6px",
-								backgroundColor: "#2d3748", // Slightly lighter than the main background
-								borderRadius: "6px",
-								padding: "8px 10px",
-								marginTop: "4px",
-							}}>
+				<div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+					<div style={{ display: "flex", flexDirection: "column", gap: "8px", width: "100%" }}>
+						<div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
 							<div
 								style={{
 									display: "flex",
-									justifyContent: "space-between",
 									alignItems: "center",
-									height: 17,
-								}}>
+									gap: "8px",
+									cursor: "pointer",
+									userSelect: "none",
+								}}
+								onClick={() => setIsTaskExpanded(!isTaskExpanded)}>
+								<i
+									className={`codicon codicon-chevron-${isTaskExpanded ? "down" : "right"}`}
+									style={{ fontSize: "12px" }}
+								/>
+								<span style={{ fontWeight: "bold" }}>Task</span>
+							</div>
+							<div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+								{showSettings && (
+									<VSCodeButton appearance="icon" onClick={showSettings}>
+										<i className="codicon codicon-settings-gear" />
+									</VSCodeButton>
+								)}
+								<VSCodeButton appearance="icon" onClick={onClose}>
+									<i className="codicon codicon-close" />
+								</VSCodeButton>
+							</div>
+						</div>
+
+						{isTaskExpanded && (
+							<div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
 								<div
+									ref={textContainerRef}
 									style={{
-										display: "flex",
-										alignItems: "center",
-										gap: "4px",
-										flexWrap: "wrap",
+										position: "relative",
+										overflow: "hidden",
+										transition: "max-height 0.2s ease-out",
 									}}>
-									<span style={{ fontWeight: "bold" }}>Tokens:</span>
-									<span
-										style={{
-											display: "flex",
-											alignItems: "center",
-											gap: "3px",
-										}}>
-										<i
-											className="codicon codicon-arrow-up"
-											style={{
-												fontSize: "12px",
-												fontWeight: "bold",
-												marginBottom: "-2px",
-											}}
-										/>
-										{formatLargeNumber(tokensIn || 0)}
-									</span>
-									<span
-										style={{
-											display: "flex",
-											alignItems: "center",
-											gap: "3px",
-										}}>
-										<i
-											className="codicon codicon-arrow-down"
-											style={{
-												fontSize: "12px",
-												fontWeight: "bold",
-												marginBottom: "-2px",
-											}}
-										/>
-										{formatLargeNumber(tokensOut || 0)}
-									</span>
+									<div ref={textRef} style={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
+										{task.text}
+									</div>
 								</div>
-								{!isCostAvailable && (
-									<DeleteButton taskSize={formatSize(currentTaskItem?.size)} taskId={currentTaskItem?.id} />
+								{showSeeMore && (
+									<VSCodeButton
+										appearance="secondary"
+										onClick={() => setIsTextExpanded(!isTextExpanded)}
+										style={{ alignSelf: "flex-start" }}>
+										{isTextExpanded ? "See Less" : "See More"}
+									</VSCodeButton>
+								)}
+								{task.images && task.images.length > 0 && (
+									<div style={{ marginTop: "8px" }}>
+										<Thumbnails images={task.images} />
+									</div>
 								)}
 							</div>
+						)}
 
-							{shouldShowPromptCacheInfo &&
-								(cacheReads !== undefined ||
-									cacheWrites !== undefined ||
-									apiConfiguration?.apiProvider === "anthropic") && (
-									<div
-										style={{
-											display: "flex",
-											alignItems: "center",
-											gap: "4px",
-											flexWrap: "wrap",
-										}}>
-										<span style={{ fontWeight: "bold" }}>Cache:</span>
-										<span
-											style={{
-												display: "flex",
-												alignItems: "center",
-												gap: "3px",
-											}}>
-											<i
-												className="codicon codicon-database"
-												style={{
-													fontSize: "12px",
-													fontWeight: "bold",
-													marginBottom: "-1px",
-												}}
-											/>
-											+{formatLargeNumber(cacheWrites || 0)}
-										</span>
-										<span
-											style={{
-												display: "flex",
-												alignItems: "center",
-												gap: "3px",
-											}}>
-											<i
-												className="codicon codicon-arrow-right"
-												style={{
-													fontSize: "12px",
-													fontWeight: "bold",
-													marginBottom: 0,
-												}}
-											/>
-											{formatLargeNumber(cacheReads || 0)}
-										</span>
-									</div>
-								)}
-							{ContextWindowComponent}
-							{isCostAvailable && (
+						{isTaskExpanded && (
+							<div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+								{/* Tokens */}
 								<div
 									style={{
 										display: "flex",
-										justifyContent: "space-between",
-										alignItems: "center",
-										height: 17,
+										flexDirection: windowWidth < 270 ? "column" : "row",
+										gap: "4px",
 									}}>
 									<div
 										style={{
 											display: "flex",
 											alignItems: "center",
 											gap: "4px",
+											flexShrink: 0,
 										}}>
-										<span style={{ fontWeight: "bold" }}>API Cost:</span>
-										<span>${totalCost?.toFixed(4)}</span>
+										<span style={{ fontWeight: "bold" }}>Tokens:</span>
 									</div>
-									<DeleteButton taskSize={formatSize(currentTaskItem?.size)} taskId={currentTaskItem?.id} />
-								</div>
-							)}
-							{checkpointTrackerErrorMessage && (
-								<div
-									style={{
-										display: "flex",
-										alignItems: "center",
-										gap: "8px",
-										color: "#f87171", // Light red for warning
-										fontSize: "11px",
-									}}>
-									<i className="codicon codicon-warning" />
-									<span>
-										{checkpointTrackerErrorMessage.replace(/disabling checkpoints\.$/, "")}
-										{checkpointTrackerErrorMessage.endsWith("disabling checkpoints.") && (
-											<>
-												<a
-													onClick={() => {
-														vscode.postMessage({
-															type: "openExtensionSettings",
-															text: "enableCheckpoints",
-														})
-													}}
-													style={{
-														color: "inherit",
-														textDecoration: "underline",
-														cursor: "pointer",
-													}}>
-													disabling checkpoints.
-												</a>
-											</>
-										)}
-										{checkpointTrackerErrorMessage.includes("Git must be installed to use checkpoints.") && (
+									<div
+										style={{
+											display: "flex",
+											alignItems: "center",
+											gap: "4px",
+											flex: 1,
+										}}>
+										<span>
+											{formatLargeNumber(tokensIn)} in / {formatLargeNumber(tokensOut)} out
+										</span>
+										{shouldShowPromptCacheInfo && (
 											<>
 												{" "}
-												<a
-													href="https://github.com/AutoGen/AutoGen/wiki/Installing-Git-for-Checkpoints"
-													style={{
-														color: "inherit",
-														textDecoration: "underline",
-													}}>
-													See here for instructions.
-												</a>
+												•{" "}
+												<span>
+													{formatLargeNumber(cacheWrites || 0)} cached / {formatLargeNumber(cacheReads || 0)} reused
+												</span>
 											</>
 										)}
-									</span>
+									</div>
 								</div>
-							)}
-						</div>
-					</>
-				)}
-			</div>
-			{/* {apiProvider === "" && (
-				<div
-					style={{
-						backgroundColor: "#1f2937", // Match page background
-						color: "#ffffff",
-						borderRadius: "0 0 8px 8px", // Match message border-radius
-						display: "flex",
-						justifyContent: "space-between",
-						alignItems: "center",
-						padding: "10px 14px",
-						fontSize: "12px",
-						marginTop: "-1px",
-						border: "1px solid #374151", // Match bot-message background
-						borderTop: "none",
-					}}>
-					<div style={{ fontWeight: "600" }}>Credits Remaining:</div>
-					<div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-						{formatPrice(Credits || 0)}
-						{(Credits || 0) < 1 && (
-							<a
-								style={{ 
-									fontSize: "11px", 
-									color: "#60a5fa", // Lighter blue for link
-									cursor: "pointer",
-									textDecoration: "none"
-								}} 
-								href={getAddCreditsUrl(vscodeUriScheme)}>
-								Get more
-							</a>
+
+								{/* Cost */}
+								{isCostAvailable && (
+									<div
+										style={{
+											display: "flex",
+											flexDirection: windowWidth < 270 ? "column" : "row",
+											gap: "4px",
+										}}>
+										<div
+											style={{
+												display: "flex",
+												alignItems: "center",
+												gap: "4px",
+												flexShrink: 0,
+											}}>
+											<span style={{ fontWeight: "bold" }}>Cost:</span>
+										</div>
+										<div
+											style={{
+												display: "flex",
+												alignItems: "center",
+												gap: "4px",
+												flex: 1,
+											}}>
+											<span>${totalCost.toFixed(4)}</span>
+										</div>
+									</div>
+								)}
+
+								{/* Context Window */}
+								{ContextWindowComponent}
+
+								{/* Checkpoint Tracker Error */}
+								{checkpointTrackerErrorMessage && (
+									<div
+										style={{
+											display: "flex",
+											flexDirection: "column",
+											gap: "4px",
+											marginTop: "4px",
+											padding: "8px",
+											backgroundColor: "var(--vscode-inputValidation-errorBackground)",
+											border: "1px solid var(--vscode-inputValidation-errorBorder)",
+											borderRadius: "4px",
+										}}>
+										<div style={{ fontWeight: "bold", color: "var(--vscode-inputValidation-errorForeground)" }}>
+											Error: Failed to track task progress
+										</div>
+										<div style={{ color: "var(--vscode-inputValidation-errorForeground)" }}>
+											{checkpointTrackerErrorMessage}
+										</div>
+									</div>
+								)}
+							</div>
 						)}
 					</div>
 				</div>
-			)} */}
+			</div>
 		</div>
 	)
 }

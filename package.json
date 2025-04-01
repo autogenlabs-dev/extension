@@ -1,8 +1,8 @@
 {
-	"name": "claude-dev",
-	"displayName": "AutoGen",
-	"description": "Autonomous coding agent right in your IDE, capable of creating/editing files, running commands, using the browser, and more with your permission every step of the way.",
-	"version": "3.7.1",
+	"name": "auto-gen-code-builder",
+	"displayName": "Auto Gen Code Builder",
+	"description": "A VS Code extension to create code structures using AI commands",
+	"version": "0.0.6",
 	"icon": "assets/icons/icon.png",
 	"galleryBanner": {
 		"color": "#617A91",
@@ -14,8 +14,8 @@
 	"author": {
 		"name": "AutoGen Bot Inc."
 	},
-	"license": "Apache-2.0",
-	"publisher": "saoudrizwan",
+	"license": "MIT",
+	"publisher": "AutoGenCodeBuilder",
 	"repository": {
 		"type": "git",
 		"url": "https://github.com/AutoGen/AutoGen"

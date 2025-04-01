@@ -30,7 +30,7 @@ describe("Chat Integration Tests", () => {
                                 case 'toggleMode':
                                     vscode.postMessage({
                                         type: 'togglePlanActMode',
-                                        chatSettings: { mode: 'act' }, 
+                                        chatSettings: { mode: 'Agent' }, 
                                         chatContent: {
                                             message: "message test",
                                         }
@@ -80,7 +80,7 @@ describe("Chat Integration Tests", () => {
 		assert.equal(message.text, "Create a hello world app")
 	})
 
-	it("should toggle between plan and act modes", async () => {
+	it("should toggle between chat and Agent modes", async () => {
 		// Set up state change listener
 		const stateChangePromise = new Promise<any>((resolve) => {
 			panel.webview.onDidReceiveMessage((message) => {
@@ -95,10 +95,10 @@ describe("Chat Integration Tests", () => {
 
 		// Verify mode changed
 		const stateChange = await stateChangePromise
-		assert.equal(stateChange.chatSettings.mode, "act")
+		assert.equal(stateChange.chatSettings.mode, "Agent")
 	})
 
-	it("should toggle between plan and act modes with messages", async () => {
+	it("should toggle between chat and Agent modes with messages", async () => {
 		// Set up state change listener
 		const stateChangePromise = new Promise<any>((resolve) => {
 			panel.webview.onDidReceiveMessage((message) => {
@@ -113,7 +113,7 @@ describe("Chat Integration Tests", () => {
 
 		// Verify mode changed
 		const stateChange = await stateChangePromise
-		assert.equal(stateChange.chatSettings.mode, "act")
+		assert.equal(stateChange.chatSettings.mode, "Agent")
 		assert.equal(stateChange.chatContent.message, "message test")
 	})
 
