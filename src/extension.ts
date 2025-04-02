@@ -174,6 +174,13 @@ export function activate(context: vscode.ExtensionContext) {
 		}),
 	)
 
+	// Register openWithLogo command
+	context.subscriptions.push(
+		vscode.commands.registerCommand("AutoGen.openWithLogo", async () => {
+			await openAutoGenPanel();
+		}),
+	)
+
 	// Diff view provider
 	const diffContentProvider = new (class implements vscode.TextDocumentContentProvider {
 		provideTextDocumentContent(uri: vscode.Uri): string {

@@ -93,6 +93,7 @@ export class AutoGen {
 	private askResponse?: AutoGenAskResponse
 	private askResponseText?: string
 	private askResponseImages?: string[]
+	private askResolve?: (value: { response: AutoGenAskResponse; text?: string; images?: string[]; selectedItems?: { type: string; path: string }[] }) => void
 	private lastMessageTs?: number
 	private consecutiveAutoApprovedRequestsCount: number = 0
 	private consecutiveMistakeCount: number = 0
@@ -591,6 +592,7 @@ export class AutoGen {
 		response: AutoGenAskResponse
 		text?: string
 		images?: string[]
+		selectedItems?: { type: string; path: string }[]
 	}> {
 		// If this AutoGen instance was aborted by the provider, then the only thing keeping us alive is a promise still running in the background, in which case we don't want to send its result to the webview as it is attached to a new instance of AutoGen now. So we can safely ignore the result of any active promises, and this class will be deallocated. (Although we set AutoGen = undefined in provider, that simply removes the reference to this instance, but the instance is still alive until this promise resolves or rejects.)
 		if (this.abort) {
@@ -704,10 +706,17 @@ export class AutoGen {
 		return result
 	}
 
-	async handleWebviewAskResponse(askResponse: AutoGenAskResponse, text?: string, images?: string[]) {
-		this.askResponse = askResponse
-		this.askResponseText = text
-		this.askResponseImages = images
+	async handleWebviewAskResponse(askResponse: AutoGenAskResponse, text?: string, images?: string[], selectedItems?: { type: string; path: string }[]) {
+		if (this.abort) {
+			throw new Error("AutoGen instance aborted")
+		}
+
+		if (!this.askResolve) {
+			throw new Error("No ask in progress")
+		}
+
+		this.askResolve({ response: askResponse, text, images, selectedItems })
+		this.askResolve = undefined
 	}
 
 	async say(type: AutoGenSay, text?: string, images?: string[], partial?: boolean): Promise<undefined> {

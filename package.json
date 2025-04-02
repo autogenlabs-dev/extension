@@ -2,7 +2,7 @@
 	"name": "auto-gen-code-builder",
 	"displayName": "Auto Gen Code Builder",
 	"description": "A VS Code extension to create code structures using AI commands",
-	"version": "0.0.6",
+	"version": "0.0.7",
 	"icon": "assets/icons/icon.png",
 	"galleryBanner": {
 		"color": "#617A91",
@@ -80,6 +80,15 @@
 					"light": "assets/icons/tab-light.svg",
 					"dark": "assets/icons/tab-dark.svg"
 				}
+			},
+			{
+				"command": "AutoGen.openWithLogo",
+				"title": "Open AutoGen",
+				"category": "AutoGen",
+				"icon": {
+					"light": "assets/icons/icon.png",
+					"dark": "assets/icons/icon.png"
+				}
 			}
 		],
 		"keybindings": [
@@ -91,7 +100,12 @@
 		],
 		"menus": {
 			"view/title": [],
-			"editor/title": []
+			"editor/title": [
+				{
+					"command": "AutoGen.openWithLogo",
+					"group": "navigation"
+				}
+			]
 		},
 		"configuration": {
 			"title": "AutoGen",

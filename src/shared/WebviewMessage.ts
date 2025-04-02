@@ -71,6 +71,7 @@ export interface WebviewMessage {
 	askResponse?: AutoGenAskResponse
 	apiConfiguration?: ApiConfiguration
 	images?: string[]
+	selectedItems?: { type: string; path: string }[]
 	bool?: boolean
 	number?: number
 	autoApprovalSettings?: AutoApprovalSettings

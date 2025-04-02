@@ -590,13 +590,13 @@ export class AutoGenProvider implements vscode.WebviewViewProvider {
 					// 	}
 					// 	break
 					case "askResponse":
-						this.AutoGen?.handleWebviewAskResponse(message.askResponse!, message.text, message.images)
+						this.AutoGen?.handleWebviewAskResponse(message.askResponse!, message.text, message.images, message.selectedItems)
 						break
 					case "clearTask":
 						// newTask will start a new task with a given task text, while clear task resets the current session and allows for a new task to be started
-						await this.clearTask()
-						await this.postStateToWebview()
-						break
+							await this.clearTask()
+							await this.postStateToWebview()
+							break
 					case "didShowAnnouncement":
 						await this.updateGlobalState("lastShownAnnouncementId", this.latestAnnouncementId)
 						await this.postStateToWebview()

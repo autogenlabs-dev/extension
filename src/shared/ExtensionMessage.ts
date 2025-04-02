@@ -52,6 +52,7 @@ export interface ExtensionMessage {
 	invoke?: Invoke
 	state?: ExtensionState
 	images?: string[]
+	selectedItems?: { type: string; path: string }[]
 	ollamaModels?: string[]
 	lmStudioModels?: string[]
 	vsCodeLmModels?: { vendor?: string; family?: string; version?: string; id?: string }[]
