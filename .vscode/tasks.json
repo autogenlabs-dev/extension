@@ -112,6 +112,29 @@
 			"label": "stop",
 			"command": "echo ${input:terminate}",
 			"type": "shell"
+		},
+		{
+			"label": "Open Secondary Side Bar on Startup",
+			"command": "${command:workbench.action.focusAuxiliaryBar}",
+			"runOptions": {
+				"runOn": "folderOpen"
+			},
+			"presentation": {
+				"reveal": "silent"
+			},
+			"problemMatcher": []
+		},
+		{
+			"label": "Open AutoGen in Secondary Bar",
+			"dependsOn": ["Open Secondary Side Bar on Startup"],
+			"command": "${command:AutoGen.openWithLogo}",
+			"runOptions": {
+				"runOn": "folderOpen"
+			},
+			"presentation": {
+				"reveal": "silent"
+			},
+			"problemMatcher": []
 		}
 	],
 	"inputs": [

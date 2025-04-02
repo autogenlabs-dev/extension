@@ -24,6 +24,12 @@ import { MAX_IMAGES_PER_MESSAGE } from "./ChatView"
 import ContextMenu from "./ContextMenu"
 import { ChatSettings } from "../../../../src/shared/ChatSettings"
 
+// Define interface for selected items
+interface SelectedItem {
+	type: string;
+	path: string;
+}
+
 // Add new regex for both triggers
 const triggerRegex = /(?:^|\s)[@#](?:(?!\s).)*$/;
 const triggerRegexGlobal = /(?:^|\s)[@#][^\s]*/g;
@@ -106,6 +112,12 @@ const ControlsContainer = styled.div`
 	margin-top: -5px;
 	padding: 0px 15px 5px 15px;
 `
+
+// Move the ModelSelectorTooltipProps interface above its usage
+interface ModelSelectorTooltipProps {
+	arrowPosition: number
+	menuPosition: number
+}
 
 // Update the ModelSelectorTooltip styling to ensure it's visible
 const ModelSelectorTooltip = styled.div<ModelSelectorTooltipProps>`
@@ -329,12 +341,6 @@ const ControlButton = styled.div<{ disabled?: boolean }>`
 	}
 `
 
-// Update the SelectedItem interface
-interface SelectedItem {
-	type: 'file' | 'folder' | 'problems' | 'terminal' | 'git';
-	path: string;
-}
-
 const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 	(
 		{
@@ -349,8 +355,8 @@ const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 			shouldDisableImages,
 			onHeightChange,
 		},
-		ref,
-	) => {
+		ref
+	): JSX.Element => {
 		const { filePaths, chatSettings, apiConfiguration, openRouterModels, platform } = useExtensionState()
 		const [isTextAreaFocused, setIsTextAreaFocused] = useState(false)
 		const [gitCommits, setGitCommits] = useState<any[]>([])
@@ -369,7 +375,7 @@ const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 		const [intendedCursorPosition, setIntendedCursorPosition] = useState<number | null>(null)
 		const contextMenuContainerRef = useRef<HTMLDivElement>(null)
 		const [showModelSelector, setShowModelSelector] = useState(false)
-		const modelSelectorRef = useRef<HTMLDivElement>(null)
+		const modelSelectorRef = useRef<HTMLDivElement | null>(null)
 		const { width: viewportWidth, height: viewportHeight } = useWindowSize()
 		const buttonRef = useRef<HTMLDivElement>(null)
 		const [arrowPosition, setArrowPosition] = useState(0)
@@ -383,6 +389,24 @@ const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 
 		// Add state for selected items
 		const [selectedItems, setSelectedItems] = useState<SelectedItem[]>([]);
+
+		// Add handler for clicks outside model selector
+		useEffect(() => {
+			function handleClickOutside(event: MouseEvent) {
+				if (showModelSelector && 
+					modelSelectorRef.current && 
+					!modelSelectorRef.current.contains(event.target as Node) &&
+					buttonRef.current && 
+					!buttonRef.current.contains(event.target as Node)) {
+					setShowModelSelector(false);
+				}
+			}
+
+			document.addEventListener('mousedown', handleClickOutside);
+			return () => {
+				document.removeEventListener('mousedown', handleClickOutside);
+			};
+		}, [showModelSelector]);
 
 		// Fetch git commits when Git is selected or when typing a hash
 		useEffect(() => {
@@ -1083,6 +1107,20 @@ const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 			}
 		}, [apiConfiguration, showModelSelector]);
 
+		// Function to handle model selector ref
+		const setModelSelectorRef = (element: HTMLDivElement | null) => {
+			modelSelectorRef.current = element;
+			if (element) {
+				// Focus on the first interactive element when the tooltip opens
+				setTimeout(() => {
+					const firstButton = element.querySelector('button, input, select');
+					if (firstButton instanceof HTMLElement) {
+						firstButton.focus();
+					}
+				}, 100);
+			}
+		};
+
 		return (
 			<div>
 				{selectedItems.length > 0 && (
@@ -1134,7 +1172,6 @@ const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 								setSelectedIndex={setSelectedMenuIndex}
 								selectedType={selectedType}
 								queryItems={queryItems}
-								trigger={inputValue[Math.max(inputValue.lastIndexOf('@'), inputValue.lastIndexOf('#'))] || undefined}
 							/>
 						</div>
 					)}
@@ -1326,17 +1363,7 @@ const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 							style={{
 								pointerEvents: 'auto'
 							}}
-							ref={el => {
-								if (el) {
-									// Focus on the first interactive element when the tooltip opens
-									setTimeout(() => {
-										const firstButton = el.querySelector('button, input, select');
-										if (firstButton instanceof HTMLElement) {
-											firstButton.focus();
-										}
-									}, 100);
-								}
-							}}
+							ref={setModelSelectorRef}
 						>
 							<ApiOptions
 								showModelOptions={true}
@@ -1351,11 +1378,5 @@ const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 		)
 	},
 )
-
-// Update TypeScript interface for styled-component props
-interface ModelSelectorTooltipProps {
-	arrowPosition: number
-	menuPosition: number
-}
 
 export default ChatTextArea

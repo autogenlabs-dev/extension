@@ -2,7 +2,7 @@
 	"name": "auto-gen-code-builder",
 	"displayName": "Auto Gen Code Builder",
 	"description": "A VS Code extension to create code structures using AI commands",
-	"version": "0.0.7",
+	"version": "0.0.8",
 	"icon": "assets/icons/icon.png",
 	"galleryBanner": {
 		"color": "#617A91",
@@ -46,67 +46,129 @@
 	"activationEvents": [],
 	"main": "./dist/extension.js",
 	"contributes": {
+		"viewsContainers": {
+			"activitybar": [
+				{
+					"id": "autogen-explorer",
+					"title": "AutoGen",
+					"icon": "$(robot)"
+				}
+			],
+			"panel": [
+				{
+					"id": "autogen-panel",
+					"title": "AutoGen",
+					"icon": "$(robot)"
+				}
+			]
+		},
+		"views": {
+			"autogen-explorer": [
+				{
+					"type": "webview",
+					"id": "autogen-main-view-primary",
+					"name": "AutoGen Assistant"
+				}
+			],
+			"autogen-panel": [
+				{
+					"type": "webview",
+					"id": "autogen-panel-view",
+					"name": "AutoGen Assistant"
+				}
+			]
+		},
+		"viewsWelcome": [
+			{
+				"view": "autogen-main-view",
+				"contents": "Welcome to AutoGen!\nStart coding with AI assistance.\n[Open AutoGen](command:AutoGen.openAssistant)"
+			}
+		],
 		"commands": [
 			{
-				"command": "AutoGen.plusButtonClicked",
+				"command": "autogen.newTask",
 				"title": "New Task",
 				"icon": "$(add)"
 			},
 			{
-				"command": "AutoGen.mcpButtonClicked",
+				"command": "autogen.mcpServers",
 				"title": "MCP Servers",
 				"icon": "$(server)"
 			},
 			{
-				"command": "AutoGen.historyButtonClicked",
+				"command": "autogen.history",
 				"title": "History",
 				"icon": "$(history)"
 			},
 			{
-				"command": "AutoGen.accountButtonClicked",
+				"command": "autogen.account",
 				"title": "Account",
 				"icon": "$(account)"
 			},
 			{
-				"command": "AutoGen.settingsButtonClicked",
+				"command": "autogen.settings",
 				"title": "Settings",
 				"icon": "$(settings-gear)"
 			},
 			{
-				"command": "AutoGen.openSecondPanel",
-				"title": "Open AutoGen",
+				"command": "autogen.openAssistant",
+				"title": "Open AutoGen Assistant",
 				"category": "AutoGen",
-				"icon": {
-					"light": "assets/icons/tab-light.svg",
-					"dark": "assets/icons/tab-dark.svg"
-				}
+				"icon": "$(robot)"
 			},
 			{
-				"command": "AutoGen.openWithLogo",
-				"title": "Open AutoGen",
+				"command": "autogen.openInFloatingWindow",
+				"title": "Open in Floating Window",
 				"category": "AutoGen",
-				"icon": {
-					"light": "assets/icons/icon.png",
-					"dark": "assets/icons/icon.png"
-				}
-			}
-		],
-		"keybindings": [
-			{
-				"command": "AutoGen.openSecondPanel",
-				"key": "ctrl+shift+c",
-				"mac": "cmd+shift+c"
+				"icon": "$(window)"
 			}
 		],
 		"menus": {
-			"view/title": [],
 			"editor/title": [
 				{
-					"command": "AutoGen.openWithLogo",
+					"command": "autogen.openAssistant",
+					"group": "navigation"
+				}
+			],
+			"view/title": [
+				{
+					"command": "autogen.newTask",
+					"when": "view == autogen-panel-view",
+					"group": "navigation"
+				},
+				{
+					"command": "autogen.settings",
+					"when": "view == autogen-panel-view",
+					"group": "navigation"
+				},
+				{
+					"command": "autogen.openInFloatingWindow",
+					"when": "view == autogen-panel-view",
+					"group": "navigation"
+				}
+			],
+			"commandPalette": [
+				{
+					"command": "autogen.openInFloatingWindow",
+					"when": "true"
+				}
+			],
+			"editor/context": [
+				{
+					"command": "autogen.openInFloatingWindow",
+					"when": "resourceScheme == autogen-panel-view",
 					"group": "navigation"
 				}
 			]
 		},
+		"keybindings": [
+			{
+				"command": "autogen.openAssistant",
+				"key": "ctrl+shift+a",
+				"mac": "cmd+shift+a",
+				"when": "!terminalFocus"
+			}
+		],
 		"configuration": {
 			"title": "AutoGen",
 			"properties": {
@@ -198,6 +260,11 @@
 					"type": "boolean",
 					"default": false,
 					"description": "Share message data,  code, and more extensive telemetry. This data may be used to improve prompts used in AutoGen, train models, and understand failure states more accurately."
+				},
+				"autogen.enabled": {
+					"type": "boolean",
+					"default": true,
+					"description": "Enable/disable AutoGen view"
 				}
 			}
 		}

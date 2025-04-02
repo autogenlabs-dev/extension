@@ -117,21 +117,179 @@ const HistoryView = ({ onDone }: HistoryViewProps) => {
 		<>
 			<style>
 				{`
+					.history-item {
+						cursor: pointer;
+						transition: all 0.3s ease;
+						position: relative;
+					}
+					
 					.history-item:hover {
 						background-color: #2d3748;
+						transform: translateY(-1px);
 					}
+					
+					.history-item-content {
+						display: flex;
+						flex-direction: column;
+						gap: 12px;
+						padding: 16px 20px;
+						position: relative;
+						border-bottom: 1px solid #3f4655;
+					}
+					
+					.history-header {
+						display: flex;
+						justify-content: space-between;
+						align-items: center;
+					}
+					
+					.history-date {
+						color: #9ca3af;
+						font-weight: 500;
+						font-size: 0.85em;
+						text-transform: uppercase;
+						transition: color 0.2s ease;
+					}
+					
+					.history-item:hover .history-date {
+						color: #d1d5db;
+					}
+					
+					.history-content {
+						font-size: var(--vscode-font-size);
+						color: #ffffff;
+						display: -webkit-box;
+						-webkit-line-clamp: 3;
+						-webkit-box-orient: vertical;
+						overflow: hidden;
+						white-space: pre-wrap;
+						word-break: break-word;
+						overflow-wrap: anywhere;
+						line-height: 1.4;
+					}
+					
+					.token-section {
+						display: flex;
+						flex-direction: column;
+						gap: 8px;
+					}
+					
+					.token-bar {
+						height: 6px;
+						background-color: #1f2937;
+						border-radius: 8px;
+						overflow: hidden;
+						margin-bottom: 4px;
+						display: flex;
+						box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.2);
+					}
+					
+					.token-in {
+						height: 100%;
+						background: linear-gradient(90deg, #3b82f6, #60a5fa);
+						transition: width 0.5s ease-in-out;
+						border-radius: 8px 0 0 8px;
+					}
+					
+					.token-out {
+						height: 100%;
+						background: linear-gradient(90deg, #10b981, #34d399);
+						transition: width 0.5s ease-in-out;
+						border-radius: 0 8px 8px 0;
+					}
+					
+					.history-item:hover .token-in {
+						background: linear-gradient(90deg, #4f46e5, #6366f1);
+					}
+					
+					.history-item:hover .token-out {
+						background: linear-gradient(90deg, #059669, #10b981);
+					}
+					
+					.token-row {
+						display: flex;
+						justify-content: space-between;
+						align-items: center;
+					}
+					
+					.token-stat {
+						display: flex;
+						align-items: center;
+						gap: 8px;
+						flex-wrap: wrap;
+						color: var(--vscode-descriptionForeground);
+					}
+					
+					.token-label {
+						font-weight: 500;
+					}
+					
+					.token-value {
+						display: flex;
+						align-items: center;
+						gap: 3px;
+					}
+					
+					.api-cost {
+						display: inline-flex;
+						align-items: center;
+						background-color: #1f2937;
+						padding: 4px 8px;
+						border-radius: 4px;
+						transition: all 0.2s ease;
+						width: auto;
+						box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+					}
+					
+					.history-item:hover .api-cost {
+						background-color: #2d3748;
+					}
+					
 					.delete-button, .export-button {
 						opacity: 0;
 						pointer-events: none;
+						transition: opacity 0.2s ease, transform 0.2s ease;
 					}
+					
 					.history-item:hover .delete-button,
 					.history-item:hover .export-button {
 						opacity: 1;
 						pointer-events: auto;
 					}
+					
+					.history-item:hover .delete-button:hover,
+					.history-item:hover .export-button:hover {
+						transform: scale(1.05);
+					}
+					
 					.history-item-highlight {
 						background-color: #4b5563;
 						color: #ffffff;
+					}
+					
+					.search-container {
+						position: relative;
+						width: 100%;
+					}
+					
+					.clear-button {
+						display: flex;
+						justify-content: center;
+						align-items: center;
+						height: 100%;
+						transition: transform 0.2s ease;
+					}
+					
+					.clear-button:hover {
+						transform: scale(1.1);
+					}
+					
+					.danger-button {
+						transition: all 0.3s ease;
+					}
+					
+					.danger-button:hover:not(:disabled) {
+						transform: translateY(-1px);
 					}
 				`}
 			</style>
@@ -172,7 +330,7 @@ const HistoryView = ({ onDone }: HistoryViewProps) => {
 							flexDirection: "column",
 							gap: "6px",
 						}}>
-						<VSCodeTextField
+						{/* <VSCodeTextField
 							style={{ width: "100%" }}
 							placeholder="Fuzzy search history..."
 							value={searchQuery}
@@ -218,7 +376,7 @@ const HistoryView = ({ onDone }: HistoryViewProps) => {
 							<VSCodeRadio value="mostRelevant" disabled={!searchQuery} style={{ opacity: searchQuery ? 1 : 0.5 }}>
 								Most Relevant
 							</VSCodeRadio>
-						</VSCodeRadioGroup>
+						</VSCodeRadioGroup> */}
 					</div>
 				</div>
 				<div style={{ flexGrow: 1, overflowY: "auto", margin: 0 }}>
@@ -238,27 +396,9 @@ const HistoryView = ({ onDone }: HistoryViewProps) => {
 										index < taskHistory.length - 1 ? "1px solid #4b5563" : "none",
 								}}
 								onClick={() => handleHistorySelect(item.id)}>
-								<div
-									style={{
-										display: "flex",
-										flexDirection: "column",
-										gap: "8px",
-										padding: "12px 20px",
-										position: "relative",
-									}}>
-									<div
-										style={{
-											display: "flex",
-											justifyContent: "space-between",
-											alignItems: "center",
-										}}>
-										<span
-											style={{
-												color: "#9ca3af",
-												fontWeight: 500,
-												fontSize: "0.85em",
-												textTransform: "uppercase",
-											}}>
+								<div className="history-item-content">
+									<div className="history-header">
+										<span className="history-date">
 											{formatDate(item.ts)}
 										</span>
 										<VSCodeButton
@@ -275,85 +415,55 @@ const HistoryView = ({ onDone }: HistoryViewProps) => {
 													alignItems: "center",
 													gap: "3px",
 													fontSize: "11px",
-													// fontWeight: "bold",
 												}}>
 												<span className="codicon codicon-trash"></span>
 												{formatSize(item.size)}
 											</div>
 										</VSCodeButton>
 									</div>
-									<div
-										style={{
-											fontSize: "var(--vscode-font-size)",
-											color: "#ffffff",
-											display: "-webkit-box",
-											WebkitLineClamp: 3,
-											WebkitBoxOrient: "vertical",
-											overflow: "hidden",
-											whiteSpace: "pre-wrap",
-											wordBreak: "break-word",
-											overflowWrap: "anywhere",
-										}}
+									<div className="history-content"
 										dangerouslySetInnerHTML={{
 											__html: item.task,
 										}}
 									/>
-									<div
-										style={{
-											display: "flex",
-											flexDirection: "column",
-											gap: "4px",
-										}}>
-										<div
-											style={{
-												display: "flex",
-												justifyContent: "space-between",
-												alignItems: "center",
-											}}>
-											<div
-												style={{
-													display: "flex",
-													alignItems: "center",
-													gap: "4px",
-													flexWrap: "wrap",
-												}}>
-												<span
-													style={{
-														fontWeight: 500,
-														color: "var(--vscode-descriptionForeground)",
-													}}>
-													Tokens:
-												</span>
-												<span
-													style={{
-														display: "flex",
-														alignItems: "center",
-														gap: "3px",
-														color: "var(--vscode-descriptionForeground)",
-													}}>
+									<div className="token-section">
+										<div className="token-bar">
+											<div 
+												className="token-in" 
+												style={{ 
+													width: `${((item.tokensIn || 0) / ((item.tokensIn || 0) + (item.tokensOut || 0))) * 100}%` 
+												}}
+											></div>
+											<div 
+												className="token-out" 
+												style={{ 
+													width: `${((item.tokensOut || 0) / ((item.tokensIn || 0) + (item.tokensOut || 0))) * 100}%` 
+												}}
+											></div>
+										</div>
+										<div className="token-row">
+											<div className="token-stat">
+												<span className="token-label">Tokens:</span>
+												<span className="token-value">
 													<i
 														className="codicon codicon-arrow-up"
 														style={{
 															fontSize: "12px",
 															fontWeight: "bold",
 															marginBottom: "-2px",
+															color: "#60a5fa"
 														}}
 													/>
 													{formatLargeNumber(item.tokensIn || 0)}
 												</span>
-												<span
-													style={{
-														display: "flex",
-														alignItems: "center",
-														gap: "3px",
-														color: "var(--vscode-descriptionForeground)",
-													}}>
+												<span className="token-value">
 													<i
 														className="codicon codicon-arrow-down"
 														style={{
 															fontSize: "12px",
 															fontWeight: "bold",
 															marginBottom: "-2px",
+															color: "#34d399"
 														}}
 													/>
 													{formatLargeNumber(item.tokensOut || 0)}
@@ -363,27 +473,9 @@ const HistoryView = ({ onDone }: HistoryViewProps) => {
 										</div>
 
 										{!!item.cacheWrites && (
-											<div
-												style={{
-													display: "flex",
-													alignItems: "center",
-													gap: "4px",
-													flexWrap: "wrap",
-												}}>
-												<span
-													style={{
-														fontWeight: 500,
-														color: "var(--vscode-descriptionForeground)",
-													}}>
-													Cache:
-												</span>
-												<span
-													style={{
-														display: "flex",
-														alignItems: "center",
-														gap: "3px",
-														color: "var(--vscode-descriptionForeground)",
-													}}>
+											<div className="token-stat">
+												<span className="token-label">Cache:</span>
+												<span className="token-value">
 													<i
 														className="codicon codicon-database"
 														style={{
@@ -394,13 +486,7 @@ const HistoryView = ({ onDone }: HistoryViewProps) => {
 													/>
 													+{formatLargeNumber(item.cacheWrites || 0)}
 												</span>
-												<span
-													style={{
-														display: "flex",
-														alignItems: "center",
-														gap: "3px",
-														color: "var(--vscode-descriptionForeground)",
-													}}>
+												<span className="token-value">
 													<i
 														className="codicon codicon-arrow-right"
 														style={{
@@ -414,30 +500,10 @@ const HistoryView = ({ onDone }: HistoryViewProps) => {
 											</div>
 										)}
 										{!!item.totalCost && (
-											<div
-												style={{
-													display: "flex",
-													justifyContent: "space-between",
-													alignItems: "center",
-													marginTop: -2,
-												}}>
-												<div
-													style={{
-														display: "flex",
-														alignItems: "center",
-														gap: "4px",
-													}}>
-													<span
-														style={{
-															fontWeight: 500,
-															color: "var(--vscode-descriptionForeground)",
-														}}>
-														API Cost:
-													</span>
-													<span
-														style={{
-															color: "var(--vscode-descriptionForeground)",
-														}}>
+											<div className="token-row">
+												<div className="token-stat">
+													<span className="api-cost">
+														<span className="codicon codicon-credit-card" style={{ marginRight: "4px" }}></span>
 														${item.totalCost?.toFixed(4)}
 													</span>
 												</div>
@@ -452,11 +518,12 @@ const HistoryView = ({ onDone }: HistoryViewProps) => {
 				</div>
 				<div
 					style={{
-						padding: "10px 10px",
+						padding: "16px",
 						borderTop: "1px solid #4b5563",
 						backgroundColor: "#1f2937",
 					}}>
 					<DangerButton
+						className="danger-button"
 						style={{ width: "100%" }}
 						disabled={deleteAllDisabled || taskHistory.length === 0}
 						onClick={() => {
@@ -479,7 +546,17 @@ const ExportButton = ({ itemId }: { itemId: string }) => (
 			e.stopPropagation()
 			vscode.postMessage({ type: "exportTaskWithId", text: itemId })
 		}}>
-		<div style={{ fontSize: "11px", fontWeight: 500, opacity: 1 }}>EXPORT</div>
+		<div style={{ 
+			fontSize: "11px", 
+			fontWeight: 500, 
+			opacity: 1,
+			display: "flex",
+			alignItems: "center",
+			gap: "3px"
+		}}>
+			<span className="codicon codicon-export"></span>
+			EXPORT
+		</div>
 	</VSCodeButton>
 )
 

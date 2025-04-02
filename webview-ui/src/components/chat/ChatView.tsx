@@ -791,9 +791,10 @@ const ChatView = ({ isHidden, showAnnouncement, hideAnnouncement, showHistoryVie
 						display: "flex",
 						flexDirection: "column",
 						paddingBottom: "10px",
-						backgroundColor: "var(--vscode-editor-background)" // Added background color
+						backgroundColor: "var(--vscode-editor-background)",
+						marginBottom: "10px" // Added background color
 					}}>
-					{telemetrySetting === "unset" && <TelemetryBanner />}
+					
 
 					{/* 		{showAnnouncement && <Announcement version={version} hideAnnouncement={hideAnnouncement} />} */}
 
@@ -802,9 +803,10 @@ const ChatView = ({ isHidden, showAnnouncement, hideAnnouncement, showHistoryVie
 							display: "flex",
 							justifyContent: "space-between",
 							alignItems: "center",
-							marginBottom: "-10px",
+							marginBottom: "10px",
 							borderBottom: "1px solid var(--vscode-widget-border)",
 							paddingBottom: "10px"
+							
 						}}>
 							<div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
 								{/* Use the VS Code codicon instead of the image */}
@@ -848,7 +850,7 @@ const ChatView = ({ isHidden, showAnnouncement, hideAnnouncement, showHistoryVie
 					{taskHistory.length > 0 && <HistoryPreview showHistoryView={showHistoryView} />}
 				</div>
 			)}
-
+{telemetrySetting === "unset" && <TelemetryBanner key="telemetryBanner" />}
 			{task && (
 				<>
 					<div style={{ flexGrow: 1, display: "flex" }} ref={scrollContainerRef}>
