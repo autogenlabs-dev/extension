@@ -1,8 +1,8 @@
 {
-	"name": "auto-gen-code-builder",
+	"name": "autogenlabs",
 	"displayName": "Auto Gen Code Builder",
 	"description": "A VS Code extension to create code structures using AI commands",
-	"version": "0.0.8",
+	"version": "0.0.9",
 	"icon": "assets/icons/icon.png",
 	"galleryBanner": {
 		"color": "#617A91",
@@ -15,7 +15,7 @@
 		"name": "AutoGen Bot Inc."
 	},
 	"license": "MIT",
-	"publisher": "AutoGenCodeBuilder",
+	"publisher": "AutoGenLabs",
 	"repository": {
 		"type": "git",
 		"url": "https://github.com/AutoGen/AutoGen"

@@ -2,7 +2,7 @@ import { VSCodeBadge, VSCodeProgressRing } from "@vscode/webview-ui-toolkit/reac
 import deepEqual from "fast-deep-equal"
 import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useEvent, useSize } from "react-use"
-import styled from "styled-components"
+import styled, { keyframes } from "styled-components"
 import {
 	AutoGenApiReqInfo,
 	AutoGenAskQuestion,
@@ -52,19 +52,69 @@ interface ChatRowProps {
 
 interface ChatRowContentProps extends Omit<ChatRowProps, "onHeightChange"> { }
 
+const pulseAnimation = keyframes`
+  0%, 100% { opacity: 0.6; transform: scale(0.8); }
+  50% { opacity: 1; transform: scale(1); }
+`
+
+const rotateAnimation = keyframes`
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+`
+
+const fadeInOutAnimation = keyframes`
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
+`
+
+const SuccessIconAnimation = keyframes`
+  0% { transform: scale(0); opacity: 0; }
+  60% { transform: scale(1.2); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+`
+
+const LoadingWrapper = styled.div`
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+`
+
+const LoadingCircle = styled.div`
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  border-top: 2px solid #fff;
+  border-radius: 50%;
+  animation: ${rotateAnimation} 0.8s linear infinite;
+`
+
+const PulsingDot = styled.div`
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  background-color: #fff;
+  border-radius: 50%;
+  animation: ${pulseAnimation} 1.5s ease-in-out infinite;
+`
+
+const SuccessIconWrapper = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: ${SuccessIconAnimation} 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+`
+
 export const ProgressIndicator = () => (
-	<div
-		style={{
-			width: "16px",
-			height: "16px",
-			display: "flex",
-			alignItems: "center",
-			justifyContent: "center",
-		}}>
-		<div style={{ transform: "scale(0.55)", transformOrigin: "center" }}>
-			<VSCodeProgressRing />
-		</div>
-	</div>
+	<LoadingWrapper>
+		<LoadingCircle />
+		<PulsingDot style={{ top: '2px', left: '6px', animationDelay: '0s' }} />
+		<PulsingDot style={{ top: '6px', left: '2px', animationDelay: '0.2s' }} />
+		<PulsingDot style={{ top: '10px', left: '6px', animationDelay: '0.4s' }} />
+		<PulsingDot style={{ top: '6px', left: '10px', animationDelay: '0.6s' }} />
+	</LoadingWrapper>
 )
 
 const Markdown = memo(({ markdown }: { markdown?: string }) => {
@@ -245,18 +295,18 @@ export const ChatRowContent = ({ message, isExpanded, onToggleExpand, lastModifi
 						MCP server:
 					</span>,
 				]
-			case "completion_result":
-				return [
-					<span
-						className="codicon codicon-check"
-						style={{
-							color: successColor,
-							marginBottom: "-1.5px",
-						}}></span>,
-					<span style={{ color: successColor, fontWeight: "bold" }}>Task Completed</span>,
-				]
+				case "completion_result":
+					return [
+						<span
+							className="codicon codicon-check"
+							style={{
+								color: successColor,
+								marginBottom: "-1.5px",
+							}}></span>,
+						<span style={{ color: successColor, fontWeight: "bold" }}>Task Completed</span>,
+					]
 			case "api_req_started":
-				const getIconSpan = (iconName: string, color: string) => (
+				const getIconSpan = (iconName: string, color: string, animate = false) => (
 					<div
 						style={{
 							width: 16,
@@ -271,6 +321,7 @@ export const ChatRowContent = ({ message, isExpanded, onToggleExpand, lastModifi
 								color,
 								fontSize: 16,
 								marginBottom: "-1.5px",
+								animation: animate ? `${fadeInOutAnimation} 2s ease-in-out infinite` : "none",
 							}}></span>
 					</div>
 				)
