@@ -279,22 +279,10 @@ const ChatView = ({ isHidden, showAnnouncement, hideAnnouncement, showHistoryVie
 	const handleSendMessage = useCallback(
 		(text: string, images: string[], selectedItems: { type: string; path: string }[]) => {
 			text = text.trim()
-			console.log("handleSendMessage called with:", {text, imageCount: images.length, selectedItems});
-			
-			if (text || images.length > 0 || selectedItems.length > 0) {
-				// Log the selected items for debugging
-				console.log("Sending message with items:", selectedItems);
-				
+			if (text || images.length > 0) {
 				if (messages.length === 0) {
-					console.log("Sending as new task with selectedItems:", selectedItems);
-					vscode.postMessage({ 
-						type: "newTask", 
-						text, 
-						images, 
-						selectedItems 
-					})
+					vscode.postMessage({ type: "newTask", text, images, selectedItems })
 				} else if (autogenAsk) {
-					console.log("Sending as askResponse with selectedItems:", selectedItems);
 					switch (autogenAsk) {
 						case "followup":
 						case "plan_mode_response":
@@ -326,8 +314,6 @@ const ChatView = ({ isHidden, showAnnouncement, hideAnnouncement, showHistoryVie
 				// setPrimaryButtonText(undefined)
 				// setSecondaryButtonText(undefined)
 				disableAutoScrollRef.current = false
-			} else {
-				console.log("Not sending message - no content or selectedItems");
 			}
 		},
 		[messages.length, autogenAsk],

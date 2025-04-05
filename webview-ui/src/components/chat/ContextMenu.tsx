@@ -1,5 +1,4 @@
 import React, { useEffect, useMemo, useRef } from "react"
-import styled from "styled-components"
 import { ContextMenuOptionType, ContextMenuQueryItem, getContextMenuOptions } from "../../utils/context-mentions"
 import { cleanPathPrefix } from "../common/CodeAccordian"
 
@@ -8,74 +7,10 @@ interface ContextMenuProps {
 	searchQuery: string
 	onMouseDown: () => void
 	selectedIndex: number
-	setSelectedIndex: React.Dispatch<React.SetStateAction<number>>
+	setSelectedIndex: (index: number) => void
 	selectedType: ContextMenuOptionType | null
 	queryItems: ContextMenuQueryItem[]
-	trigger?: string
 }
-
-const MenuContainer = styled.div`
-	position: absolute;
-	bottom: calc(100% - 10px);
-	left: 15px;
-	right: 15px;
-	overflow-x: hidden;
-	background-color: var(--vscode-editorSuggestWidget-background);
-	border: 1px solid var(--vscode-editorSuggestWidget-border);
-	border-radius: 3px;
-	box-shadow: 0 2px 8px var(--vscode-widget-shadow);
-`
-
-const MenuItem = styled.div<{ isSelected: boolean }>`
-	padding: 8px 12px;
-	cursor: pointer;
-	color: ${props => (props.isSelected ? "var(--vscode-editorSuggestWidget-selectedForeground)" : "var(--vscode-editorSuggestWidget-foreground)")};
-	border-bottom: 1px solid var(--vscode-editorSuggestWidget-border);
-	display: flex;
-	align-items: center;
-	background-color: ${props => (props.isSelected ? "var(--vscode-editorSuggestWidget-selectedBackground)" : "transparent")};
-	transition: all 0.12s ease;
-	user-select: none;
-
-	&:last-child {
-		border-bottom: none;
-	}
-
-	&:hover {
-		background-color: ${props => !props.isSelected && "var(--vscode-list-hoverBackground)"};
-	}
-`
-
-const MenuItemIcon = styled.i`
-	margin-right: 8px;
-	flex-shrink: 0;
-	font-size: 14px;
-`
-
-const MenuItemContent = styled.div`
-	display: flex;
-	align-items: center;
-	flex: 1;
-	min-width: 0;
-	overflow: hidden;
-`
-
-const MenuItemLabel = styled.span`
-	line-height: 1.2;
-`
-
-const MenuItemDescription = styled.span`
-	font-size: 0.85em;
-	opacity: 0.7;
-	white-space: nowrap;
-	overflow: hidden;
-	text-overflow: ellipsis;
-	line-height: 1.2;
-`
-
-const NoResults = styled.span`
-	line-height: 1.2;
-`
 
 const ContextMenu: React.FC<ContextMenuProps> = ({
 	onSelect,
@@ -85,13 +20,12 @@ const ContextMenu: React.FC<ContextMenuProps> = ({
 	setSelectedIndex,
 	selectedType,
 	queryItems,
-	trigger,
 }) => {
 	const menuRef = useRef<HTMLDivElement>(null)
 
 	const filteredOptions = useMemo(
-		() => getContextMenuOptions(searchQuery, selectedType, queryItems, trigger),
-		[searchQuery, selectedType, queryItems, trigger],
+		() => getContextMenuOptions(searchQuery, selectedType, queryItems),
+		[searchQuery, selectedType, queryItems],
 	)
 
 	useEffect(() => {
@@ -207,27 +141,104 @@ const ContextMenu: React.FC<ContextMenuProps> = ({
 	}
 
 	return (
-		<MenuContainer onMouseDown={onMouseDown}>
-			{filteredOptions.map((option, index) => (
-				<MenuItem
-					key={`${option.type}-${option.value || index}`}
-					isSelected={index === selectedIndex}
-					onClick={() => isOptionSelectable(option) && onSelect(option.type, option.value)}
-					onMouseEnter={() => isOptionSelectable(option) && setSelectedIndex(index)}>
-					{option.type === ContextMenuOptionType.NoResults ? (
-						<NoResults>{option.label || "No results"}</NoResults>
-					) : (
-						<>
-							<MenuItemIcon className={`codicon codicon-${getIconForOption(option)}`} />
-							<MenuItemContent>
-								<MenuItemLabel>{renderOptionContent(option)}</MenuItemLabel>
-								{option.description && <MenuItemDescription>{option.description}</MenuItemDescription>}
-							</MenuItemContent>
-						</>
-					)}
-				</MenuItem>
-			))}
-		</MenuContainer>
+		<div
+			style={{
+				position: "absolute",
+				bottom: "calc(100% - 10px)",
+				left: 15,
+				right: 15,
+				overflowX: "hidden",
+			}}
+			onMouseDown={onMouseDown}>
+			<div
+				ref={menuRef}
+				style={{
+					backgroundColor: "#111827", // Dark background matching the rest of the UI
+					border: "1px solid #4b5563",
+					borderRadius: "6px", // Slightly more rounded corners
+					boxShadow: "0 4px 12px rgba(0, 0, 0, 0.35)", // Enhanced shadow
+					zIndex: 1000,
+					display: "flex",
+					flexDirection: "column",
+					maxHeight: "250px", // Slightly larger max height
+					overflowY: "auto",
+				}}>
+				{/* Can't use virtuoso since it requires fixed height and menu height is dynamic based on # of items */}
+				{filteredOptions.map((option, index) => (
+					<div
+						className={`context-menu-item ${index === selectedIndex && isOptionSelectable(option) ? 'selected' : ''}`}
+						key={`${option.type}-${option.value || index}`}
+						onClick={() => isOptionSelectable(option) && onSelect(option.type, option.value)}
+						style={{
+							padding: "10px 12px", // More vertical padding
+							cursor: isOptionSelectable(option) ? "pointer" : "default",
+							color:
+								index === selectedIndex && isOptionSelectable(option)
+									? "var(--vscode-quickInputList-focusForeground)"
+									: "var(--vscode-foreground)",
+							borderBottom: index < filteredOptions.length - 1 ? "1px solid rgba(75, 85, 99, 0.4)" : "none", // Lighter border
+							display: "flex",
+							alignItems: "center",
+							justifyContent: "space-between",
+							backgroundColor:
+								index === selectedIndex && isOptionSelectable(option)
+									? "var(--vscode-quickInputList-focusBackground)"
+									: "",
+							transition: "all 0.12s ease", // Smooth hover transition
+							userSelect: "none", // Prevent text selection
+							opacity: isOptionSelectable(option) ? 1 : 0.6, // Dimmer appearance for non-selectable items
+						}}
+						onMouseEnter={() => isOptionSelectable(option) && setSelectedIndex(index)}>
+						<div
+							style={{
+								display: "flex",
+								alignItems: "center",
+								flex: 1,
+								minWidth: 0,
+								overflow: "hidden",
+							}}>
+							<i
+								className={`codicon codicon-${getIconForOption(option)}`}
+								style={{
+									marginRight: "8px",
+									flexShrink: 0,
+									fontSize: "14px",
+								}}
+							/>
+							{renderOptionContent(option)}
+						</div>
+						{(option.type === ContextMenuOptionType.File ||
+							option.type === ContextMenuOptionType.Folder ||
+							option.type === ContextMenuOptionType.Git) &&
+							!option.value && (
+								<i
+									className="codicon codicon-chevron-right"
+									style={{
+										fontSize: "14px",
+										flexShrink: 0,
+										marginLeft: 8,
+									}}
+								/>
+							)}
+						{(option.type === ContextMenuOptionType.Problems ||
+							option.type === ContextMenuOptionType.Terminal ||
+							((option.type === ContextMenuOptionType.File ||
+								option.type === ContextMenuOptionType.Folder ||
+								option.type === ContextMenuOptionType.Git) &&
+								option.value)) && (
+								<i
+									className="codicon codicon-add"
+									style={{
+										fontSize: "14px",
+										flexShrink: 0,
+										marginLeft: 8,
+									}}
+								/>
+							)}
+					</div>
+				))}
+			</div>
+		</div>
 	)
 }
 
