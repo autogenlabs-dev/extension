@@ -239,7 +239,7 @@ const SettingsView = ({ onDone }: SettingsViewProps) => {
 				<VSCodePanelTab id="api">API</VSCodePanelTab>
 				<VSCodePanelTab id="auto-approve">Auto-approve</VSCodePanelTab>
 				<VSCodePanelTab id="custom-instructions">Custom Instructions</VSCodePanelTab>
-				<VSCodePanelTab id="telemetry">Telemetry</VSCodePanelTab>
+				{/* <VSCodePanelTab id="telemetry">Telemetry</VSCodePanelTab> */}
 
 				<VSCodePanelView id="api">
 					<ApiOptions showModelOptions={true} />
@@ -258,13 +258,13 @@ const SettingsView = ({ onDone }: SettingsViewProps) => {
 								onChange={(e) => {
 									setCustomInstructions((e.target as HTMLTextAreaElement).value)
 								}}
-								style={{ width: "600px", height: "auto" }}
+								style={{ width: "330px", height: "auto" }}
 							/>
 						</SettingsSection>
 					</PanelContent>
 				</VSCodePanelView>
 
-				<VSCodePanelView id="telemetry">
+				{/* <VSCodePanelView id="telemetry">
 					<PanelContent>
 						<SettingsSection>
 							<SectionTitle>Telemetry</SectionTitle>
@@ -281,7 +281,7 @@ const SettingsView = ({ onDone }: SettingsViewProps) => {
 							</Description>
 						</SettingsSection>
 					</PanelContent>
-				</VSCodePanelView>
+				</VSCodePanelView> */}
 			</VSCodePanels>
 
 			<ButtonContainer>

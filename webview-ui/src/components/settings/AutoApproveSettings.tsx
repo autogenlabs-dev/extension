@@ -11,6 +11,7 @@ const SettingsSection = styled.div`
 	border-radius: 6px;
 	padding: 16px;
 	margin-bottom: 16px;
+	width: auto;
 `
 
 const SectionTitle = styled.h4`
@@ -57,12 +58,12 @@ const ACTION_METADATA: {
 		description:
 			"Allows execution of safe terminal commands. If the model determines a command is potentially destructive, it will still require approval.",
 	},
-	{
-		id: "useBrowser",
-		label: "Use the browser",
-		shortName: "Browser",
-		description: "Allows ability to launch and interact with any website in a headless browser.",
-	},
+	// {
+	// 	id: "useBrowser",
+	// 	label: "Use the browser",
+	// 	shortName: "Browser",
+	// 	description: "Allows ability to launch and interact with any website in a headless browser.",
+	// },
 	{
 		id: "useMcp",
 		label: "Use MCP servers",

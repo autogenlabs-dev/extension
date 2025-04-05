@@ -263,11 +263,12 @@ const Badge = styled.div`
 	border-radius: 3px;
 	padding: 4px 8px;
 	font-size: 11px;
+	margin-right: 6px;
+	margin-bottom: 4px;
 	border: 1px solid var(--vscode-badge-border, transparent);
-	transition: all 0.1s ease;
 
 	.codicon {
-		margin-right: 6px;
+		margin-right: 4px;
 		font-size: 12px;
 	}
 
@@ -275,26 +276,20 @@ const Badge = styled.div`
 		margin-left: 6px;
 		opacity: 0.7;
 		cursor: pointer;
-		transition: all 0.1s ease;
 		
 		&:hover {
 			opacity: 1;
 		}
-	}
-
-	&:hover {
-		border-color: var(--vscode-focusBorder);
 	}
 `
 
 const BadgeContainer = styled.div`
 	display: flex;
 	flex-wrap: wrap;
-	gap: 6px;
-	padding: 10px 15px;
+	gap: 4px;
+	padding: 8px 15px;
 	background: var(--vscode-editor-background);
 	border-bottom: 1px solid var(--vscode-input-border);
-	margin-bottom: 5px;
 `
 
 const TopControls = styled.div`
@@ -304,34 +299,29 @@ const TopControls = styled.div`
 	z-index: 10;
 	display: flex;
 	align-items: center;
-	gap: 3px;
-	margin: 5px;
+	gap: 6px;
 `
 
 const ControlButton = styled.div<{ disabled?: boolean }>`
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	width: 22px;
-	height: 22px;
+	width: 24px;
+	height: 24px;
+	border-radius: 4px;
+	background: var(--vscode-editor-background);
+	border: 1px solid var(--vscode-input-border);
 	cursor: ${props => props.disabled ? 'not-allowed' : 'pointer'};
 	opacity: ${props => props.disabled ? 0.5 : 1};
-	font-size: 12px;
-	transition: all 0.1s ease;
 	
 	&:hover {
 		background: ${props => !props.disabled && 'var(--vscode-toolbar-hoverBackground)'};
-		border-color: ${props => !props.disabled && 'var(--vscode-focusBorder)'};
-	}
-
-	.codicon {
-		font-size: 13px;
 	}
 `
 
-// Update the SelectedItem interface
+// Add state for selected files/folders
 interface SelectedItem {
-	type: 'file' | 'folder' | 'problems' | 'terminal' | 'git';
+	type: 'file' | 'folder';
 	path: string;
 }
 
@@ -375,6 +365,7 @@ const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 		const [arrowPosition, setArrowPosition] = useState(0)
 		const [menuPosition, setMenuPosition] = useState(0)
 		const [shownTooltipMode, setShownTooltipMode] = useState<ChatSettings["mode"] | null>(null)
+		const [triggerChar, setTriggerChar] = useState<string | undefined>(undefined)
 
 		const [, metaKeyChar] = useMetaKeyDetection(platform)
 
@@ -449,43 +440,43 @@ const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 					return
 				}
 
-				// Add selected item to badges based on type
-				if (value) {
-					switch (type) {
-						case ContextMenuOptionType.File:
-						case ContextMenuOptionType.Folder:
-							setSelectedItems(prev => [...prev, {
-								type: type === ContextMenuOptionType.File ? 'file' : 'folder',
-								path: value.substring(1) // Remove leading slash
-							}]);
-							break;
-						case ContextMenuOptionType.Problems:
-							setSelectedItems(prev => [...prev, {
-								type: 'problems',
-								path: 'Problems'
-							}]);
-							break;
-						case ContextMenuOptionType.Terminal:
-							setSelectedItems(prev => [...prev, {
-								type: 'terminal',
-								path: 'Terminal'
-							}]);
-							break;
-						case ContextMenuOptionType.Git:
-							setSelectedItems(prev => [...prev, {
-								type: 'git',
-								path: value
-							}]);
-							break;
+				if (type === ContextMenuOptionType.File || type === ContextMenuOptionType.Folder) {
+					if (!value) {
+						setSelectedType(type)
+						setSearchQuery("")
+						setSelectedMenuIndex(0)
+						return
 					}
+					// Add selected file/folder to badges
+					setSelectedItems(prev => [...prev, {
+						type: type === ContextMenuOptionType.File ? 'file' : 'folder',
+						path: value
+					}]);
 				}
 
 				setShowContextMenu(false)
 				setSelectedType(null)
-				setSearchQuery("")
-
-				// Clear the trigger character from the input
 				if (textAreaRef.current) {
+					let insertValue = value || ""
+					
+					// Handle different types of selections
+					switch (type) {
+						case ContextMenuOptionType.Problems:
+							insertValue = "problems"
+							break
+						case ContextMenuOptionType.Terminal:
+							insertValue = "terminal"
+							break
+						case ContextMenuOptionType.Git:
+							insertValue = value || "git"
+							break
+						case ContextMenuOptionType.File:
+						case ContextMenuOptionType.Folder:
+							insertValue = value || ""
+							break
+					}
+
+					// Find and remove the trigger character and any text after it
 					const textBeforeCursor = textAreaRef.current.value.slice(0, cursorPosition)
 					const lastTriggerIndex = Math.max(
 						textBeforeCursor.lastIndexOf("@"),
@@ -493,35 +484,37 @@ const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 					)
 					
 					if (lastTriggerIndex !== -1) {
-						const newValue = textAreaRef.current.value.slice(0, lastTriggerIndex) +
+						// Get the trigger character that was used
+						const triggerChar = textAreaRef.current.value[lastTriggerIndex]
+						
+						// Create the new text with the selection
+						const newValue = textAreaRef.current.value.slice(0, lastTriggerIndex) + 
+							(lastTriggerIndex > 0 && textAreaRef.current.value[lastTriggerIndex - 1] !== ' ' ? ' ' : '') +
+							insertValue + ' ' +
 							textAreaRef.current.value.slice(cursorPosition)
 						
 						setInputValue(newValue)
-						setCursorPosition(lastTriggerIndex)
-						setIntendedCursorPosition(lastTriggerIndex)
+						const newPosition = lastTriggerIndex + insertValue.length + 1
+						setCursorPosition(newPosition)
+						setIntendedCursorPosition(newPosition)
 					}
-				}
 
-				setTimeout(() => {
-					if (textAreaRef.current) {
-						textAreaRef.current.blur()
-						textAreaRef.current.focus()
-					}
-				}, 0)
+					setTimeout(() => {
+						if (textAreaRef.current) {
+							textAreaRef.current.blur()
+							textAreaRef.current.focus()
+						}
+					}, 0)
+				}
 			},
 			[setInputValue, cursorPosition],
 		)
-
-		// Wrap the onSend prop to clear selected items
-		const handleSend = useCallback(() => {
-			onSend(inputValue, selectedImages, selectedItems);
-			setSelectedItems([]); // Clear selected items after sending
-		}, [onSend, setSelectedItems, inputValue, selectedImages]);
 
 		const handleKeyDown = useCallback(
 			(event: React.KeyboardEvent<HTMLTextAreaElement>) => {
 				if (showContextMenu) {
 					if (event.key === "Escape") {
+						// event.preventDefault()
 						setSelectedType(null)
 						setSelectedMenuIndex(3) // File by default
 						return
@@ -531,7 +524,7 @@ const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 						event.preventDefault()
 						setSelectedMenuIndex((prevIndex) => {
 							const direction = event.key === "ArrowUp" ? -1 : 1
-							const options = getContextMenuOptions(searchQuery, selectedType, queryItems)
+							const options = getContextMenuOptions(searchQuery, selectedType, queryItems, triggerChar)
 							const optionsLength = options.length
 
 							if (optionsLength === 0) return prevIndex
@@ -557,7 +550,7 @@ const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 					}
 					if ((event.key === "Enter" || event.key === "Tab") && selectedMenuIndex !== -1) {
 						event.preventDefault()
-						const selectedOption = getContextMenuOptions(searchQuery, selectedType, queryItems)[selectedMenuIndex]
+						const selectedOption = getContextMenuOptions(searchQuery, selectedType, queryItems, triggerChar)[selectedMenuIndex]
 						if (
 							selectedOption &&
 							selectedOption.type !== ContextMenuOptionType.URL &&
@@ -573,7 +566,7 @@ const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 				if (event.key === "Enter" && !event.shiftKey && !isComposing) {
 					event.preventDefault()
 					setIsTextAreaFocused(false)
-					handleSend() // Use handleSend instead of onSend
+					onSend(inputValue, selectedImages, selectedItems)
 				}
 
 				if (event.key === "Backspace" && !isComposing) {
@@ -612,7 +605,22 @@ const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 					}
 				}
 			},
-			[showContextMenu, searchQuery, selectedMenuIndex, handleSend, selectedType, inputValue, cursorPosition, setInputValue, justDeletedSpaceAfterMention, queryItems],
+			[
+				onSend,
+				showContextMenu,
+				searchQuery,
+				selectedMenuIndex,
+				handleMentionSelect,
+				selectedType,
+				inputValue,
+				cursorPosition,
+				setInputValue,
+				justDeletedSpaceAfterMention,
+				queryItems,
+				triggerChar,
+				selectedImages,
+				selectedItems,
+			],
 		)
 
 		useLayoutEffect(() => {
@@ -632,20 +640,36 @@ const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 
 				setShowContextMenu(showMenu)
 				if (showMenu) {
-					const lastTriggerIndex = Math.max(
-						newValue.lastIndexOf("@", newCursorPosition - 1),
-						newValue.lastIndexOf("#", newCursorPosition - 1)
-					)
+					// Find the trigger character by looking at text before cursor
+					const textBeforeCursor = newValue.slice(0, newCursorPosition)
+					const lastAtIndex = textBeforeCursor.lastIndexOf("@")
+					const lastHashIndex = textBeforeCursor.lastIndexOf("#")
+					
+					// Determine which trigger was used
+					let lastTriggerIndex = -1
+					let trigger: string | undefined = undefined
+					
+					if (lastAtIndex > lastHashIndex && lastAtIndex !== -1) {
+						lastTriggerIndex = lastAtIndex
+						trigger = "@"
+					} else if (lastHashIndex !== -1) {
+						lastTriggerIndex = lastHashIndex
+						trigger = "#"
+					}
+					
 					const query = newValue.slice(lastTriggerIndex + 1, newCursorPosition)
 					setSearchQuery(query)
+					setTriggerChar(trigger)
+					
 					if (query.length > 0) {
 						setSelectedMenuIndex(0)
 					} else {
-						setSelectedMenuIndex(3) // Set to "File" option by default
+						setSelectedMenuIndex(trigger === "@" ? 0 : 0) // Default index based on trigger
 					}
 				} else {
 					setSearchQuery("")
 					setSelectedMenuIndex(-1)
+					setTriggerChar(undefined)
 				}
 			},
 			[setInputValue],
@@ -753,13 +777,12 @@ const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 			if (!textAreaRef.current || !highlightLayerRef.current) return
 
 			const text = textAreaRef.current.value
-			const html = text
+
+			highlightLayerRef.current.innerHTML = text
 				.replace(/\n$/, "\n\n")
 				.replace(/[<>&]/g, (c) => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;" })[c] || c)
-				// Remove the highlighting for @ and # triggers
-				.replace(triggerRegexGlobal, '$&')
+				.replace(triggerRegexGlobal, '<mark class="mention-context-textarea-highlight">$&</mark>')
 
-			highlightLayerRef.current.innerHTML = html
 			highlightLayerRef.current.scrollTop = textAreaRef.current.scrollTop
 			highlightLayerRef.current.scrollLeft = textAreaRef.current.scrollLeft
 		}, [])
@@ -1089,7 +1112,7 @@ const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 					<BadgeContainer>
 						{selectedItems.map((item, index) => (
 							<Badge key={index}>
-								<span className={`codicon codicon-${item.type === 'file' ? 'file' : item.type === 'folder' ? 'folder' : item.type === 'problems' ? 'problems' : item.type === 'terminal' ? 'terminal' : 'git'}`} />
+								<span className={`codicon codicon-${item.type === 'file' ? 'file' : 'folder'}`} />
 								{item.path.split('/').pop()}
 								<span 
 									className="codicon codicon-close close-icon"
@@ -1114,13 +1137,19 @@ const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 							disabled={textAreaDisabled}
 							onClick={handleContextButtonClick}
 							title="Add file/folder reference (@)">
-							<span>@</span>
+							<span style={{ fontSize: "13px" }}>@</span>
+						</ControlButton>
+						<ControlButton 
+							disabled={textAreaDisabled}
+							onClick={handleHashButtonClick}
+							title="Add problem/terminal/git reference (#)">
+							<span style={{ fontSize: "13px" }}>#</span>
 						</ControlButton>
 						<ControlButton
 							disabled={shouldDisableImages}
 							onClick={() => !shouldDisableImages && onSelectImages()}
 							title="Add images">
-							<i style={{ marginTop: 2 }} className="codicon codicon-device-camera" />
+							<span className="codicon codicon-device-camera" style={{ fontSize: "14px" }} />
 						</ControlButton>
 					</TopControls>
 
@@ -1134,7 +1163,7 @@ const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 								setSelectedIndex={setSelectedMenuIndex}
 								selectedType={selectedType}
 								queryItems={queryItems}
-								trigger={inputValue[Math.max(inputValue.lastIndexOf('@'), inputValue.lastIndexOf('#'))] || undefined}
+								trigger={triggerChar}
 							/>
 						</div>
 					)}
@@ -1163,7 +1192,7 @@ const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 							wordWrap: "break-word",
 							color: "transparent",
 							overflow: "hidden",
-							backgroundColor: "transparent",
+							backgroundColor: "var(--vscode-input-background)",
 							fontFamily: "var(--vscode-font-family)",
 							fontSize: "var(--vscode-editor-font-size)",
 							lineHeight: "var(--vscode-editor-line-height)",
@@ -1173,9 +1202,9 @@ const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 							borderTop: 0,
 							borderColor: "transparent",
 							borderBottom: `${thumbnailsHeight + 6}px solid transparent`,
-							paddingTop: "42px",
+							paddingTop: "42px", // Match textarea
 							paddingRight: "28px",
-							paddingLeft: "52px",
+							paddingLeft: "12px",
 							paddingBottom: "6px",
 						}}
 					/>
@@ -1214,27 +1243,32 @@ const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 						style={{
 							width: "100%",
 							boxSizing: "border-box",
-							backgroundColor: "var(--vscode-input-background)",
+							backgroundColor: "transparent",
 							color: "var(--vscode-input-foreground)",
-							border: "1px solid var(--vscode-input-border)",
-							borderRadius: 3,
+							border: "2px solid #0078D4", // Added blue border
+							borderRadius: 4,
 							fontFamily: "var(--vscode-font-family)",
 							fontSize: "var(--vscode-editor-font-size)",
 							lineHeight: "var(--vscode-editor-line-height)",
 							resize: "none",
 							overflowX: "hidden",
-							overflowY: "auto",
-							scrollbarWidth: "thin",
-							paddingTop: "42px",
+							overflowY: "auto", // Changed from scroll to auto
+							scrollbarWidth: "thin", // Changed from none to thin
+							paddingTop: "42px", // Increased padding for controls
 							paddingRight: "28px",
-							paddingLeft: "52px",
+							paddingLeft: "12px",
 							paddingBottom: "6px",
-							borderColor: isTextAreaFocused ? "var(--vscode-focusBorder)" : "var(--vscode-input-border)",
+							borderLeft: 0,
+							borderRight: 0,
+							borderTop: 0,
+							borderBottom: `${thumbnailsHeight + 6}px solid transparent`,
+							borderColor: "transparent",
 							cursor: textAreaDisabled ? "not-allowed" : undefined,
 							flex: 1,
-							zIndex: 2,
-							outline: "none",
-							borderBottom: `${thumbnailsHeight + 6}px solid transparent`,
+							zIndex: 1,
+							outline: isTextAreaFocused
+								? `2px solid ${chatSettings.mode === "chat" ? PLAN_MODE_COLOR : "#0078D4"}`
+								: "none",
 						}}
 						onScroll={() => updateHighlights()}
 					/>
@@ -1287,7 +1321,7 @@ const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 								onClick={() => {
 									if (!textAreaDisabled) {
 										setIsTextAreaFocused(false)
-										handleSend() // Use handleSend instead of onSend
+										onSend(inputValue, selectedImages, selectedItems)
 									}
 								}}
 								style={{ fontSize: 15 }}></div>

@@ -279,10 +279,22 @@ const ChatView = ({ isHidden, showAnnouncement, hideAnnouncement, showHistoryVie
 	const handleSendMessage = useCallback(
 		(text: string, images: string[], selectedItems: { type: string; path: string }[]) => {
 			text = text.trim()
-			if (text || images.length > 0) {
+			console.log("handleSendMessage called with:", {text, imageCount: images.length, selectedItems});
+			
+			if (text || images.length > 0 || selectedItems.length > 0) {
+				// Log the selected items for debugging
+				console.log("Sending message with items:", selectedItems);
+				
 				if (messages.length === 0) {
-					vscode.postMessage({ type: "newTask", text, images, selectedItems })
+					console.log("Sending as new task with selectedItems:", selectedItems);
+					vscode.postMessage({ 
+						type: "newTask", 
+						text, 
+						images, 
+						selectedItems 
+					})
 				} else if (autogenAsk) {
+					console.log("Sending as askResponse with selectedItems:", selectedItems);
 					switch (autogenAsk) {
 						case "followup":
 						case "plan_mode_response":
@@ -314,6 +326,8 @@ const ChatView = ({ isHidden, showAnnouncement, hideAnnouncement, showHistoryVie
 				// setPrimaryButtonText(undefined)
 				// setSecondaryButtonText(undefined)
 				disableAutoScrollRef.current = false
+			} else {
+				console.log("Not sending message - no content or selectedItems");
 			}
 		},
 		[messages.length, autogenAsk],
@@ -791,9 +805,10 @@ const ChatView = ({ isHidden, showAnnouncement, hideAnnouncement, showHistoryVie
 						display: "flex",
 						flexDirection: "column",
 						paddingBottom: "10px",
-						backgroundColor: "var(--vscode-editor-background)" // Added background color
+						backgroundColor: "var(--vscode-editor-background)",
+						marginBottom: "10px" // Added background color
 					}}>
-					{telemetrySetting === "unset" && <TelemetryBanner />}
+					
 
 					{/* 		{showAnnouncement && <Announcement version={version} hideAnnouncement={hideAnnouncement} />} */}
 
@@ -802,9 +817,10 @@ const ChatView = ({ isHidden, showAnnouncement, hideAnnouncement, showHistoryVie
 							display: "flex",
 							justifyContent: "space-between",
 							alignItems: "center",
-							marginBottom: "-10px",
+							marginBottom: "10px",
 							borderBottom: "1px solid var(--vscode-widget-border)",
 							paddingBottom: "10px"
+							
 						}}>
 							<div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
 								{/* Use the VS Code codicon instead of the image */}
@@ -848,7 +864,7 @@ const ChatView = ({ isHidden, showAnnouncement, hideAnnouncement, showHistoryVie
 					{taskHistory.length > 0 && <HistoryPreview showHistoryView={showHistoryView} />}
 				</div>
 			)}
-
+{telemetrySetting === "unset" && <TelemetryBanner key="telemetryBanner" />}
 			{task && (
 				<>
 					<div style={{ flexGrow: 1, display: "flex" }} ref={scrollContainerRef}>

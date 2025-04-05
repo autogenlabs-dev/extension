@@ -71,7 +71,6 @@ export interface WebviewMessage {
 	askResponse?: AutoGenAskResponse
 	apiConfiguration?: ApiConfiguration
 	images?: string[]
-	selectedItems?: { type: string; path: string }[]
 	bool?: boolean
 	number?: number
 	autoApprovalSettings?: AutoApprovalSettings
@@ -84,6 +83,9 @@ export interface WebviewMessage {
 	serverName?: string
 	toolName?: string
 	autoApprove?: boolean
+	
+	// For selected context items
+	selectedItems?: { type: string; path: string }[]
 
 	// For auth
 	user?: UserInfo | null

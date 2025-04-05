@@ -91,6 +91,8 @@ const SettingsSection = styled.div`
 	padding: 20px;
 	margin-bottom: 20px;
 	background: ${() => getAsVar(VSCodeStyles.VSC_EDITOR_BACKGROUND)};
+	width: auto;
+	max-width: 100%;
 `
 
 const SectionTitle = styled.h4`
@@ -244,7 +246,7 @@ const ApiOptions = ({ showModelOptions, apiErrorMessage, modelIdErrorMessage, is
 	}
 
 	return (
-		<div style={{ padding: "16px" }}>
+		<div style={{ padding: "16px", width: "500px", maxWidth: "100%" }}>
 			<SettingsSection>
 				<SectionTitle>API Provider Configuration</SectionTitle>
 				<FormGroup>
@@ -779,6 +781,7 @@ const ApiOptions = ({ showModelOptions, apiErrorMessage, modelIdErrorMessage, is
 								margin: "10px 0",
 								cursor: "pointer",
 								alignItems: "center",
+								width: "auto"
 							}}
 							onClick={() => setModelConfigurationSelected((val) => !val)}>
 							<span
@@ -826,14 +829,14 @@ const ApiOptions = ({ showModelOptions, apiErrorMessage, modelIdErrorMessage, is
 									}}>
 									Supports Computer Use
 								</VSCodeCheckbox>
-								<div style={{ display: "flex", gap: 10, marginTop: "5px" }}>
+								<div style={{ display: "flex", gap: 10, marginTop: "5px", width: "auto" }}>
 									<VSCodeTextField
 										value={
 											apiConfiguration?.openAiModelInfo?.contextWindow
 												? apiConfiguration.openAiModelInfo.contextWindow.toString()
 												: openAiModelInfoSaneDefaults.contextWindow?.toString()
 										}
-										style={{ flex: 1 }}
+										style={{ flex: 1, width: "auto" }}
 										onInput={(input: any) => {
 											let modelInfo = apiConfiguration?.openAiModelInfo
 												? apiConfiguration.openAiModelInfo
@@ -852,7 +855,7 @@ const ApiOptions = ({ showModelOptions, apiErrorMessage, modelIdErrorMessage, is
 												? apiConfiguration.openAiModelInfo.maxTokens.toString()
 												: openAiModelInfoSaneDefaults.maxTokens?.toString()
 										}
-										style={{ flex: 1 }}
+										style={{ flex: 1, width: "auto" }}
 										onInput={(input: any) => {
 											let modelInfo = apiConfiguration?.openAiModelInfo
 												? apiConfiguration.openAiModelInfo
@@ -866,14 +869,14 @@ const ApiOptions = ({ showModelOptions, apiErrorMessage, modelIdErrorMessage, is
 										<span style={{ fontWeight: 500 }}>Max Output Tokens</span>
 									</VSCodeTextField>
 								</div>
-								<div style={{ display: "flex", gap: 10, marginTop: "5px" }}>
+								<div style={{ display: "flex", gap: 10, marginTop: "5px", width: "auto" }}>
 									<VSCodeTextField
 										value={
 											apiConfiguration?.openAiModelInfo?.inputPrice
 												? apiConfiguration.openAiModelInfo.inputPrice.toString()
 												: openAiModelInfoSaneDefaults.inputPrice?.toString()
 										}
-										style={{ flex: 1 }}
+										style={{ flex: 1, width: "auto" }}
 										onInput={(input: any) => {
 											let modelInfo = apiConfiguration?.openAiModelInfo
 												? apiConfiguration.openAiModelInfo
@@ -892,7 +895,7 @@ const ApiOptions = ({ showModelOptions, apiErrorMessage, modelIdErrorMessage, is
 												? apiConfiguration.openAiModelInfo.outputPrice.toString()
 												: openAiModelInfoSaneDefaults.outputPrice?.toString()
 										}
-										style={{ flex: 1 }}
+										style={{ flex: 1, width: "auto" }}
 										onInput={(input: any) => {
 											let modelInfo = apiConfiguration?.openAiModelInfo
 												? apiConfiguration.openAiModelInfo
@@ -906,7 +909,7 @@ const ApiOptions = ({ showModelOptions, apiErrorMessage, modelIdErrorMessage, is
 										<span style={{ fontWeight: 500 }}>Output Price / 1M tokens</span>
 									</VSCodeTextField>
 								</div>
-								<div style={{ display: "flex", gap: 10, marginTop: "5px" }}>
+								<div style={{ display: "flex", gap: 10, marginTop: "5px", width: "auto" }}>
 									<VSCodeTextField
 										value={
 											apiConfiguration?.openAiModelInfo?.temperature
