@@ -89,7 +89,27 @@
 					"light": "assets/icons/icon.png",
 					"dark": "assets/icons/icon.png"
 				}
-			}
+			},
+			{
+				"command": "extension.openChat",
+				"title": "Open AutoGen Code Builder"
+			  },
+			  {
+				"command": "extension.showCodePreview",
+				"title": "Show Component Preview",
+				"icon": "$(preview)"
+			  },
+			  {
+				"command": "extension.showPreview",
+				"title": "Show Component Preview",
+				"icon": "$(preview)"
+			  },
+			  {
+				"command": "extension.showPreview",
+				"title": "Preview Component",
+				"icon": "$(preview)",
+				"category": "Component Preview"
+			  }
 		],
 		"keybindings": [
 			{
@@ -104,8 +124,31 @@
 				{
 					"command": "AutoGen.openWithLogo",
 					"group": "navigation"
-				}
-			]
+				},
+				{
+					"command": "extension.showPreview",
+					"group": "navigation"
+				  }
+			],
+			"editor/context": [
+        {
+          "when": "editorHasSelection",
+          "command": "extension.showCodePreview",
+          "group": "navigation"
+        },
+        {
+          "when": "editorHasSelection",
+          "command": "extension.showPreview",
+          "group": "navigation"
+        }
+      ],
+ 
+      "commandPalette": [
+        {
+          "command": "extension.showPreview",
+          "when": "editorHasSelection"
+        }
+      ]
 		},
 		"configuration": {
 			"title": "AutoGen",

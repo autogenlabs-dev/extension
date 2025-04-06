@@ -9,7 +9,12 @@ import { DIFF_VIEW_URI_SCHEME } from "./integrations/editor/DiffViewProvider"
 import assert from "node:assert"
 import { telemetryService } from "./services/telemetry/TelemetryService"
 import { AutoGenProvider } from "./core/webview/AutogenProvider"
+import path from "path";
+import fs from "fs";
+import { ExtensionView } from "./extentionView/extensionView";
 
+  import { handleSelectedOptions } from "./viewHandlers/viewHandlers";
+  
 /*
 Built using https://github.com/microsoft/vscode-webview-ui-toolkit
 
@@ -20,6 +25,9 @@ https://github.com/microsoft/vscode-webview-ui-toolkit-samples/tree/main/framewo
 */
 
 let outputChannel: vscode.OutputChannel
+let globalPanel: vscode.WebviewPanel | undefined;
+let globalContext: vscode.ExtensionContext | undefined;
+let currentStatusBarItem: vscode.StatusBarItem | undefined;
 
 // Import auxiliary window service types
 interface IAuxiliaryWindowOpenOptions {
@@ -547,6 +555,125 @@ export function activate(context: vscode.ExtensionContext) {
 	}
 	context.subscriptions.push(vscode.window.registerUriHandler({ handleUri }))
 	
+	
+	//ui builder 
+	globalContext = context;
+  
+	let disposable = vscode.commands.registerCommand("extension.openChat", () => {
+	  globalPanel = vscode.window.createWebviewPanel(
+		"chatPanel",
+		"Custom Component Builder",
+		vscode.ViewColumn.One,
+		{
+		  enableScripts: true,
+		  localResourceRoots: [
+			vscode.Uri.file(path.join(context.extensionPath, "src")),
+		  ],
+		}
+	  );
+  
+	  globalPanel.onDidDispose(() => {
+		globalPanel = undefined;
+	  });
+  
+	  try {
+		new ExtensionView(context);
+  
+		// Updated message handler to support component search
+		globalPanel.webview.onDidReceiveMessage(async (message: any) => {
+		  if (!globalPanel) {
+			return;
+		  }
+  
+		  try {
+			console.log("Received message in extension:", message);
+  
+			switch (message.command) {
+			  case "createComponentFile":
+				if (
+				  !message.category ||
+				  !message.componentName ||
+				  !message.componentCode
+				) {
+				  throw new Error("Missing component information");
+				}
+  
+				// Ensure React+Tailwind setup exists
+			
+  
+				// Create the component
+				const componentDir = path.join(
+				  vscode.workspace.rootPath!,
+				  "src",
+				  "components",
+				  message.category.toLowerCase()
+				);
+  
+				fs.mkdirSync(componentDir, { recursive: true });
+  
+				const componentPath = path.join(
+				  componentDir,
+				  `${message.componentName}.jsx`
+				);
+				fs.writeFileSync(componentPath, message.componentCode);
+  
+				vscode.window.showInformationMessage(
+				  `Component created successfully at ${componentPath}`
+				);
+  
+				globalPanel.webview.postMessage({
+				  command: "componentCreated",
+				  success: true,
+				  path: componentPath,
+				});
+				break;
+  
+		
+			  case "processSelectedOptions":
+				await handleSelectedOptions(message.options);
+				break;
+  
+			  case "openChat":
+				vscode.commands.executeCommand("extension.openChatBar");
+				break;
+  
+			  
+			}
+  
+			globalPanel.webview.postMessage({
+			  status: "success",
+			  message: "Operation completed successfully!",
+			});
+		  } catch (error: any) {
+			console.error("Error handling message:", error);
+			globalPanel.webview.postMessage({
+			  command: "error",
+			  message: error.message || "Failed to create component",
+			});
+		  }
+		});
+	  } catch (error) {
+		console.error("Error loading webview:", error);
+	  }
+	});
+  
+  
+	context.subscriptions.push(
+	  disposable,
+
+	);
+  
+	let autoGenBuilderDisposable = vscode.commands.registerCommand(
+	  "extension.openAutoGenBuilder",
+	  () => {
+		const extensionView = new ExtensionView(context);
+	  }
+	);
+  
+	context.subscriptions.push(autoGenBuilderDisposable);
+  
+
+	
 	return createAutoGenAPI(outputChannel, defaultProvider)
 }
 
@@ -554,6 +681,9 @@ export function activate(context: vscode.ExtensionContext) {
 export function deactivate() {
 	telemetryService.shutdown()
 	Logger.log("AutoGen extension deactivated")
+	if (currentStatusBarItem) {
+		currentStatusBarItem.dispose();
+	  }
 }
 
 // TODO: Find a solution for automatically removing DEV related content from production builds.
@@ -574,3 +704,12 @@ if (IS_DEV && IS_DEV !== "false") {
 		vscode.commands.executeCommand("workbench.action.reloadWindow")
 	})
 }
+
+
+/// UI builder code
+
+  
+
+  
+  
+  
