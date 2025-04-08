@@ -447,6 +447,9 @@ export function activate(context: vscode.ExtensionContext) {
 
 	// Register commands
 	context.subscriptions.push(
+		vscode.commands.registerCommand("claude-dev.SidebarProvider.focus", async () => {
+			await vscode.commands.executeCommand("workbench.action.focusSideBar");
+		}),
 		vscode.commands.registerCommand("AutoGen.plusButtonClicked", async () => {
 			Logger.log("Plus button Clicked")
 			const activeProvider = getActiveProvider();
@@ -707,9 +710,3 @@ if (IS_DEV && IS_DEV !== "false") {
 
 
 /// UI builder code
-
-  
-
-  
-  
-  

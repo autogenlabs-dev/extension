@@ -3,11 +3,8 @@ import * as path from "path";
 import * as fs from "fs";
 import { getSidebarHtml } from "./components/Sidebar";
 import { getMainContentHtml } from "./components/MainContent";
-import { websiteTemplates } from "./websiteTemplates/websiteTemplates";
-import {
-    showTypeCards,
-    handleWebsiteTypeSelection,
-} from "./websiteTemplates/websiteTemplatesHelper";
+// Import AutoGenProvider to access its static methods and potentially types
+import { AutoGenProvider } from "../core/webview/AutogenProvider"; // Added import
 
 class ExtensionView {
     private panel: vscode.WebviewPanel;
@@ -41,10 +38,12 @@ class ExtensionView {
                                 throw new Error("No workspace found!");
                             }
 
+                            let targetPath: string | undefined = undefined; // Define targetPath here to access later
+
                             try {
                                 // Clean up the file path to remove leading slash and fix project name
                                 const cleanPath = message.filePath.replace(/^\/vs-code-extension/, '');
-                                const targetPath = path.join(vscode.workspace.rootPath, cleanPath);
+                                targetPath = path.join(vscode.workspace.rootPath, cleanPath); // Assign value
                                 const targetDir = path.dirname(targetPath);
 
                                 console.log("Creating file at:", targetPath);
@@ -64,11 +63,91 @@ class ExtensionView {
                                 if (fs.existsSync(targetPath)) {
                                     console.log("File created successfully at:", targetPath);
                                     vscode.window.showInformationMessage(`Component created at: ${targetPath}`);
+
+                                    // --- START: New logic to trigger AutoGen task ---
+                                    const autoGenProvider = AutoGenProvider.getVisibleInstance();
+                                    if (autoGenProvider) {
+                                        const relativePath = path.relative(vscode.workspace.rootPath, targetPath);
+                                        const componentData = {
+                                            title: message.title || "unknown",
+                                            filePath: message.filePath || "unknown",
+                                            dependencies: message.dependencies || [],
+                                            language: message.language || "JavaScript",
+                                            framework: message.framework || "React",
+                                            cssFramework: message.cssFramework || "unknown",
+                                            category: message.category || "unknown",
+                                            type: message.type || "unknown",
+                                            difficulty: message.difficulty || "unknown",
+                                            hasAnimation: message.hasAnimation || false
+                                        };
+
+                                        const prompt = "Analyze the newly generated component with the following details:\\n" +
+                                            "- Title: " + componentData.title + "\\n" +
+                                            "- File path: " + componentData.filePath + "\\n" +
+                                            "- Dependencies: " + JSON.stringify(componentData.dependencies) + "\\n" +
+                                            "- Language: " + componentData.language + "\\n" +
+                                            "- Framework: " + componentData.framework + "\\n" +
+                                            "- CSS Framework: " + componentData.cssFramework + "\\n" +
+                                            "- Category: " + componentData.category + "\\n" +
+                                            "- Type: " + componentData.type + "\\n" +
+                                            "- Difficulty: " + componentData.difficulty + "\\n" +
+                                            "- Has animation: " + componentData.hasAnimation + "\\n" +
+                                            "Please check the file, install any dependencies if needed, fix imports and navigation, run the project, and make any necessary adjustments based on this component data.";
+
+                                        // Ensure the AutoGen panel is visible/focused
+                                        // Use the correct command ID for the AutoGen view
+                                        await vscode.commands.executeCommand('claude-dev.SidebarProvider.focus'); // Focus the view directly
+                                        // A slight delay might be needed for the view to fully activate before starting the task
+                                        await new Promise(resolve => setTimeout(resolve, 200));
+
+                                        await autoGenProvider.initAutoGenWithTask(prompt);
+                                        console.log("Triggered new AutoGen task for:", targetPath);
+                                    } else {
+                                        console.warn("AutoGenProvider instance not found. Cannot trigger follow-up task.");
+                                        vscode.window.showWarningMessage("Component created, but couldn't automatically start analysis task. Please open the AutoGen chat manually.");
+                                    }
+                                    // --- END: New logic ---
+
+                                } else {
+                                     // Added else block for clarity
+                                     console.error("File verification failed after write:", targetPath);
+                                     throw new Error("File verification failed after writing.");
                                 }
 
                             } catch (error: any) {
                                 console.error("File creation error:", error);
-                                throw error;
+                                // Ensure targetPath is defined before showing error message
+                                const errorMsgPath = targetPath ? ` at ${targetPath}` : '';
+                                vscode.window.showErrorMessage(`Failed to create component${errorMsgPath}: ${error.message}`);
+                                // Do not re-throw here to avoid duplicate error messages if caught below
+                            }
+                            break; // Added break statement
+
+                        case "initializePrompt":
+                            {
+                                let autoGenProvider = AutoGenProvider.getVisibleInstance();
+
+                                // Fallback: get any existing instance
+                                if (!autoGenProvider && (AutoGenProvider as any).activeInstances) {
+                                    const instances = Array.from((AutoGenProvider as any).activeInstances as Set<any>);
+                                    if (instances.length > 0) {
+                                        autoGenProvider = instances[0];
+                                    }
+                                }
+
+                                if (autoGenProvider) {
+                                    try {
+                                        await vscode.commands.executeCommand('claude-dev.SidebarProvider.focus');
+                                        await new Promise(resolve => setTimeout(resolve, 200));
+                                        await autoGenProvider.initAutoGenWithTask(message.prompt);
+                                        console.log("Triggered AutoGen task with prompt from ExtensionView");
+                                    } catch (error) {
+                                        console.error("Failed to trigger AutoGen task:", error);
+                                    }
+                                } else {
+                                    console.warn("AutoGenProvider instance not found. Cannot trigger analysis task.");
+                                    vscode.window.showWarningMessage("Component created, but couldn't automatically start analysis task. Please open the AutoGen chat manually.");
+                                }
                             }
                             break;
 
@@ -76,8 +155,9 @@ class ExtensionView {
                             console.log("Unknown command:", message.command);
                     }
                 } catch (error: any) {
-                    console.error("Error in ExtensionView:", error);
-                    vscode.window.showErrorMessage(`Failed to create component: ${error.message}`);
+                    // General catch block for errors within onDidReceiveMessage
+                    console.error("Error processing message in ExtensionView:", error);
+                    vscode.window.showErrorMessage(`An unexpected error occurred: ${error.message}`);
                 }
             },
             undefined,
@@ -589,8 +669,51 @@ function getScriptContent(): string {
             vscode.postMessage({
                 command: 'createComponentFile',
                 filePath: state.filePath,
-                componentCode: state.selectedComponentCode
+                componentCode: state.selectedComponentCode,
+                title: state.selectedComponentTitle || "unknown",
+                dependencies: state.selectedDependencies || [],
+                language: state.selectedLanguage || "JavaScript",
+                framework: state.selectedFramework || "React",
+                cssFramework: state.selectedCssFramework || "unknown",
+                category: state.selectedCategory || "unknown",
+                type: state.selectedType || "unknown",
+                difficulty: state.selectedDifficulty || "unknown",
+                hasAnimation: state.selectedHasAnimation || false,
+                // Additional metadata from API response if available
+                apiData: state.selectedComponentData || {}
             });
+
+            const componentData = {
+                title: message.title || "unknown",
+                filePath: message.filePath || "unknown",
+                dependencies: message.dependencies || [],
+                language: message.language || "JavaScript",
+                framework: message.framework || "React",
+                cssFramework: message.cssFramework || "unknown",
+                category: message.category || "unknown",
+                type: message.type || "unknown",
+                difficulty: message.difficulty || "unknown",
+                hasAnimation: message.hasAnimation || false
+            };
+
+            const prompt = "Analyze the newly generated component with the following details:\\n" +
+                "- Title: " + componentData.title + "\\n" +
+                "- File path: " + componentData.filePath + "\\n" +
+                "- Dependencies: " + JSON.stringify(componentData.dependencies) + "\\n" +
+                "- Language: " + componentData.language + "\\n" +
+                "- Framework: " + componentData.framework + "\\n" +
+                "- CSS Framework: " + componentData.cssFramework + "\\n" +
+                "- Category: " + componentData.category + "\\n" +
+                "- Type: " + componentData.type + "\\n" +
+                "- Difficulty: " + componentData.difficulty + "\\n" +
+                "- Has animation: " + componentData.hasAnimation + "\\n" +
+                "Please check the file, install any dependencies if needed, fix imports and navigation, run the project, and make any necessary adjustments based on this component data.";
+
+            vscode.postMessage({
+                command: 'initializePrompt',
+                prompt: prompt
+            });
+            
         }
     `;
 }

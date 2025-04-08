@@ -936,6 +936,24 @@ export class AutoGenProvider implements vscode.WebviewViewProvider {
 						this.postMessageToWebview({ type: "relinquishControl" })
 						break
 					}
+					case "initializePrompt": // Handle prompt from ExtensionView
+						if (message.prompt) {
+							const structuredPrompt = `The user wants to generate a component based on the following request:
+
+${message.prompt}
+
+Please generate the component. After generation, verify the component code, ensure all necessary dependencies are listed or installed, and confirm everything is set up correctly.`;
+
+							await this.initAutoGenWithTask(structuredPrompt);
+
+							// Focus the sidebar container and chat view
+							try {
+								await vscode.commands.executeCommand("claude-dev.SidebarProvider.focus");
+							} catch (error) {
+								console.error("Failed to focus AutoGen chat sidebar:", error);
+							}
+						}
+						break;
 					// Add more switch case statements here as more webview message commands
 					// are created within the webview context (i.e. inside media/main.js)
 				}

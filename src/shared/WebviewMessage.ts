@@ -65,8 +65,10 @@ export interface WebviewMessage {
 		| "fetchUserCreditsData"
 		| "optionsResponse"
 		| "requestTotalTasksSize"
+		| "initializePrompt" // Added for ExtensionView -> AutoGenProvider communication
 	// | "relaunchChromeDebugMode"
 	text?: string
+	prompt?: string // Added for initializePrompt message
 	disabled?: boolean
 	askResponse?: AutoGenAskResponse
 	apiConfiguration?: ApiConfiguration

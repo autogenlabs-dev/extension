@@ -48,6 +48,10 @@
 	"contributes": {
 		"commands": [
 			{
+				"command": "claude-dev.SidebarProvider.focus",
+				"title": "Focus AutoGen Chat Sidebar"
+			},
+			{
 				"command": "AutoGen.plusButtonClicked",
 				"title": "New Task",
 				"icon": "$(add)"
