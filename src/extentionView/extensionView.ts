@@ -277,6 +277,76 @@ ${componentCode}`;
 function getScriptContent(): string {
     return `
         const vscode = acquireVsCodeApi();
+
+        function renderFolderStructure(framework) {
+            const previewGrid = document.getElementById('previewGrid');
+            if (!previewGrid) return;
+            previewGrid.innerHTML = '';
+
+            // Example folder structure for React and Next.js
+            let structure = [];
+            if (framework === 'Next.js') {
+                structure = [
+                    { name: 'my-next-app/', children: [
+                        { name: 'pages/', children: [
+                            { name: 'index.tsx' },
+                            { name: 'about.tsx' }
+                        ]},
+                        { name: 'components/', children: [
+                            { name: 'Header.tsx' },
+                            { name: 'Footer.tsx' }
+                        ]},
+                        { name: 'public/', children: [
+                            { name: 'favicon.ico' }
+                        ]},
+                        { name: 'styles/', children: [
+                            { name: 'globals.css' }
+                        ]},
+                        { name: 'package.json' },
+                        { name: 'tsconfig.json' }
+                    ]}
+                ];
+            } else {
+                // Default to React
+                structure = [
+                    { name: 'my-react-app/', children: [
+                        { name: 'src/', children: [
+                            { name: 'components/', children: [
+                                { name: 'Header.tsx' },
+                                { name: 'Footer.tsx' }
+                            ]},
+                            { name: 'App.tsx' },
+                            { name: 'index.tsx' }
+                        ]},
+                        { name: 'public/', children: [
+                            { name: 'index.html' }
+                        ]},
+                        { name: 'package.json' },
+                        { name: 'tsconfig.json' }
+                    ]}
+                ];
+            }
+
+            function renderTree(nodes, level = 0) {
+                let html = '<ul style="list-style:none;padding-left:' + (level * 20) + 'px">';
+                for (const node of nodes) {
+                    html += '<li style="margin:4px 0;">';
+                    html += '<span style="font-family:monospace;">' + node.name + '</span>';
+                    if (node.children) {
+                        html += renderTree(node.children, level + 1);
+                    }
+                    html += '</li>';
+                }
+                html += '</ul>';
+                return html;
+            }
+
+            previewGrid.innerHTML =
+                '<div style="padding:16px;">' +
+                '<h4 style="margin-bottom:8px;">Project Structure (' + (framework || 'React') + ')</h4>' +
+                renderTree(structure) +
+                '</div>';
+        }
         const BASE_URL = "http://localhost:5000";
         const API_ENDPOINT = "/api/extension/designs";
 
@@ -285,15 +355,30 @@ function getScriptContent(): string {
         const cssFrameworks = ['Tailwind CSS', 'Bootstrap', 'Custom CSS'];
         const websiteTypes = ['E-commerce', 'Portfolio', 'Blog'];
 
+        // Separate state for each sidebar icon functionality
         const state = {
-            selectedJS: '',
-            selectedCSS: '',
-            selectedWebsiteType: '',
+            // Current active panel
+            activePanel: 'framework',
+            
+            // Framework icon (icon 1) state
+            framework: {
+                selectedJS: '',
+                selectedCSS: '',
+                selectedCategory: '',
+                availableCategories: []
+            },
+            
+            // Layout icon (icon 2) state
+            layout: {
+                selectedJS: 'React',
+                selectedCSS: '',
+                selectedWebsiteType: ''
+            },
+            
+            // Shared state for component selection
             selectedComponents: [],
-            selectedCategory: '',
             selectedComponentCode: null,
-            filePath: '',
-            availableCategories: []
+            filePath: ''
         };
 
         // Main initialization function
@@ -360,19 +445,40 @@ function getScriptContent(): string {
 
         function handleSelection(type, value) {
             console.log('Selection:', type, value);
-            if (type === 'js') {
-                state.selectedJS = value;
-                const cssContainer = document.getElementById('cssFrameworkContainer');
-                if (cssContainer) {
-                    cssContainer.classList.remove('hidden');
-                    updateSelection('jsFrameworkButtons', value);
+            
+            // Store selection in the appropriate panel's state
+            if (state.activePanel === 'framework') {
+                if (type === 'js') {
+                    state.framework.selectedJS = value;
+                    const cssContainer = document.getElementById('cssFrameworkContainer');
+                    if (cssContainer) {
+                        cssContainer.classList.remove('hidden');
+                        updateSelection('jsFrameworkButtons', value);
+                    }
+                    // Immediately show the structure for the selected JS framework
+                    showFrameworkCards(value);
+                } else if (type === 'css') {
+                    state.framework.selectedCSS = value;
+                    updateSelection('cssFrameworkButtons', value);
+                    fetchAvailableCategories().then(() => {
+                        showFrameworkCards(value, 'all');
+                    });
                 }
-            } else if (type === 'css') {
-                state.selectedCSS = value;
-                updateSelection('cssFrameworkButtons', value);
-                fetchAvailableCategories().then(() => {
-                    showFrameworkCards(value, 'all');
-                });
+            } else if (state.activePanel === 'layout') {
+                if (type === 'js') {
+                    state.layout.selectedJS = value;
+                    updateSelection('jsFrameworkButtons', value);
+                    // Always show folder structure in layout panel
+                    renderFolderStructure(value);
+                } else if (type === 'css') {
+                    state.layout.selectedCSS = value;
+                    updateSelection('cssFrameworkButtons', value);
+                    // Still show folder structure, don't fetch components
+                    renderFolderStructure(state.layout.selectedJS);
+                } else if (type === 'websiteType') {
+                    state.layout.selectedWebsiteType = value;
+                    updateSelection('websiteTypeButtons', value);
+                }
             }
         }
 
@@ -428,8 +534,11 @@ function getScriptContent(): string {
             );
             button.classList.add('active');
 
-            state.selectedCategory = category;
-            showFrameworkCards(state.selectedCSS, category);
+            // Use the appropriate state based on active panel
+            if (state.activePanel === 'framework') {
+                state.framework.selectedCategory = category;
+                showFrameworkCards(state.framework.selectedCSS, category);
+            }
         }
 
         async function fetchComponents(category) {
@@ -509,36 +618,54 @@ function getScriptContent(): string {
             if (!previewGrid) return;
 
             previewGrid.innerHTML = '';
-            console.log('Fetching components for:', filter || 'navbar');
 
-            fetchComponents(filter || 'navbar')
-                .then(components => {
-                    if (!Array.isArray(components) || components.length === 0) {
-                        console.log('No components received or invalid data');
-                        previewGrid.innerHTML = '<p>No components available for this category.</p>';
-                        return;
-                    }
+            // Only for framework panel (icon 1)
+            if (state.activePanel === 'framework') {
+                // Show project structure if JS framework is selected but no CSS framework yet
+                const setupFrameworks = ['React', 'Next.js', 'Tailwind CSS', 'Bootstrap'];
+                if (setupFrameworks.includes(state.framework.selectedJS) && !state.framework.selectedCSS) {
+                    renderFolderStructure(state.framework.selectedJS);
+                    return;
+                }
 
-                    console.log('Processing components:', components);
+                // If both JS and CSS frameworks are selected, fetch and show component cards
+                if (state.framework.selectedJS && state.framework.selectedCSS) {
+                    console.log('Fetching components for:', filter || 'navbar');
 
-                    // Show all components vertically
-                    components.forEach(component => {
-                        if (component && component.title && component.image) {
-                            const card = createCard(component, framework);
-                            card.onclick = () => {
-                                handleComponentSelection(component.title, component.code, component.path);
-                                // Remove selection from other cards
-                                document.querySelectorAll('.selected').forEach(el => el.classList.remove('selected'));
-                                card.classList.add('selected');
-                            };
-                            previewGrid.appendChild(card);
-                        }
-                    });
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    previewGrid.innerHTML = '<p>Error loading components</p>';
-                });
+                    fetchComponents(filter || 'navbar')
+                        .then(components => {
+                            if (!Array.isArray(components) || components.length === 0) {
+                                console.log('No components received or invalid data');
+                                previewGrid.innerHTML = '<p>No components available for this category.</p>';
+                                return;
+                            }
+
+                            console.log('Processing components:', components);
+
+                            // Show all components vertically
+                            components.forEach(component => {
+                                if (component && component.title && component.image) {
+                                    const card = createCard(component, framework);
+                                    card.onclick = () => {
+                                        handleComponentSelection(component.title, component.code, component.path);
+                                        // Remove selection from other cards
+                                        document.querySelectorAll('.selected').forEach(el => el.classList.remove('selected'));
+                                        card.classList.add('selected');
+                                    };
+                                    previewGrid.appendChild(card);
+                                }
+                            });
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                            previewGrid.innerHTML = '<p>Error loading components</p>';
+                        });
+                    return;
+                }
+
+                // Default: show nothing if neither is selected
+                previewGrid.innerHTML = '<p>Please select a JavaScript and CSS framework.</p>';
+            }
         }
 
 
@@ -585,19 +712,38 @@ function getScriptContent(): string {
             document.getElementById('previewGrid').innerHTML = '';
         }
 
+
         function handleSidebarClick(panel) {
             console.log('Sidebar clicked:', panel);
 
+            // Update active icon
             document.querySelectorAll('.sidebar-icon').forEach(icon => {
                 icon.classList.remove('active');
             });
             event.currentTarget.classList.add('active');
 
+            // Update active panel in state
+            state.activePanel = panel;
+
+            // Clear preview area for all panels
+            const previewGrid = document.getElementById('previewGrid');
+            if (previewGrid) {
+                previewGrid.innerHTML = '';
+            }
+
+            // External commands
             if (panel === 'agent') {
                 vscode.postMessage({ command: 'openAgent' });
                 return;
+            } else if (panel === 'search') {
+                vscode.postMessage({ command: 'showComponentPicker' });
+                return;
+            } else if (panel === 'chat') {
+                vscode.postMessage({ command: 'openChat' });
+                return;
             }
 
+            // Hide all containers
             const containers = {
                 framework: document.getElementById('jsFrameworkContainer'),
                 css: document.getElementById('cssFrameworkContainer'),
@@ -608,21 +754,33 @@ function getScriptContent(): string {
                 if (container) container.classList.add('hidden');
             });
 
+            // Handle each panel independently
             if (panel === 'framework') {
+                // Framework panel (icon 1)
                 containers.framework.classList.remove('hidden');
-                if (state.selectedJS) {
+                if (state.framework.selectedJS) {
                     containers.css.classList.remove('hidden');
-                    if (state.selectedCSS) {
-                        showFrameworkCards(state.selectedCSS);
+                    if (state.framework.selectedCSS) {
+                        showFrameworkCards(state.framework.selectedCSS);
+                    } else {
+                        // Show JS framework structure if no CSS framework selected
+                        renderFolderStructure(state.framework.selectedJS);
                     }
                 }
             } else if (panel === 'layout') {
-                containers.websiteType.classList.remove('hidden');
-                document.getElementById('previewGrid').innerHTML = '';
-            } else if (panel === 'search') {
-                vscode.postMessage({ command: 'showComponentPicker' });
-            } else if (panel === 'chat') {
-                vscode.postMessage({ command: 'openChat' });
+                // Layout panel (icon 2) - always show folder structure
+                containers.framework.classList.remove('hidden');
+                containers.css.classList.remove('hidden');
+                renderFolderStructure(state.layout.selectedJS || 'React');
+            } else if (panel === 'components') {
+                // Components panel (icon 3) - could be implemented separately
+                previewGrid.innerHTML = '<p>Components panel selected. Select a component category.</p>';
+            } else if (panel === 'design') {
+                // Design panel (icon 4) - could be implemented separately
+                previewGrid.innerHTML = '<p>Design panel selected. Choose a design template.</p>';
+            } else if (panel === 'content') {
+                // Content panel (icon 5) - could be implemented separately
+                previewGrid.innerHTML = '<p>Content panel selected. Add content to your project.</p>';
             }
         }
 

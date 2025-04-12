@@ -1419,8 +1419,16 @@ Please generate the component. After generation, verify the component code, ensu
 				throw new Error("Invalid response from MCP marketplace API")
 			}
 
+			// Ensure response.data is an array or has an items array before mapping
+			let responseData: any[] = []
+			if (Array.isArray(response.data)) {
+				responseData = response.data
+			} else if (response.data && Array.isArray(response.data.items)) {
+				responseData = response.data.items
+			}
+
 			const catalog: McpMarketplaceCatalog = {
-				items: (response.data || []).map((item: any) => ({
+				items: responseData.map((item: any) => ({
 					...item,
 					githubStars: item.githubStars ?? 0,
 					downloadCount: item.downloadCount ?? 0,

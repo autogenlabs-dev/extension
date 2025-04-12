@@ -7,24 +7,27 @@ import {
 	VSCodePanelTab,
 	VSCodePanelView,
 	VSCodeTextField,
-} from "@vscode/webview-ui-toolkit/react"
-import { memo, useCallback, useEffect, useState } from "react"
-import styled from "styled-components"
-import { useExtensionState } from "../../context/ExtensionStateContext"
-import { validateApiConfiguration, validateModelId } from "../../utils/validate"
-import { vscode } from "../../utils/vscode"
-import SettingsButton from "../common/SettingsButton"
-import ApiOptions from "./ApiOptions"
-import { TabButton } from "../mcp/McpView"
-import { useEvent } from "react-use"
-import { ExtensionMessage } from "../../../../src/shared/ExtensionMessage"
-import { getAsVar, VSCodeStyles } from "../../utils/vscStyles"
-import AutoApproveSettings from "./AutoApproveSettings"
-const { IS_DEV } = process.env
+} from "@vscode/webview-ui-toolkit/react";
+import { memo, useCallback, useEffect, useState } from "react";
+import { useExtensionState } from "../../context/ExtensionStateContext";
+import { validateApiConfiguration, validateModelId } from "../../utils/validate";
+import { vscode } from "../../utils/vscode";
+import SettingsButton from "../common/SettingsButton";
+import ApiOptions from "./ApiOptions";
+import { useEvent } from "react-use";
+import { ExtensionMessage } from "../../../../src/shared/ExtensionMessage";
+import { getAsVar, VSCodeStyles } from "../../utils/vscStyles";
+import AutoApproveSettings from "./AutoApproveSettings";
+import styled from "styled-components";
+import McpMarketplaceView from "../mcp/marketplace/McpMarketplaceView";
+import McpResourceRow from "../mcp/McpResourceRow";
+import McpToolRow from "../mcp/McpToolRow";
+import { DEFAULT_MCP_TIMEOUT_SECONDS, McpServer } from "../../../../src/shared/mcp";
+import McpConfigView from "./McpConfigView";
 
 type SettingsViewProps = {
-	onDone: () => void
-}
+	onDone: () => void;
+};
 
 const SettingsContainer = styled.div`
 	height: 100%;
@@ -50,12 +53,12 @@ const SettingsContainer = styled.div`
 		overflow-y: auto;
 		padding: 0 16px;
 	}
-`
+`;
 
 const PanelContent = styled.div`
 	max-width: 800px;
 	margin: 0 auto;
-`
+`;
 
 const SettingsSection = styled.div`
 	border: 1px solid ${() => getAsVar(VSCodeStyles.VSC_TITLEBAR_INACTIVE_FOREGROUND)};
@@ -69,18 +72,18 @@ const SettingsSection = styled.div`
 		border-color: ${() => getAsVar(VSCodeStyles.VSC_FOREGROUND)};
 		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 	}
-`
+`;
 
 const SectionTitle = styled.h3`
 	margin-top: 0;
 	margin-bottom: 16px;
 	color: ${() => getAsVar(VSCodeStyles.VSC_FOREGROUND)};
-`
+`;
 
 const Description = styled.div`
 	color: ${() => getAsVar(VSCodeStyles.VSC_DESCRIPTION_FOREGROUND)};
 	margin-top: 8px;
-`
+`;
 
 const ButtonContainer = styled.div`
 	margin-top: auto;
@@ -129,7 +132,7 @@ const ButtonContainer = styled.div`
 		color: var(--vscode-button-foreground);
 		opacity: 0.8;
 	}
-`
+`;
 
 const VersionText = styled.div`
 	margin-left: auto;
@@ -137,7 +140,7 @@ const VersionText = styled.div`
 	opacity: 0.7;
 	font-size: 11px;
 	letter-spacing: 0.5px;
-`
+`;
 
 const SettingsView = ({ onDone }: SettingsViewProps) => {
 	const {
@@ -151,16 +154,16 @@ const SettingsView = ({ onDone }: SettingsViewProps) => {
 		chatSettings,
 		planActSeparateModelsSetting,
 		setPlanActSeparateModelsSetting,
-	} = useExtensionState()
-	const [apiErrorMessage, setApiErrorMessage] = useState<string | undefined>(undefined)
-	const [modelIdErrorMessage, setModelIdErrorMessage] = useState<string | undefined>(undefined)
-	const [pendingTabChange, setPendingTabChange] = useState<"chat" | "Agent" | null>(null)
+	} = useExtensionState();
+	const [apiErrorMessage, setApiErrorMessage] = useState<string | undefined>(undefined);
+	const [modelIdErrorMessage, setModelIdErrorMessage] = useState<string | undefined>(undefined);
+	const [pendingTabChange, setPendingTabChange] = useState<"chat" | "Agent" | null>(null);
 
 	const handleSubmit = (withoutDone: boolean = false) => {
-		const apiValidationResult = validateApiConfiguration(apiConfiguration)
-		const modelIdValidationResult = validateModelId(apiConfiguration, openRouterModels)
+		const apiValidationResult = validateApiConfiguration(apiConfiguration);
+		const modelIdValidationResult = validateModelId(apiConfiguration, openRouterModels);
 
-		let apiConfigurationToSubmit = apiConfiguration
+		let apiConfigurationToSubmit = apiConfiguration;
 		if (!apiValidationResult && !modelIdValidationResult) {
 			// vscode.postMessage({ type: "apiConfiguration", apiConfiguration })
 			// vscode.postMessage({
@@ -178,7 +181,7 @@ const SettingsView = ({ onDone }: SettingsViewProps) => {
 			// })
 		} else {
 			// if the api configuration is invalid, we don't save it
-			apiConfigurationToSubmit = undefined
+			apiConfigurationToSubmit = undefined;
 		}
 
 		vscode.postMessage({
@@ -187,21 +190,21 @@ const SettingsView = ({ onDone }: SettingsViewProps) => {
 			customInstructionsSetting: customInstructions,
 			telemetrySetting,
 			apiConfiguration: apiConfigurationToSubmit,
-		})
+		});
 
 		if (!withoutDone) {
-			onDone()
+			onDone();
 		}
-	}
+	};
 
 	useEffect(() => {
-		setApiErrorMessage(undefined)
-		setModelIdErrorMessage(undefined)
-	}, [apiConfiguration])
+		setApiErrorMessage(undefined);
+		setModelIdErrorMessage(undefined);
+	}, [apiConfiguration]);
 
 	const handleMessage = useCallback(
 		(event: MessageEvent) => {
-			const message: ExtensionMessage = event.data
+			const message: ExtensionMessage = event.data;
 			switch (message.type) {
 				case "didUpdateSettings":
 					if (pendingTabChange) {
@@ -210,28 +213,28 @@ const SettingsView = ({ onDone }: SettingsViewProps) => {
 							chatSettings: {
 								mode: pendingTabChange,
 							},
-						})
-						setPendingTabChange(null)
+						});
+						setPendingTabChange(null);
 					}
-					break
+					break;
 			}
 		},
-		[pendingTabChange],
-	)
+		[pendingTabChange]
+	);
 
-	useEvent("message", handleMessage)
+	useEvent("message", handleMessage);
 
 	const handleResetState = () => {
-		vscode.postMessage({ type: "resetState" })
-	}
+		vscode.postMessage({ type: "resetState" });
+	};
 
 	const handleTabChange = (tab: "chat" | "Agent") => {
 		if (tab === chatSettings.mode) {
-			return
+			return;
 		}
-		setPendingTabChange(tab)
-		handleSubmit(true)
-	}
+		setPendingTabChange(tab);
+		handleSubmit(true);
+	};
 
 	return (
 		<SettingsContainer>
@@ -239,6 +242,7 @@ const SettingsView = ({ onDone }: SettingsViewProps) => {
 				<VSCodePanelTab id="api">API</VSCodePanelTab>
 				<VSCodePanelTab id="auto-approve">Auto-approve</VSCodePanelTab>
 				<VSCodePanelTab id="custom-instructions">Custom Instructions</VSCodePanelTab>
+				<VSCodePanelTab id="mcp-config">MCP Config</VSCodePanelTab>
 				{/* <VSCodePanelTab id="telemetry">Telemetry</VSCodePanelTab> */}
 
 				<VSCodePanelView id="api">
@@ -247,6 +251,15 @@ const SettingsView = ({ onDone }: SettingsViewProps) => {
 
 				<VSCodePanelView id="auto-approve">
 					<AutoApproveSettings />
+				</VSCodePanelView>
+
+				<VSCodePanelView id="mcp-config">
+					<PanelContent>
+						<SettingsSection>
+							<SectionTitle>MCP Configuration</SectionTitle>
+							<McpConfigView />
+						</SettingsSection>
+					</PanelContent>
 				</VSCodePanelView>
 
 				<VSCodePanelView id="custom-instructions">
@@ -292,7 +305,7 @@ const SettingsView = ({ onDone }: SettingsViewProps) => {
 				<VersionText>Version: {version}</VersionText>
 			</ButtonContainer>
 		</SettingsContainer>
-	)
-}
+	);
+};
 
-export default SettingsView
+export default SettingsView;
