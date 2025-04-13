@@ -39,6 +39,15 @@ export interface ExtensionMessage {
 		| "userCreditsUsage"
 		| "userCreditsPayments"
 		| "totalTasksSize"
+		// Native Filesystem Results/Errors
+		| "nativeFsReadFileResult"
+		| "nativeFsWriteFileResult"
+		| "nativeFsListDirectoryResult"
+		| "nativeFsCreateDirectoryResult"
+		| "nativeFsGetFileInfoResult"
+		| "nativeFsRenameResult"
+		| "nativeFsDeleteResult"
+		| "nativeFsError"
 	text?: string
 	action?:
 		| "chatButtonClicked"
@@ -79,6 +88,28 @@ export interface ExtensionMessage {
 	userCreditsUsage?: UsageTransaction[]
 	userCreditsPayments?: PaymentTransaction[]
 	totalTasksSize?: number | null
+
+	// --- Native Filesystem Payload (Extension -> Webview) ---
+	path?: string // For results and errors
+	content?: string // For readFile result
+	entries?: { name: string; type: 'file' | 'directory' | 'unknown' }[] // For listDirectory result
+	stats?: SerializableFileStat // Use the serializable version
+	oldPath?: string // For rename result
+	newPath?: string // For rename result
+	operation?: string // For error messages
+	// error?: string // Already exists
+	// --- End Native Filesystem Payload ---
+}
+
+/**
+ * A serializable representation of file status information,
+ * mirroring essential parts of vscode.FileStat.
+ */
+export interface SerializableFileStat {
+	type: 'file' | 'directory' | 'symbolicLink' | 'unknown';
+	ctime: number; // Creation time in milliseconds since epoch
+	mtime: number; // Modification time in milliseconds since epoch
+	size: number;  // Size in bytes
 }
 
 export type Invoke = "sendMessage" | "primaryButtonClick" | "secondaryButtonClick"
@@ -89,6 +120,7 @@ export const DEFAULT_PLATFORM = "unknown"
 
 export interface ExtensionState {
 	apiConfiguration?: ApiConfiguration
+	mcpServers?: McpServer[] // Add MCP servers list
 	autoApprovalSettings: AutoApprovalSettings
 	browserSettings: BrowserSettings
 	chatSettings: ChatSettings

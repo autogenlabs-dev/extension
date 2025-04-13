@@ -24,6 +24,7 @@ import McpResourceRow from "../mcp/McpResourceRow";
 import McpToolRow from "../mcp/McpToolRow";
 import { DEFAULT_MCP_TIMEOUT_SECONDS, McpServer } from "../../../../src/shared/mcp";
 import McpConfigView from "./McpConfigView";
+import FilesystemView from "./FilesystemView"; // Import the new component
 
 type SettingsViewProps = {
 	onDone: () => void;
@@ -243,6 +244,7 @@ const SettingsView = ({ onDone }: SettingsViewProps) => {
 				<VSCodePanelTab id="auto-approve">Auto-approve</VSCodePanelTab>
 				<VSCodePanelTab id="custom-instructions">Custom Instructions</VSCodePanelTab>
 				<VSCodePanelTab id="mcp-config">MCP Config</VSCodePanelTab>
+				<VSCodePanelTab id="filesystem">Filesystem</VSCodePanelTab> {/* Added Filesystem Tab */}
 				{/* <VSCodePanelTab id="telemetry">Telemetry</VSCodePanelTab> */}
 
 				<VSCodePanelView id="api">
@@ -273,6 +275,16 @@ const SettingsView = ({ onDone }: SettingsViewProps) => {
 								}}
 								style={{ width: "330px", height: "auto" }}
 							/>
+						</SettingsSection>
+					</PanelContent>
+				</VSCodePanelView>
+
+				<VSCodePanelView id="filesystem"> {/* Added Filesystem Panel View */}
+					<PanelContent>
+						<SettingsSection>
+							<SectionTitle>Native Filesystem Operations</SectionTitle>
+							{/* Replace placeholder with the actual component */}
+							<FilesystemView />
 						</SettingsSection>
 					</PanelContent>
 				</VSCodePanelView>

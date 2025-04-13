@@ -12,9 +12,10 @@ import { AutoGenProvider } from "./core/webview/AutogenProvider"
 import path from "path";
 import fs from "fs";
 import { ExtensionView } from "./extentionView/extensionView";
+import { BrowserSessionWithMCP, registerBrowserToolsMCP } from "./services/browser/BrowserSessionWithMCP";
 
   import { handleSelectedOptions } from "./viewHandlers/viewHandlers";
-  
+
 /*
 Built using https://github.com/microsoft/vscode-webview-ui-toolkit
 
@@ -171,11 +172,11 @@ class AutoGenExtension {
 							e.preventDefault();
 							const newLeft = e.clientX + offsetX;
 							const newTop = e.clientY + offsetY;
-							
+
 							// Keep panel within viewport bounds
 							const maxX = window.innerWidth - floating.offsetWidth;
 							const maxY = window.innerHeight - floating.offsetHeight;
-							
+
 							floating.style.left = Math.max(0, Math.min(newLeft, maxX)) + 'px';
 							floating.style.top = Math.max(0, Math.min(newTop, maxY)) + 'px';
 						}
@@ -191,7 +192,7 @@ class AutoGenExtension {
 						const rect = floating.getBoundingClientRect();
 						const maxX = window.innerWidth - floating.offsetWidth;
 						const maxY = window.innerHeight - floating.offsetHeight;
-						
+
 						if (rect.right > window.innerWidth) {
 							floating.style.left = Math.max(0, maxX) + 'px';
 						}
@@ -238,7 +239,7 @@ class AutoGenExtension {
 
 // This method is called when your extension is activated
 // Your extension is activated the very first time the command is executed
-export function activate(context: vscode.ExtensionContext) {
+export async function activate(context: vscode.ExtensionContext) {
 	outputChannel = vscode.window.createOutputChannel("AutoGen")
 	context.subscriptions.push(outputChannel)
 
@@ -249,9 +250,21 @@ export function activate(context: vscode.ExtensionContext) {
 	const extension = new AutoGenExtension(context, outputChannel);
 	extension.initialize();
 
+	// Register browser-tools MCP server and wait for it to potentially update settings
+	const settingsUpdated = await registerBrowserToolsMCP(context);
+
 	// Create a default provider for API access
 	const defaultProvider = new AutoGenProvider(context, outputChannel)
-	
+
+	// If the settings file was updated by the registration function, refresh McpHub
+	if (settingsUpdated) {
+		console.log("MCP settings potentially updated, triggering state refresh.");
+		// Add a small delay to ensure file system changes are settled before reading
+		await delay(500);
+		// Trigger a full state update in the provider, which will fetch the latest MCP servers
+		await defaultProvider.postStateToWebview();
+	}
+
 	// Register command to move to secondary sidebar
 	context.subscriptions.push(
 		vscode.commands.registerCommand("AutoGen.moveToSecondary", async () => {
@@ -315,10 +328,10 @@ export function activate(context: vscode.ExtensionContext) {
 		// Always open in right column (Three) for consistency
 		const viewColumn = vscode.ViewColumn.Three;
 		const title = "AutoGen Code Builder";
-		
+
 		// Use a constant panel key to ensure we only ever have one panel
 		const panelKey = `autogen-panel`;
-		
+
 		// Check if we already have a panel
 		if (panelMap.has(panelKey)) {
 			const existingPanel = panelMap.get(panelKey);
@@ -327,14 +340,14 @@ export function activate(context: vscode.ExtensionContext) {
 				return existingPanel.panel;
 			}
 		}
-		
+
 		Logger.log(`Opening AutoGen panel`)
 		const provider = new AutoGenProvider(context, outputChannel)
-		
+
 		// Create webview panel in column Three (right side)
 		const panel = vscode.window.createWebviewPanel(
-			AutoGenProvider.tabPanelId, 
-			title, 
+			AutoGenProvider.tabPanelId,
+			title,
 			viewColumn,
 			{
 				enableScripts: true,
@@ -342,15 +355,15 @@ export function activate(context: vscode.ExtensionContext) {
 				localResourceRoots: [context.extensionUri],
 			}
 		)
-		
+
 		panel.iconPath = {
 			light: vscode.Uri.joinPath(context.extensionUri, "assets", "icons", "robot_panel_light.png"),
 			dark: vscode.Uri.joinPath(context.extensionUri, "assets", "icons", "robot_panel_dark.png"),
 		}
-		
+
 		// Save reference to panel
 		panelMap.set(panelKey, { panel, provider });
-		
+
 		// Handle panel disposal
 		panel.onDidDispose(() => {
 			// Remove from our tracking map
@@ -358,10 +371,10 @@ export function activate(context: vscode.ExtensionContext) {
 			// Also dispose the provider
 			provider.dispose();
 		});
-		
+
 		// Resolve the webview
 		provider.resolveWebviewView(panel)
-		
+
 		return panel
 	}
 
@@ -369,7 +382,7 @@ export function activate(context: vscode.ExtensionContext) {
 	const openAutoGenInFloatingWindow = async () => {
 		// First create the panel in the current window
 		const panel = await openAutoGenPanel();
-		
+
 		// Then move it to a new window
 		if (panel) {
 			await vscode.commands.executeCommand('workbench.action.moveEditorToNewWindow');
@@ -389,17 +402,17 @@ export function activate(context: vscode.ExtensionContext) {
 		vscode.commands.registerCommand("AutoGen.openWithLogo", async () => {
 			await openAutoGenPanel();
 		}),
-		
+
 		// Command to open in a floating window
 		vscode.commands.registerCommand("autogen.openInFloatingWindow", async () => {
 			await openAutoGenInFloatingWindow();
 		}),
-		
+
 		// Register utility commands for panel functionality
 		vscode.commands.registerCommand("autogen.newTask", () => {
 			const activeProvider = getActiveProvider();
 			if (activeProvider) {
-				activeProvider.postMessageToWebview({ 
+				activeProvider.postMessageToWebview({
 					type: 'action',
 					action: 'chatButtonClicked'
 				});
@@ -408,7 +421,7 @@ export function activate(context: vscode.ExtensionContext) {
 		vscode.commands.registerCommand("autogen.settings", () => {
 			const activeProvider = getActiveProvider();
 			if (activeProvider) {
-				activeProvider.postMessageToWebview({ 
+				activeProvider.postMessageToWebview({
 					type: 'action',
 					action: 'settingsButtonClicked'
 				});
@@ -557,11 +570,11 @@ export function activate(context: vscode.ExtensionContext) {
 		}
 	}
 	context.subscriptions.push(vscode.window.registerUriHandler({ handleUri }))
-	
-	
-	//ui builder 
+
+
+	//ui builder
 	globalContext = context;
-  
+
 	let disposable = vscode.commands.registerCommand("extension.openChat", () => {
 	  globalPanel = vscode.window.createWebviewPanel(
 		"chatPanel",
@@ -574,23 +587,23 @@ export function activate(context: vscode.ExtensionContext) {
 		  ],
 		}
 	  );
-  
+
 	  globalPanel.onDidDispose(() => {
 		globalPanel = undefined;
 	  });
-  
+
 	  try {
 		new ExtensionView(context);
-  
+
 		// Updated message handler to support component search
 		globalPanel.webview.onDidReceiveMessage(async (message: any) => {
 		  if (!globalPanel) {
 			return;
 		  }
-  
+
 		  try {
 			console.log("Received message in extension:", message);
-  
+
 			switch (message.command) {
 			  case "createComponentFile":
 				if (
@@ -600,10 +613,10 @@ export function activate(context: vscode.ExtensionContext) {
 				) {
 				  throw new Error("Missing component information");
 				}
-  
+
 				// Ensure React+Tailwind setup exists
-			
-  
+
+
 				// Create the component
 				const componentDir = path.join(
 				  vscode.workspace.rootPath!,
@@ -611,38 +624,38 @@ export function activate(context: vscode.ExtensionContext) {
 				  "components",
 				  message.category.toLowerCase()
 				);
-  
+
 				fs.mkdirSync(componentDir, { recursive: true });
-  
+
 				const componentPath = path.join(
 				  componentDir,
 				  `${message.componentName}.jsx`
 				);
 				fs.writeFileSync(componentPath, message.componentCode);
-  
+
 				vscode.window.showInformationMessage(
 				  `Component created successfully at ${componentPath}`
 				);
-  
+
 				globalPanel.webview.postMessage({
 				  command: "componentCreated",
 				  success: true,
 				  path: componentPath,
 				});
 				break;
-  
-		
+
+
 			  case "processSelectedOptions":
 				await handleSelectedOptions(message.options);
 				break;
-  
+
 			  case "openChat":
 				vscode.commands.executeCommand("extension.openChatBar");
 				break;
-  
-			  
+
+
 			}
-  
+
 			globalPanel.webview.postMessage({
 			  status: "success",
 			  message: "Operation completed successfully!",
@@ -659,24 +672,24 @@ export function activate(context: vscode.ExtensionContext) {
 		console.error("Error loading webview:", error);
 	  }
 	});
-  
-  
+
+
 	context.subscriptions.push(
 	  disposable,
 
 	);
-  
+
 	let autoGenBuilderDisposable = vscode.commands.registerCommand(
 	  "extension.openAutoGenBuilder",
 	  () => {
 		const extensionView = new ExtensionView(context);
 	  }
 	);
-  
-	context.subscriptions.push(autoGenBuilderDisposable);
-  
 
-	
+	context.subscriptions.push(autoGenBuilderDisposable);
+
+
+
 	return createAutoGenAPI(outputChannel, defaultProvider)
 }
 

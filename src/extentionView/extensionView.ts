@@ -274,13 +274,75 @@ ${componentCode}`;
     }
 }
 
+// Function to generate documentation HTML
+function getDocumentationHtml(): string {
+    // Use string concatenation to avoid issues with template literals within template literals
+    let html = '<div style="padding: 20px; color: #e5e7eb;">';
+    html += '<h2 style="font-size: 1.5rem; margin-bottom: 16px; color: #60a5fa;">Documentation</h2>';
+    
+    html += '<div style="margin-bottom: 24px;">';
+    html += '<h3 style="font-size: 1.2rem; margin-bottom: 8px; color: #f9fafb;">Getting Started</h3>';
+    html += '<p style="line-height: 1.6; margin-bottom: 12px;">';
+    html += 'This extension helps you build components and applications quickly using pre-built templates and components.';
+    html += '</p>';
+    html += '<p style="line-height: 1.6; margin-bottom: 12px;">';
+    html += 'Use the sidebar icons to navigate between different features:';
+    html += '</p>';
+    html += '<ul style="list-style-type: disc; padding-left: 20px; margin-bottom: 16px;">';
+    html += '<li style="margin-bottom: 8px;">Framework - Select frameworks and components</li>';
+    html += '<li style="margin-bottom: 8px;">Layout - View and customize project structure</li>';
+    html += '<li style="margin-bottom: 8px;">Components - Browse GitHub repositories</li>';
+    html += '<li style="margin-bottom: 8px;">Documentation - You are here!</li>';
+    html += '<li style="margin-bottom: 8px;">Content - Manage content for your project</li>';
+    html += '</ul>';
+    html += '</div>';
+    
+    html += '<div style="margin-bottom: 24px;">';
+    html += '<h3 style="font-size: 1.2rem; margin-bottom: 8px; color: #f9fafb;">Using Components</h3>';
+    html += '<p style="line-height: 1.6; margin-bottom: 12px;">';
+    html += '1. Select a JavaScript and CSS framework in the Framework tab';
+    html += '</p>';
+    html += '<p style="line-height: 1.6; margin-bottom: 12px;">';
+    html += '2. Browse available components by category';
+    html += '</p>';
+    html += '<p style="line-height: 1.6; margin-bottom: 12px;">';
+    html += '3. Click on a component to select it';
+    html += '</p>';
+    html += '<p style="line-height: 1.6; margin-bottom: 12px;">';
+    html += '4. Click "Generate Code" to add the component to your project'; // Escaped quotes
+    html += '</p>';
+    html += '</div>';
+    
+    html += '<div style="margin-bottom: 24px;">';
+    html += '<h3 style="font-size: 1.2rem; margin-bottom: 8px; color: #f9fafb;">Additional Resources</h3>';
+    html += '<p style="line-height: 1.6; margin-bottom: 12px;">';
+    html += 'For more information, visit the following resources:';
+    html += '</p>';
+    html += '<ul style="list-style-type: disc; padding-left: 20px;">';
+    html += '<li style="margin-bottom: 8px;"><a href="#" style="color: #60a5fa; text-decoration: underline;">Extension Documentation</a></li>';
+    html += '<li style="margin-bottom: 8px;"><a href="#" style="color: #60a5fa; text-decoration: underline;">GitHub Repository</a></li>';
+    html += '<li style="margin-bottom: 8px;"><a href="#" style="color: #60a5fa; text-decoration: underline;">Report Issues</a></li>';
+    html += '</ul>';
+    html += '</div>';
+    html += '</div>';
+    return html;
+}
+
+
 function getScriptContent(): string {
+    // Get the documentation HTML as a string
+    const documentationHtmlString = getDocumentationHtml();
+
     return `
         const vscode = acquireVsCodeApi();
+        // Store the documentation HTML in a JS variable, escaping backticks
+        const documentationHtml = \`${documentationHtmlString.replace(/`/g, '\\`')}\`; 
 
         function renderFolderStructure(framework) {
             const previewGrid = document.getElementById('previewGrid');
             if (!previewGrid) return;
+            // Only show in layout tab
+            if (state.activePanel !== 'layout') return;
             previewGrid.innerHTML = '';
 
             // Example folder structure for React and Next.js
@@ -341,9 +403,9 @@ function getScriptContent(): string {
                 return html;
             }
 
+            // No heading for layout tab
             previewGrid.innerHTML =
                 '<div style="padding:16px;">' +
-                '<h4 style="margin-bottom:8px;">Project Structure (' + (framework || 'React') + ')</h4>' +
                 renderTree(structure) +
                 '</div>';
         }
@@ -452,7 +514,7 @@ function getScriptContent(): string {
                     state.framework.selectedJS = value;
                     const cssContainer = document.getElementById('cssFrameworkContainer');
                     if (cssContainer) {
-                        cssContainer.classList.remove('hidden');
+                        cssContainer.style.display = ''; // Show CSS container
                         updateSelection('jsFrameworkButtons', value);
                     }
                     // Immediately show the structure for the selected JS framework
@@ -468,6 +530,10 @@ function getScriptContent(): string {
                 if (type === 'js') {
                     state.layout.selectedJS = value;
                     updateSelection('jsFrameworkButtons', value);
+                    const cssContainer = document.getElementById('cssFrameworkContainer');
+                     if (cssContainer) {
+                        cssContainer.style.display = ''; // Show CSS container
+                    }
                     // Always show folder structure in layout panel
                     renderFolderStructure(value);
                 } else if (type === 'css') {
@@ -486,6 +552,37 @@ function getScriptContent(): string {
         document.addEventListener('DOMContentLoaded', () => {
             console.log('DOM loaded, initializing UI...');
             initializeUI();
+
+            // On load, show/hide elements based on the initial active panel
+            const isFrameworkPanel = state.activePanel === 'framework';
+            const isLayoutPanel = state.activePanel === 'layout';
+            
+            const previewHeader = document.querySelector('.preview-header');
+            if (previewHeader) {
+                previewHeader.style.display = isFrameworkPanel ? '' : 'none';
+            }
+            const filterNav = document.querySelector('.filter-nav');
+            if (filterNav) {
+                filterNav.style.display = isFrameworkPanel ? '' : 'none';
+            }
+            const debugButton = document.getElementById('debugButton');
+            if (debugButton) {
+                debugButton.style.display = isFrameworkPanel ? '' : 'none';
+            }
+            const chatButton = document.getElementById('openChatButton');
+            if (chatButton) {
+                chatButton.style.display = isFrameworkPanel ? '' : 'none';
+            }
+            const jsContainer = document.getElementById('jsFrameworkContainer');
+             if (jsContainer) {
+                jsContainer.style.display = (isFrameworkPanel || isLayoutPanel) ? '' : 'none';
+            }
+            const cssContainer = document.getElementById('cssFrameworkContainer');
+            if (cssContainer) {
+                 // Show CSS only if a JS framework is selected in the respective active panel
+                 const showCss = (isFrameworkPanel && state.framework.selectedJS) || (isLayoutPanel && state.layout.selectedJS);
+                 cssContainer.style.display = showCss ? '' : 'none';
+            }
         });
 
         async function fetchAvailableCategories() {
@@ -712,7 +809,6 @@ function getScriptContent(): string {
             document.getElementById('previewGrid').innerHTML = '';
         }
 
-
         function handleSidebarClick(panel) {
             console.log('Sidebar clicked:', panel);
 
@@ -724,6 +820,38 @@ function getScriptContent(): string {
 
             // Update active panel in state
             state.activePanel = panel;
+
+            // Toggle visibility based on the active panel
+            const isFrameworkPanel = panel === 'framework';
+            const isLayoutPanel = panel === 'layout';
+
+            const previewHeader = document.querySelector('.preview-header');
+            if (previewHeader) {
+                previewHeader.style.display = isFrameworkPanel ? '' : 'none';
+            }
+            const filterNav = document.querySelector('.filter-nav');
+            if (filterNav) {
+                filterNav.style.display = isFrameworkPanel ? '' : 'none';
+            }
+            const debugButton = document.getElementById('debugButton');
+            if (debugButton) {
+                debugButton.style.display = isFrameworkPanel ? '' : 'none';
+            }
+            const chatButton = document.getElementById('openChatButton');
+            if (chatButton) {
+                chatButton.style.display = isFrameworkPanel ? '' : 'none';
+            }
+             const jsContainer = document.getElementById('jsFrameworkContainer');
+             if (jsContainer) {
+                jsContainer.style.display = (isFrameworkPanel || isLayoutPanel) ? '' : 'none';
+            }
+            const cssContainer = document.getElementById('cssFrameworkContainer');
+            if (cssContainer) {
+                 // Show CSS only if a JS framework is selected in the respective active panel
+                 const showCss = (isFrameworkPanel && state.framework.selectedJS) || (isLayoutPanel && state.layout.selectedJS);
+                 cssContainer.style.display = showCss ? '' : 'none';
+            }
+
 
             // Clear preview area for all panels
             const previewGrid = document.getElementById('previewGrid');
@@ -743,44 +871,55 @@ function getScriptContent(): string {
                 return;
             }
 
-            // Hide all containers
-            const containers = {
-                framework: document.getElementById('jsFrameworkContainer'),
-                css: document.getElementById('cssFrameworkContainer'),
-                websiteType: document.getElementById('websiteTypeContainer')
-            };
-
-            Object.values(containers).forEach(container => {
-                if (container) container.classList.add('hidden');
-            });
-
-            // Handle each panel independently
+            // Handle each panel's content rendering
             if (panel === 'framework') {
                 // Framework panel (icon 1)
-                containers.framework.classList.remove('hidden');
-                if (state.framework.selectedJS) {
-                    containers.css.classList.remove('hidden');
-                    if (state.framework.selectedCSS) {
-                        showFrameworkCards(state.framework.selectedCSS);
-                    } else {
-                        // Show JS framework structure if no CSS framework selected
-                        renderFolderStructure(state.framework.selectedJS);
-                    }
+                // Containers are already handled by visibility toggle above
+                if (state.framework.selectedJS && state.framework.selectedCSS) {
+                    showFrameworkCards(state.framework.selectedCSS);
+                } else if (state.framework.selectedJS) {
+                     // Show JS framework structure if no CSS framework selected yet
+                     renderFolderStructure(state.framework.selectedJS);
+                } else {
+                     previewGrid.innerHTML = '<p>Please select a JavaScript framework.</p>'; // Initial state
                 }
             } else if (panel === 'layout') {
-                // Layout panel (icon 2) - always show folder structure
-                containers.framework.classList.remove('hidden');
-                containers.css.classList.remove('hidden');
+                // Layout panel (icon 2)
+                // Containers are already handled by visibility toggle above
                 renderFolderStructure(state.layout.selectedJS || 'React');
             } else if (panel === 'components') {
-                // Components panel (icon 3) - could be implemented separately
-                previewGrid.innerHTML = '<p>Components panel selected. Select a component category.</p>';
+                // Components panel (icon 3) - show GitHub repos with images
+                // Inlined logic:
+                const repos = [
+                    { name: "VSCode Extension Example", description: "A sample VSCode extension repository.", url: "https://github.com/microsoft/vscode-extension-samples", image: "https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png" },
+                    { name: "React", description: "A declarative, efficient, and flexible JavaScript library for building user interfaces.", url: "https://github.com/facebook/react", image: "https://raw.githubusercontent.com/facebook/react/main/fixtures/dom/public/react-logo.svg" },
+                    { name: "TypeScript", description: "TypeScript is a superset of JavaScript that compiles to clean JavaScript output.", url: "https://github.com/microsoft/TypeScript", image: "https://raw.githubusercontent.com/remojansen/logo.ts/master/ts.png" }
+                ];
+                const grid = document.createElement('div');
+                grid.style.display = 'flex';
+                grid.style.flexWrap = 'wrap';
+                grid.style.gap = '16px';
+                repos.forEach(repo => {
+                    const card = document.createElement('div');
+                    card.style.width = '260px'; card.style.background = '#1f2937'; card.style.border = '1px solid #374151'; card.style.borderRadius = '10px'; card.style.overflow = 'hidden'; card.style.boxShadow = '0 2px 8px rgba(0,0,0,0.08)'; card.style.display = 'flex'; card.style.flexDirection = 'column'; card.style.cursor = 'pointer';
+                    card.onclick = () => window.open(repo.url, '_blank');
+                    const img = document.createElement('img');
+                    img.src = repo.image; img.alt = repo.name; img.style.width = '100%'; img.style.height = '120px'; img.style.objectFit = 'contain'; img.style.background = '#fff'; img.style.padding = '12px';
+                    const info = document.createElement('div'); info.style.padding = '16px';
+                    const title = document.createElement('h4'); title.textContent = repo.name; title.style.color = '#e5e7eb'; title.style.marginBottom = '8px'; title.style.fontSize = '1.1rem';
+                    const desc = document.createElement('p'); desc.textContent = repo.description; desc.style.color = '#9ca3af'; desc.style.fontSize = '0.95rem';
+                    info.appendChild(title); info.appendChild(desc);
+                    card.appendChild(img); card.appendChild(info);
+                    grid.appendChild(card);
+                });
+                if (previewGrid) previewGrid.appendChild(grid);
+
             } else if (panel === 'design') {
-                // Design panel (icon 4) - could be implemented separately
-                previewGrid.innerHTML = '<p>Design panel selected. Choose a design template.</p>';
+                // Design panel (icon 4) - show documentation in a card
+                previewGrid.innerHTML = '<div class="w-full border rounded-lg overflow-hidden bg-gray-800 border-gray-700" style="margin: 1rem auto; max-width: 90%;">' + documentationHtml + '</div>';
             } else if (panel === 'content') {
-                // Content panel (icon 5) - could be implemented separately
-                previewGrid.innerHTML = '<p>Content panel selected. Add content to your project.</p>';
+                // Content panel (icon 5) - show documentation in a card
+                 previewGrid.innerHTML = '<div class="w-full border rounded-lg overflow-hidden bg-gray-800 border-gray-700" style="margin: 1rem auto; max-width: 90%;">' + documentationHtml + '</div>';
             }
         }
 
@@ -828,44 +967,34 @@ function getScriptContent(): string {
                 command: 'createComponentFile',
                 filePath: state.filePath,
                 componentCode: state.selectedComponentCode,
-                title: state.selectedComponentTitle || "unknown",
-                dependencies: state.selectedDependencies || [],
-                language: state.selectedLanguage || "JavaScript",
-                framework: state.selectedFramework || "React",
-                cssFramework: state.selectedCssFramework || "unknown",
-                category: state.selectedCategory || "unknown",
-                type: state.selectedType || "unknown",
-                difficulty: state.selectedDifficulty || "unknown",
-                hasAnimation: state.selectedHasAnimation || false,
+                title: state.selectedComponentTitle || "unknown", // Assuming these exist in state now
+                dependencies: state.selectedDependencies || [], // Assuming these exist in state now
+                language: state.selectedLanguage || "JavaScript", // Assuming these exist in state now
+                framework: state.selectedFramework || "React", // Assuming these exist in state now
+                cssFramework: state.selectedCssFramework || "unknown", // Assuming these exist in state now
+                category: state.selectedCategory || "unknown", // Assuming these exist in state now
+                type: state.selectedType || "unknown", // Assuming these exist in state now
+                difficulty: state.selectedDifficulty || "unknown", // Assuming these exist in state now
+                hasAnimation: state.selectedHasAnimation || false, // Assuming these exist in state now
                 // Additional metadata from API response if available
-                apiData: state.selectedComponentData || {}
+                apiData: state.selectedComponentData || {} // Assuming these exist in state now
             });
 
-            const componentData = {
-                title: message.title || "unknown",
-                filePath: message.filePath || "unknown",
-                dependencies: message.dependencies || [],
-                language: message.language || "JavaScript",
-                framework: message.framework || "React",
-                cssFramework: message.cssFramework || "unknown",
-                category: message.category || "unknown",
-                type: message.type || "unknown",
-                difficulty: message.difficulty || "unknown",
-                hasAnimation: message.hasAnimation || false
-            };
-
-            const prompt = "Analyze the newly generated component with the following details:\\n" +
-                "- Title: " + componentData.title + "\\n" +
-                "- File path: " + componentData.filePath + "\\n" +
-                "- Dependencies: " + JSON.stringify(componentData.dependencies) + "\\n" +
-                "- Language: " + componentData.language + "\\n" +
-                "- Framework: " + componentData.framework + "\\n" +
-                "- CSS Framework: " + componentData.cssFramework + "\\n" +
-                "- Category: " + componentData.category + "\\n" +
-                "- Type: " + componentData.type + "\\n" +
-                "- Difficulty: " + componentData.difficulty + "\\n" +
-                "- Has animation: " + componentData.hasAnimation + "\\n" +
+            // Construct prompt using state data instead
+             const prompt = "Analyze the newly generated component with the following details:\\n" +
+                "- Title: " + (state.selectedComponents.length > 0 ? state.selectedComponents[0] : 'unknown') + "\\n" + // Assuming title is stored in selectedComponents
+                "- File path: " + state.filePath + "\\n" +
+                // Add other relevant state properties if available, otherwise use defaults
+                "- Dependencies: []\\n" + 
+                "- Language: JavaScript\\n" + 
+                "- Framework: " + state.framework.selectedJS + "\\n" +
+                "- CSS Framework: " + state.framework.selectedCSS + "\\n" +
+                "- Category: " + state.framework.selectedCategory + "\\n" +
+                "- Type: unknown\\n" + 
+                "- Difficulty: unknown\\n" + 
+                "- Has animation: false\\n" + 
                 "Please check the file, install any dependencies if needed, fix imports and navigation, run the project, and make any necessary adjustments based on this component data.";
+
 
             vscode.postMessage({
                 command: 'initializePrompt',

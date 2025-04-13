@@ -57,6 +57,7 @@ import { parseMentions } from "./mentions"
 import { formatResponse } from "./prompts/responses"
 import { addUserInstructions, SYSTEM_PROMPT } from "./prompts/system"
 import { ContextManager } from "./context-management/ContextManager"
+import { nativeFsService } from "../services/nativeFs/NativeFsService" // Import the new service
 import { OpenAiHandler } from "../api/providers/openai"
 import { ApiStream } from "../api/transform/stream"
 import { DEFAULT_LANGUAGE_SETTINGS, getLanguageKey, LanguageDisplay, LanguageKey } from "../shared/Languages"
@@ -1734,9 +1735,58 @@ export class AutoGen {
 				}
 
 				if (block.name !== "browser_action") {
-					await this.browserSession.closeBrowser()
+						await this.browserSession.closeBrowser()
 				}
 
+				// --- Intercept basic filesystem tools to use NativeFsService ---
+				let intercepted = false;
+				if (block.name === "read_file" && !block.partial) {
+					const relPath: string | undefined = block.params.path;
+					if (relPath) {
+						const accessAllowed = this.autogenIgnoreController.validateAccess(relPath);
+						if (!accessAllowed) {
+							await this.say("autogenignore_error", relPath);
+							pushToolResult(formatResponse.toolError(formatResponse.autogenIgnoreError(relPath)));
+						} else {
+							try {
+								console.log(`[AutoGen] Intercepting read_file for ${relPath}, using NativeFsService`);
+								const content = await nativeFsService.readFile(relPath);
+								pushToolResult(content);
+								telemetryService.captureToolUsage(this.taskId, block.name, true, true); // Log as auto-approved internal use
+							} catch (error) {
+								await handleError("reading file via NativeFsService", error);
+							}
+						}
+						intercepted = true;
+					}
+				} else if (block.name === "list_files" && !block.partial) {
+					const relDirPath: string | undefined = block.params.path;
+					const recursiveRaw: string | undefined = block.params.recursive;
+					const recursive = recursiveRaw?.toLowerCase() === "true";
+
+					// Only intercept non-recursive calls for now, as NativeFsService doesn't handle recursive
+					if (relDirPath && !recursive) {
+						try {
+							console.log(`[AutoGen] Intercepting non-recursive list_files for ${relDirPath}, using NativeFsService`);
+							const absoluteDirPath = path.resolve(cwd, relDirPath); // Need absolute path for formatting
+							const entries = await nativeFsService.listDirectory(relDirPath);
+							const result = formatResponse.formatNativeFsDirectoryEntries(cwd, absoluteDirPath, entries, this.autogenIgnoreController);
+							pushToolResult(result);
+							telemetryService.captureToolUsage(this.taskId, block.name, true, true); // Log as auto-approved internal use
+						} catch (error) {
+							await handleError("listing directory via NativeFsService", error);
+						}
+						intercepted = true;
+					}
+				}
+				// --- End Intercept ---
+
+				// If intercepted, skip the normal tool handling switch statement
+				if (intercepted) {
+					break;
+				}
+
+				// --- Original Tool Handling Switch ---
 				switch (block.name) {
 					case "write_to_file":
 					case "replace_in_file": {
@@ -2006,78 +2056,11 @@ export class AutoGen {
 							break
 						}
 					}
-					case "read_file": {
-						const relPath: string | undefined = block.params.path
-						const sharedMessageProps: AutoGenSayTool = {
-							tool: "readFile",
-							path: getReadablePath(cwd, removeClosingTag("path", relPath)),
-						}
-						try {
-							if (block.partial) {
-								const partialMessage = JSON.stringify({
-									...sharedMessageProps,
-									content: undefined,
-								} satisfies AutoGenSayTool)
-								if (this.shouldAutoApproveTool(block.name)) {
-									this.removeLastPartialMessageIfExistsWithType("ask", "tool")
-									await this.say("tool", partialMessage, undefined, block.partial)
-								} else {
-									this.removeLastPartialMessageIfExistsWithType("say", "tool")
-									await this.ask("tool", partialMessage, block.partial).catch(() => {})
-								}
-								break
-							} else {
-								if (!relPath) {
-									this.consecutiveMistakeCount++
-									pushToolResult(await this.sayAndCreateMissingParamError("read_file", "path"))
+					// read_file is now handled above by the interceptor
 
-									break
-								}
-
-								const accessAllowed = this.autogenIgnoreController.validateAccess(relPath)
-								if (!accessAllowed) {
-									await this.say("autogenignore_error", relPath)
-									pushToolResult(formatResponse.toolError(formatResponse.autogenIgnoreError(relPath)))
-
-									break
-								}
-
-								this.consecutiveMistakeCount = 0
-								const absolutePath = path.resolve(cwd, relPath)
-								const completeMessage = JSON.stringify({
-									...sharedMessageProps,
-									content: absolutePath,
-								} satisfies AutoGenSayTool)
-								if (this.shouldAutoApproveTool(block.name)) {
-									this.removeLastPartialMessageIfExistsWithType("ask", "tool")
-									await this.say("tool", completeMessage, undefined, false) // need to be sending partialValue bool, since undefined has its own purpose in that the message is treated neither as a partial or completion of a partial, but as a single complete message
-									this.consecutiveAutoApprovedRequestsCount++
-									telemetryService.captureToolUsage(this.taskId, block.name, true, true)
-								} else {
-									showNotificationForApprovalIfAutoApprovalEnabled(
-										`AutoGen wants to read ${path.basename(absolutePath)}`,
-									)
-									this.removeLastPartialMessageIfExistsWithType("say", "tool")
-									const didApprove = await askApproval("tool", completeMessage)
-									if (!didApprove) {
-										telemetryService.captureToolUsage(this.taskId, block.name, false, false)
-										break
-									}
-									telemetryService.captureToolUsage(this.taskId, block.name, false, true)
-								}
-								// now execute the tool like normal
-								const content = await extractTextFromFile(absolutePath)
-								pushToolResult(content)
-
-								break
-							}
-						} catch (error) {
-							await handleError("reading file", error)
-
-							break
-						}
-					}
 					case "list_files": {
+						// Note: Non-recursive calls are handled by the interceptor above.
+						// This case will now only handle recursive calls or if the interceptor fails.
 						const relDirPath: string | undefined = block.params.path
 						const recursiveRaw: string | undefined = block.params.recursive
 						const recursive = recursiveRaw?.toLowerCase() === "true"
