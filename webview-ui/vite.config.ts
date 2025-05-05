@@ -4,6 +4,8 @@ import { defineConfig } from "vite"
 import tailwindcss from "@tailwindcss/vite"
 import react from "@vitejs/plugin-react-swc"
 
+import { resolve } from "path"
+
 export default defineConfig({
 	plugins: [react(), tailwindcss()],
 	test: {
@@ -14,8 +16,12 @@ export default defineConfig({
 	build: {
 		outDir: "build",
 		rollupOptions: {
+			input: {
+				main: resolve(__dirname, "index.html"),
+				builder: resolve(__dirname, "src/builder/index.html"),
+			},
 			output: {
-				inlineDynamicImports: true,
+				// inlineDynamicImports: true, // removed for multi-entry support
 				entryFileNames: `assets/[name].js`,
 				chunkFileNames: `assets/[name].js`,
 				assetFileNames: `assets/[name].[ext]`,

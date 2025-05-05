@@ -7,18 +7,26 @@ export function getMainContentHtml(): string {
                 <h3>JavaScript Frameworks</h3>
                 <div id="jsFrameworkButtons" class="button-container"></div>
             </div>
-            <div id="cssFrameworkContainer" class="framework-section">
+            <div id="cssFrameworkContainer" class="framework-section hidden">
                 <h3>CSS Frameworks</h3>
                 <div id="cssFrameworkButtons" class="button-container"></div>
             </div>
+            <div id="layoutPanel" class="framework-section hidden">
+                <h3>Layout Options</h3>
+                <div id="layoutOptions"></div>
+            </div>
             <div id="websiteTypeContainer" class="framework-section hidden">
-                <h3>Website Types</h3>
+                <h3></h3>
                 <div id="websiteTypeButtons"></div>
             </div>
             <div id="elementsPanel" class="elements-panel hidden">
                 <h3 class="elements-title">Elements</h3>
                 <div class="elements-list"></div>
             </div>
+
+               <button id="debugButton" class="debug-button">
+            Generate Code
+        </button>
         </div>
 
         <div class="preview-area">
@@ -35,9 +43,7 @@ export function getMainContentHtml(): string {
             </div>
         </div>
 
-        <button id="debugButton" class="debug-button">
-            Generate Code
-        </button>
+     
 
         <button id="openChatButton" class="chat-button-hidden">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">

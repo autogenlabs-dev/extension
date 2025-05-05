@@ -12,6 +12,7 @@ import { AutoGenProvider } from "./core/webview/AutogenProvider"
 import path from "path";
 import fs from "fs";
 import { ExtensionView } from "./extentionView/extensionView";
+import { BuilderUI } from './core/webview/BuilderUI';
 
   import { handleSelectedOptions } from "./viewHandlers/viewHandlers";
   
@@ -675,6 +676,11 @@ export function activate(context: vscode.ExtensionContext) {
   
 	context.subscriptions.push(autoGenBuilderDisposable);
   
+	context.subscriptions.push(
+        vscode.commands.registerCommand('extension.openBuilderUI', () => {
+            BuilderUI.show(context.extensionUri);
+        })
+    );
 
 	
 	return createAutoGenAPI(outputChannel, defaultProvider)

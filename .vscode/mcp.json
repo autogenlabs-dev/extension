@@ -1,0 +1,86 @@
+{
+    "name": "GitHub Copilot Agent",
+    "description": "AI coding assistant with autocomplete, filesystem, and browser tools",
+    "version": "1.0.0",
+    "schemaVersion": "2.0",
+    "model": {
+      "provider": "openai",
+      "name": "gpt-4",
+      "temperature": 0.2,
+      "max_tokens": 2048
+    },
+    "features": {
+      "autocomplete": true,
+      "inline_suggestions": true,
+      "chat_panel": true,
+      "context_learning": true,
+      "streaming": true
+    },
+    "tools": [
+      {
+        "name": "filesystem",
+        "description": "Read and write project files",
+        "type": "filesystem",
+        "permissions": ["read", "write"],
+        "commands": ["readFile", "writeFile", "listDirectory", "deleteFile"],
+        "options": {
+          "watch_changes": true,
+          "max_file_size": 10485760
+        }
+      },
+      {
+        "name": "browser",
+        "description": "Fetch and search the web",
+        "type": "browser",
+        "permissions": ["fetch"],
+        "commands": ["fetchURL", "getDOM", "search"],
+        "options": {
+          "allow_external_requests": true,
+          "default_headers": {
+            "User-Agent": "CopilotAgent/1.0"
+          },
+          "timeout": 30000,
+          "max_redirects": 5
+        }
+      }
+    ],
+    "context": {
+      "max_file_tokens": 3000,
+      "include_file_types": [".js", ".ts", ".tsx", ".jsx", ".py", ".java", ".cpp", ".html", ".css", ".json"],
+      "exclude_dirs": ["node_modules", "dist", "build", ".git", ".cache"],
+      "max_project_files": 100,
+      "watch_changes": true
+    },
+    "commands": [
+      {
+        "name": "explain-code",
+        "trigger": "explain",
+        "description": "Explains selected code",
+        "shortcuts": ["ctrl+shift+e", "cmd+shift+e"]
+      },
+      {
+        "name": "generate-tests",
+        "trigger": "test",
+        "description": "Generates unit tests",
+        "shortcuts": ["ctrl+shift+t", "cmd+shift+t"]
+      },
+      {
+        "name": "refactor-code",
+        "trigger": "refactor",
+        "description": "Refactors selected code",
+        "shortcuts": ["ctrl+shift+r", "cmd+shift+r"]
+      }
+    ],
+    "security": {
+      "allow_internet_access": true,
+      "telemetry": false,
+      "cors": {
+        "allowed_origins": ["https://*.github.com"],
+        "allow_credentials": false
+      },
+      "rate_limiting": {
+        "max_requests_per_minute": 60,
+        "max_tokens_per_minute": 100000
+      }
+    }
+}

@@ -113,6 +113,15 @@
 				"title": "Preview Component",
 				"icon": "$(preview)",
 				"category": "Component Preview"
+			  },
+			  {
+				"command": "extension.openBuilderUI",
+				"title": "Open Builder UI",
+				"category": "Builder",
+				"icon": {
+				  "light": "assets/icons/tab-light.svg",
+				  "dark": "assets/icons/tab-dark.svg"
+				}
 			  }
 		],
 		"keybindings": [

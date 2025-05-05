@@ -18,6 +18,7 @@ const AppContent = () => {
 	const [showMcp, setShowMcp] = useState(false)
 	const [showAccount, setShowAccount] = useState(false)
 	const [showAnnouncement, setShowAnnouncement] = useState(false)
+	const [showBuilder, setShowBuilder] = useState(false)
 
 	const handleMessage = useCallback((e: MessageEvent) => {
 		const message: ExtensionMessage = e.data
@@ -42,18 +43,27 @@ const AppContent = () => {
 						setShowMcp(true)
 						setShowAccount(false)
 						break
-					case "accountButtonClicked":
+						case "accountButtonClicked":
 						setShowSettings(false)
 						setShowHistory(false)
 						setShowMcp(false)
 						setShowAccount(true)
+						setShowBuilder(false)
 						break
 					case "chatButtonClicked":
 						setShowSettings(false)
 						setShowHistory(false)
 						setShowMcp(false)
 						setShowAccount(false)
+						setShowBuilder(false)
 						break
+					// case "builderButtonClicked":
+					// 	setShowSettings(false)
+					// 	setShowHistory(false)
+					// 	setShowMcp(false)
+					// 	setShowAccount(false)
+					// 	setShowBuilder(true)
+					// 	break
 				}
 				break
 		}
@@ -91,6 +101,7 @@ const AppContent = () => {
 					{showHistory && <HistoryView onDone={() => setShowHistory(false)} />}
 					{showMcp && <McpView onDone={() => setShowMcp(false)} />}
 					{showAccount && <AccountView onDone={() => setShowAccount(false)} />}
+					{/* {showBuilder && <BuilderApp />} */}
 					{/* Do not conditionally load ChatView, it's expensive and there's state we don't want to lose (user input, disableInput, askResponse promise, etc.) */}
 					<ChatView
 						showHistoryView={() => {

@@ -278,73 +278,279 @@ function getScriptContent(): string {
     return `
         const vscode = acquireVsCodeApi();
 
-        function renderFolderStructure(framework) {
+        // Helper function to find a directory and add a node to it
+        function addNodeToStructure(structure, targetPathParts, nodeToAdd) {
+            let currentLevel = structure;
+            let found = true;
+            for (let i = 0; i < targetPathParts.length; i++) {
+                const part = targetPathParts[i];
+                const nextLevel = currentLevel.find(item => item.name === part + '/' && item.children);
+                if (nextLevel) {
+                    currentLevel = nextLevel.children;
+                } else {
+                    // If path doesn't exist fully, add to the deepest found level or root
+                    console.warn('[addNodeToStructure] Path part not found:', part, 'in', targetPathParts.join('/'));
+                    if (i > 0) { // Add to the last successfully found directory
+                        const parentDir = currentLevel.find(item => item.name === targetPathParts[i-1] + '/');
+                        if(parentDir) parentDir.children.push(nodeToAdd);
+                        else currentLevel.push(nodeToAdd); // Fallback add to current level
+                    } else { // Add to root if first part fails
+                        currentLevel.push(nodeToAdd);
+                    }
+                    found = false;
+                    break;
+                }
+            }
+            if (found) {
+                currentLevel.push(nodeToAdd);
+            }
+        }
+
+        function renderFolderStructure(option) {
             const previewGrid = document.getElementById('previewGrid');
             if (!previewGrid) return;
             previewGrid.innerHTML = '';
 
-            // Example folder structure for React and Next.js
+            let baseFramework = 'React';
+            if (typeof option === 'string') {
+                option = option.trim(); // Trim whitespace
+                if (option.startsWith('Vue') || option.startsWith('Nuxt')) baseFramework = 'Vue';
+                else if (option.startsWith('Angular')) baseFramework = 'Angular';
+                else if (option.startsWith('Svelte') || option.startsWith('SvelteKit')) baseFramework = 'Svelte';
+                else if (option.startsWith('Next')) baseFramework = 'Next.js';
+                else if (option.startsWith('Solid')) baseFramework = 'SolidJS';
+                else if (option.startsWith('Qwik')) baseFramework = 'Qwik';
+                else if (option.startsWith('Astro')) baseFramework = 'Astro';
+                else if (option.startsWith('React Native') || option.startsWith('Expo')) baseFramework = 'ReactNative';
+            }
+            
+            console.log('[renderFolderStructure] Rendering for option:', option, ' Base Framework:', baseFramework);
+
             let structure = [];
-            if (framework === 'Next.js') {
-                structure = [
-                    { name: 'my-next-app/', children: [
-                        { name: 'pages/', children: [
-                            { name: 'index.tsx' },
-                            { name: 'about.tsx' }
+            let appName = 'my-app';
+
+            // Define Base Structures
+            switch(baseFramework) {
+                case 'Next.js':
+                    appName = 'my-next-app';
+                    structure = [
+                        { name: 'app/', children: [
+                             { name: 'page.tsx' }, { name: 'layout.tsx' }, { name: 'globals.css' }
                         ]},
                         { name: 'components/', children: [
-                            { name: 'Header.tsx' },
-                            { name: 'Footer.tsx' }
+                             { name: 'Header.tsx' }, { name: 'Footer.tsx' }
                         ]},
-                        { name: 'public/', children: [
-                            { name: 'favicon.ico' }
-                        ]},
-                        { name: 'styles/', children: [
-                            { name: 'globals.css' }
-                        ]},
-                        { name: 'package.json' },
-                        { name: 'tsconfig.json' }
-                    ]}
-                ];
-            } else {
-                // Default to React
-                structure = [
-                    { name: 'my-react-app/', children: [
-                        { name: 'src/', children: [
-                            { name: 'components/', children: [
-                                { name: 'Header.tsx' },
-                                { name: 'Footer.tsx' }
+                        { name: 'public/', children: [{ name: 'favicon.ico' }]},
+                        { name: 'package.json' }, { name: 'tsconfig.json' }, { name: 'next.config.js' }
+                    ];
+                    break;
+                 case 'Vue':
+                     appName = option && option.startsWith('Nuxt') ? 'my-nuxt-app' : 'my-vue-app';
+                     if (option && option.startsWith('Nuxt')) {
+                         structure = [
+                             { name: 'components/', children: [{ name: 'AppHeader.vue' }]},
+                             { name: 'layouts/', children: [{ name: 'default.vue' }]},
+                             { name: 'pages/', children: [{ name: 'index.vue' }]},
+                             { name: 'server/', children: [{ name: 'api/', children: [] }]},
+                             { name: 'public/', children: [{ name: 'favicon.ico' }]},
+                             { name: 'assets/', children: [{ name: 'main.css' }]},
+                             { name: 'nuxt.config.ts' }, { name: 'package.json' }, { name: 'tsconfig.json' }
+                         ];
+                     } else {
+                         structure = [
+                            { name: 'src/', children: [
+                                { name: 'components/', children: [{ name: 'HelloWorld.vue' }]},
+                                { name: 'assets/', children: [{ name: 'logo.png' }]},
+                                { name: 'App.vue' }, { name: 'main.ts' }
                             ]},
-                            { name: 'App.tsx' },
-                            { name: 'index.tsx' }
+                            { name: 'public/', children: [{ name: 'index.html' }]},
+                            { name: 'package.json' }, { name: 'vite.config.ts' }, { name: 'tsconfig.json' }
+                        ];
+                     }
+                     break;
+                 case 'Angular':
+                     appName = 'my-angular-app';
+                     structure = [
+                        { name: 'src/', children: [
+                            { name: 'app/', children: [
+                                 { name: 'app.component.css' }, { name: 'app.component.html' }, { name: 'app.component.spec.ts' },
+                                 { name: 'app.component.ts' }, { name: 'app.module.ts' },
+                             ]},
+                             { name: 'assets/', children: []},
+                             { name: 'environments/', children: [{ name: 'environment.prod.ts' }, { name: 'environment.ts' }]},
+                             { name: 'favicon.ico' }, { name: 'index.html' }, { name: 'main.ts' }, { name: 'polyfills.ts' }, { name: 'styles.css' }
                         ]},
-                        { name: 'public/', children: [
-                            { name: 'index.html' }
+                        { name: 'package.json' }, { name: 'angular.json' }, { name: 'tsconfig.json' }
+                    ];
+                     break;
+                 case 'Svelte':
+                     appName = 'my-svelte-app'; // SvelteKit is the default now
+                     structure = [
+                        { name: 'src/', children: [
+                            { name: 'lib/', children: [{ name: 'Counter.svelte' }]},
+                            { name: 'routes/', children: [{ name: '+page.svelte' }, { name: '+layout.svelte' }]},
+                            { name: 'app.html' }
                         ]},
-                        { name: 'package.json' },
-                        { name: 'tsconfig.json' }
-                    ]}
-                ];
+                        { name: 'static/', children: [{ name: 'favicon.png' }]},
+                        { name: 'package.json' }, { name: 'svelte.config.js' }, { name: 'vite.config.ts' }, { name: 'tsconfig.json' }
+                    ];
+                     break;
+                 case 'Astro':
+                     appName = 'my-astro-app';
+                     structure = [
+                         { name: 'src/', children: [
+                             { name: 'components/', children: [{ name: 'Card.astro'}] },
+                             { name: 'layouts/', children: [{ name: 'Layout.astro' }] },
+                             { name: 'pages/', children: [{ name: 'index.astro' }] },
+                             { name: 'styles/', children: [{ name: 'global.css' }] },
+                         ]},
+                         { name: 'public/', children: [{ name: 'favicon.svg' }]},
+                         { name: 'astro.config.mjs' }, { name: 'package.json' }, { name: 'tsconfig.json' }
+                     ];
+                     break;
+                 case 'ReactNative':
+                     appName = option && option.startsWith('Expo') ? 'my-expo-app' : 'my-rn-app';
+                     structure = [
+                         { name: 'components/', children: [{ name: 'Button.tsx' }] },
+                         { name: 'screens/', children: [{ name: 'HomeScreen.tsx' }] },
+                         { name: 'assets/', children: [{ name: 'icon.png' }] },
+                         { name: 'App.tsx' },
+                         { name: 'package.json' },
+                         (option && option.startsWith('Expo')) ? { name: 'app.json' } : { name: 'index.js' }
+                     ];
+                     break;
+                 // Add cases for SolidJS, Qwik if needed, otherwise they fall through to React
+                 case 'SolidJS':
+                 case 'Qwik':
+                 case 'React':
+                 default:
+                     appName = 'my-react-app';
+                     structure = [
+                        { name: 'src/', children: [
+                            { name: 'components/', children: [{ name: 'Header.tsx' }, { name: 'Footer.tsx' }]},
+                            { name: 'App.tsx' }, { name: 'index.tsx' }, { name: 'index.css' }
+                        ]},
+                        { name: 'public/', children: [{ name: 'index.html' }]},
+                        { name: 'package.json' }, { name: 'tsconfig.json' }, { name: 'vite.config.ts' } // Assuming Vite
+                    ];
+                    break;
             }
 
+            // Conditionally add files/folders based on keywords in the option
+            if (typeof option === 'string') {
+                if (option.includes('Tailwind') && baseFramework !== 'ReactNative') {
+                     structure.push({ name: 'tailwind.config.js' });
+                     // Add postcss if not already implied by framework base (e.g., Next.js, SvelteKit)
+                     if (!['Next.js', 'Svelte', 'Astro'].includes(baseFramework)) {
+                         structure.push({ name: 'postcss.config.js' });
+                     }
+                     // Add tailwind directives to main css file
+                     let cssPath = [];
+                     let cssFile = '';
+                     if(baseFramework === 'Next.js') { cssPath = ['app']; cssFile = 'globals.css'; }
+                     else if(baseFramework === 'Angular') { cssPath = ['src']; cssFile = 'styles.css'; }
+                     else if(baseFramework === 'Svelte') { cssPath = ['src', 'routes']; cssFile = '+layout.svelte'; } // Or app.postcss
+                     else if(baseFramework === 'Astro') { cssPath = ['src', 'styles']; cssFile = 'global.css'; }
+                     else if(baseFramework === 'React') { cssPath = ['src']; cssFile = 'index.css'; }
+                     // If we found a path, add a comment/placeholder node
+                     if(cssPath.length > 0 || cssFile) {
+                          // Note: Can't easily *modify* file content here, so add a placeholder
+                          // Use string concatenation for the node name
+                          addNodeToStructure(structure, cssPath, { name: '(add Tailwind directives to ' + cssFile + ')' });
+                     }
+                }
+                if (option.includes('Redux') && baseFramework === 'React') {
+                    addNodeToStructure(structure, ['src'], { name: 'store/', children: [{ name: 'store.ts' }, { name: 'features/', children: [{ name: 'counterSlice.ts' }] }] });
+                }
+                 if (option.includes('Pinia') && baseFramework === 'Vue' && !(option && option.startsWith('Nuxt'))) { // Add to Vue/Vite, not Nuxt
+                    addNodeToStructure(structure, ['src'], { name: 'stores/', children: [{ name: 'counter.ts' }] });
+                 }
+                 if (option.includes('Vuetify') && baseFramework === 'Vue' && !(option && option.startsWith('Nuxt'))) { // Add to Vue/Vite, not Nuxt
+                     addNodeToStructure(structure, ['src'], { name: 'plugins/', children: [{ name: 'vuetify.ts' }] });
+                 }
+                 if (option.includes('Framer Motion') && baseFramework === 'React') {
+                     // Maybe add a specific component example?
+                     addNodeToStructure(structure, ['src', 'components'], { name: 'AnimatedComponent.tsx' });
+                 }
+                 if (option.includes('State Management') && baseFramework === 'Svelte') { // Assumes SvelteKit
+                     addNodeToStructure(structure, ['src', 'lib'], { name: 'stores.js' });
+                 }
+                 // Add more conditions here for Material UI, etc.
+             }
+
+            // Add the root application folder using string concatenation
+            const rootStructure = [{ name: appName + '/', children: structure }];
+
             function renderTree(nodes, level = 0) {
-                let html = '<ul style="list-style:none;padding-left:' + (level * 20) + 'px">';
+                // Use theme variables for consistency
+                let html = '<ul style="padding-left: ' + (level * 15) + 'px;">';
                 for (const node of nodes) {
-                    html += '<li style="margin:4px 0;">';
-                    html += '<span style="font-family:monospace;">' + node.name + '</span>';
+                    // Get the file extension if this is a file (no children)
+                    let fileType = '';
+                    let fileTypeClass = '';
+                    
+                    if (!node.children) {
+                        // Check for file extension
+                        const nameParts = node.name.split('.');
+                        if (nameParts.length > 1) {
+                            const extension = nameParts[nameParts.length - 1]; // Get last part after dot
+                            fileType = extension;
+                            fileTypeClass = extension + '-type';
+                            
+                            // Handle special cases like .tsx, .jsx where we want to show the full extension
+                            if (extension === 'tsx' || extension === 'jsx') {
+                                fileType = '.' + extension;
+                            }
+                        }
+                    }
+                    
+                    // Determine icon and name class based on presence of children (folder) or not (file)
+                    const isFolder = !!node.children;
+                    const iconClass = isFolder ? 'folder-icon' : 'file-icon';
+                    const nameClass = isFolder ? 'folder-name' : 'file-name';
+                    const icon = isFolder ? '📁' : getFileIcon(node.name);
+                    
+                    html += '<li>';
+                    html += '<span class="' + iconClass + '">' + icon + '</span>';
+                    html += '<span class="' + nameClass + '">' + node.name + '</span>';
+                    
+                    // Add file type badge if it's a file (no children) and has a valid extension
+                    if (!isFolder && fileType) {
+                        html += '<span class="file-type ' + fileTypeClass + '">' + fileType + '</span>';
+                    }
+                    
+                    html += '</li>';
+                    
                     if (node.children) {
                         html += renderTree(node.children, level + 1);
                     }
-                    html += '</li>';
                 }
                 html += '</ul>';
                 return html;
             }
+            
+            // Helper function to get appropriate file icon based on file extension
+            function getFileIcon(filename) {
+                const ext = filename.split('.').pop();
+                switch(ext) {
+                    case 'js': return '📄'; // JavaScript
+                    case 'ts': return '📄'; // TypeScript
+                    case 'tsx': 
+                    case 'jsx': return '📄'; // React
+                    case 'css': return '📄'; // CSS
+                    case 'html': return '📄'; // HTML
+                    case 'json': return '📄'; // JSON
+                    case 'vue': return '📄'; // Vue
+                    case 'svelte': return '📄'; // Svelte
+                    default: return '📄'; // Default file icon
+                }
+            }
 
+            // Wrap output in a card div with enhanced styling
             previewGrid.innerHTML =
-                '<div style="padding:16px;">' +
-                '<h4 style="margin-bottom:8px;">Project Structure (' + (framework || 'React') + ')</h4>' +
-                renderTree(structure) +
+                '<div class="folder-structure-card">' + 
+                    '<h4>' + (option || 'Default') + ' Project Structure</h4>' + 
+                    renderTree(rootStructure) +
                 '</div>';
         }
         const BASE_URL = "http://localhost:5000";
@@ -353,7 +559,18 @@ function getScriptContent(): string {
         // Define constants at the top
         const jsFrameworks = ['React', 'Next.js', 'Vue'];
         const cssFrameworks = ['Tailwind CSS', 'Bootstrap', 'Custom CSS'];
-        const websiteTypes = ['E-commerce', 'Portfolio', 'Blog'];
+        const websiteTypes = ['E-commerce', 'Portfolio', 'Management Dashboard', 'Blog', 'Animated Showcase', 'Landing Page'];
+        const layoutOptions = [
+  'React + Tailwind CSS',
+  'React + Redux Setup',
+  'React + Next.js',
+  'React + Tailwind + Framer Motion',
+  'Vue.js + Vuetify',
+  'Vue.js + Pinia',
+
+];
+        const templateCategories = ['Headers', 'Footers', 'Hero Sections', 'Cards', 'Forms'];
+        const mcpDesignOptions = ['Modern Minimal', 'Glassmorphism', 'Retro Theme', 'Check MCP Status']; // Added MCP/Design options
 
         // Separate state for each sidebar icon functionality
         const state = {
@@ -372,13 +589,17 @@ function getScriptContent(): string {
             layout: {
                 selectedJS: 'React',
                 selectedCSS: '',
-                selectedWebsiteType: ''
+                selectedWebsiteType: '',
+                selectedLayout: '' // Added state for selected layout
             },
             
             // Shared state for component selection
             selectedComponents: [],
             selectedComponentCode: null,
-            filePath: ''
+            filePath: '',
+            selectedTemplateCategory: '', 
+            selectedWebsiteTemplate: '', 
+            selectedMcpDesignOption: '' // Added state for selected MCP/Design option
         };
 
         // Main initialization function
@@ -389,6 +610,11 @@ function getScriptContent(): string {
             initializeFilters();
             // Initialize other buttons
             initializeButtons();
+            // Initialize layout options (but don't necessarily populate immediately)
+            // We will populate when the layout panel is clicked
+            // Initialize website type buttons (don't populate immediately)
+            // Initialize template panel (don't populate immediately)
+            // Initialize MCP/Design panel (don't populate immediately)
         }
 
         function initializeFrameworkButtons() {
@@ -403,6 +629,10 @@ function getScriptContent(): string {
                     button.addEventListener('click', () => handleSelection('js', framework));
                     jsContainer.appendChild(button);
                 });
+                // Apply selected state if returning
+                if (state.framework.selectedJS) {
+                    updateSelection('jsFrameworkButtons', state.framework.selectedJS);
+                }
             }
 
             // CSS Framework buttons
@@ -416,6 +646,10 @@ function getScriptContent(): string {
                     button.addEventListener('click', () => handleSelection('css', framework));
                     cssContainer.appendChild(button);
                 });
+                 // Apply selected state if returning
+                 if (state.framework.selectedCSS) {
+                    updateSelection('cssFrameworkButtons', state.framework.selectedCSS);
+                }
             }
         }
 
@@ -445,41 +679,85 @@ function getScriptContent(): string {
 
         function handleSelection(type, value) {
             console.log('Selection:', type, value);
-            
-            // Store selection in the appropriate panel's state
+            const previewGrid = document.getElementById('previewGrid'); // Get previewGrid once
+
             if (state.activePanel === 'framework') {
                 if (type === 'js') {
                     state.framework.selectedJS = value;
                     const cssContainer = document.getElementById('cssFrameworkContainer');
                     if (cssContainer) {
                         cssContainer.classList.remove('hidden');
-                        updateSelection('jsFrameworkButtons', value);
+                        updateSelection('jsFrameworkButtons', value); 
                     }
-                    // Immediately show the structure for the selected JS framework
-                    showFrameworkCards(value);
+                    // Show folder structure immediately as preview
+                    renderFolderStructure(value); 
+                    // showFrameworkCards(value); // Optionally keep or remove this if structure is enough initially
                 } else if (type === 'css') {
                     state.framework.selectedCSS = value;
                     updateSelection('cssFrameworkButtons', value);
+                    // Fetch and show component cards as preview
                     fetchAvailableCategories().then(() => {
-                        showFrameworkCards(value, 'all');
+                        showFrameworkCards(value, state.framework.selectedCategory || 'all'); // Use selected category if available
                     });
                 }
-            } else if (state.activePanel === 'layout') {
-                if (type === 'js') {
+            } else if (state.activePanel === 'layout') { 
+                if (type === 'layoutOption') {
+                    state.layout.selectedLayout = value;
+                    updateSelection('layoutOptions', value);
+                    console.log('Layout selected:', value);
+                    // Render the folder structure based on the selected option
+                    renderFolderStructure(value);
+                } 
+                else if (type === 'js') {
                     state.layout.selectedJS = value;
                     updateSelection('jsFrameworkButtons', value);
-                    // Always show folder structure in layout panel
-                    renderFolderStructure(value);
+                    // Maybe update structure preview if relevant to layout?
+                    // renderFolderStructure(value);
                 } else if (type === 'css') {
                     state.layout.selectedCSS = value;
                     updateSelection('cssFrameworkButtons', value);
-                    // Still show folder structure, don't fetch components
-                    renderFolderStructure(state.layout.selectedJS);
-                } else if (type === 'websiteType') {
+                }
+            } else if (state.activePanel === 'content') { 
+                if (type === 'websiteTypeOption') {
                     state.layout.selectedWebsiteType = value;
                     updateSelection('websiteTypeButtons', value);
+                    console.log('Website Type selected:', value);
+                     // Update previewGrid to show the selected website type
+                    if (previewGrid) {
+                        previewGrid.innerHTML = '<div class="preview-placeholder">Selected Website Type: <strong>' + value + '</strong></div>';
+                    }
+                 }
+            } else if (state.activePanel === 'components') { 
+                 if (type === 'templateCategory') { 
+                    state.selectedTemplateCategory = value;
+                    console.log('Template Category selected:', value);
+                    updateSelection('#elementsPanel .elements-list', value);
+                    // Fetch/show components/templates for this category, which updates preview
+                    if (state.framework.selectedJS && state.framework.selectedCSS) {
+                        showFrameworkCards(state.framework.selectedCSS, value); 
+                    } else {
+                        if (previewGrid) {
+                            previewGrid.innerHTML = '<div class="preview-placeholder">Please select JS and CSS frameworks first to see templates for: <strong>' + value + '</strong></div>';
+                        }
+                    }
+                 }
+             } 
+            // Potentially handle 'css' selection if made while 'design' panel is active (Now handled by mcpDesignOption)
+            else if (type === 'mcpDesignOption') { // Handle MCP/Design option selection
+                state.selectedMcpDesignOption = value;
+                updateSelection('mcpDesignOptions', value);
+                console.log('MCP/Design Option selected:', value);
+                // Update previewGrid to show the selected option
+                if (previewGrid) {
+                    if (value === 'Check MCP Status') {
+                         // Placeholder for actual status check
+                         previewGrid.innerHTML = '<div class="preview-placeholder">Checking MCP Server Status... (Placeholder)</div>'; 
+                         // TODO: Implement actual MCP status check if possible
+                    } else {
+                         previewGrid.innerHTML = '<div class="preview-placeholder">Selected Design Option: <strong>' + value + '</strong></div>';
+                    }
                 }
-            }
+             }
         }
 
         // Ensure initialization happens after DOM is loaded
@@ -720,81 +998,163 @@ function getScriptContent(): string {
             document.querySelectorAll('.sidebar-icon').forEach(icon => {
                 icon.classList.remove('active');
             });
-            event.currentTarget.classList.add('active');
+             if (event && event.currentTarget instanceof Element) {
+                event.currentTarget.classList.add('active');
+            }
 
             // Update active panel in state
             state.activePanel = panel;
 
-            // Clear preview area for all panels
+            // Get references to preview elements
             const previewGrid = document.getElementById('previewGrid');
+            const previewText = document.getElementById('previewText');
+            const filterNav = document.querySelector('.filter-nav');
+
+            // Clear preview grid and hide filter nav by default
             if (previewGrid) {
-                previewGrid.innerHTML = '';
+                previewGrid.innerHTML = ''; 
+            }
+            if (filterNav) {
+                filterNav.style.display = 'none'; // Hide filters by default
+                filterNav.innerHTML = ''; // Clear old filters
+            }
+            if(previewText) {
+                previewText.textContent = ''; // Clear subtitle by default
             }
 
-            // External commands
+            // External commands (handle first)
             if (panel === 'agent') {
                 vscode.postMessage({ command: 'openAgent' });
-                return;
+                return; // Exit early for external commands
             } else if (panel === 'search') {
                 vscode.postMessage({ command: 'showComponentPicker' });
-                return;
+                return; // Exit early
             } else if (panel === 'chat') {
                 vscode.postMessage({ command: 'openChat' });
-                return;
+                return; // Exit early
             }
 
-            // Hide all containers
-            const containers = {
-                framework: document.getElementById('jsFrameworkContainer'),
-                css: document.getElementById('cssFrameworkContainer'),
-                websiteType: document.getElementById('websiteTypeContainer')
+            // Define all relevant panel containers
+             const panels = {
+                jsFramework: document.getElementById('jsFrameworkContainer'),
+                cssFramework: document.getElementById('cssFrameworkContainer'),
+                layout: document.getElementById('layoutPanel'),
+                websiteType: document.getElementById('websiteTypeContainer'),
+                components: document.getElementById('elementsPanel'),
+                design: document.getElementById('mcpDesignPanel') // Map 'design' to the new panel ID
             };
 
-            Object.values(containers).forEach(container => {
-                if (container) container.classList.add('hidden');
+            // Hide all panels first
+             Object.values(panels).forEach(p => {
+                if (p) {
+                    p.classList.add('hidden');
+                    p.classList.remove('visible'); // Ensure 'visible' class is removed too
+                }
             });
 
-            // Handle each panel independently
-            if (panel === 'framework') {
-                // Framework panel (icon 1)
-                containers.framework.classList.remove('hidden');
-                if (state.framework.selectedJS) {
-                    containers.css.classList.remove('hidden');
-                    if (state.framework.selectedCSS) {
-                        showFrameworkCards(state.framework.selectedCSS);
-                    } else {
-                        // Show JS framework structure if no CSS framework selected
-                        renderFolderStructure(state.framework.selectedJS);
-                    }
+            // Show the relevant panel based on the clicked icon's data-panel attribute
+             if (panel === 'framework') {
+                if (panels.jsFramework) {
+                     panels.jsFramework.classList.remove('hidden');
+                     panels.jsFramework.classList.add('visible');
                 }
+                // Show CSS panel if JS already selected
+                if (state.framework.selectedJS && panels.cssFramework) {
+                    panels.cssFramework.classList.remove('hidden');
+                    panels.cssFramework.classList.add('visible');
+                }
+                initializeFrameworkButtons(); 
+
+                // Show and populate filter nav for framework panel
+                if(filterNav) {
+                     filterNav.style.display = ''; // Show filter nav (reset to default display)
+                }
+                if(previewText) {
+                     previewText.textContent = 'Select frameworks and a component category.';
+                }
+                // Fetch categories which updates filters, then show cards
+                fetchAvailableCategories().then(() => {
+                    if (state.framework.selectedJS && state.framework.selectedCSS) {
+                        showFrameworkCards(state.framework.selectedCSS, state.framework.selectedCategory || 'all');
+                    } else if (state.framework.selectedJS) {
+                        renderFolderStructure(state.framework.selectedJS);
+                    } else {
+                        if(previewGrid) previewGrid.innerHTML = '<p>Select a JavaScript framework.</p>';
+                    }
+                });
+
             } else if (panel === 'layout') {
-                // Layout panel (icon 2) - always show folder structure
-                containers.framework.classList.remove('hidden');
-                containers.css.classList.remove('hidden');
-                renderFolderStructure(state.layout.selectedJS || 'React');
-            } else if (panel === 'components') {
-                // Components panel (icon 3) - could be implemented separately
-                previewGrid.innerHTML = '<p>Components panel selected. Select a component category.</p>';
-            } else if (panel === 'design') {
-                // Design panel (icon 4) - could be implemented separately
-                previewGrid.innerHTML = '<p>Design panel selected. Choose a design template.</p>';
-            } else if (panel === 'content') {
-                // Content panel (icon 5) - could be implemented separately
-                previewGrid.innerHTML = '<p>Content panel selected. Add content to your project.</p>';
+                 if (panels.layout) {
+                     panels.layout.classList.remove('hidden');
+                     panels.layout.classList.add('visible');
+                 }
+                 if(previewText) previewText.textContent = 'Configure layout options.';
+                // Render structure on panel load
+                 renderFolderStructure(state.layout.selectedLayout || layoutOptions[0]); // Show structure for current or default
+                 initializeLayoutOptions(); 
+
+             } else if (panel === 'content') { 
+                if (panels.websiteType) {
+                     panels.websiteType.classList.remove('hidden');
+                     panels.websiteType.classList.add('visible');
+                 }
+                  if(previewText) previewText.textContent = 'Select a website type.';
+                 if (previewGrid) previewGrid.innerHTML = '<p>Select a website type.</p>';
+                 initializeWebsiteTypeButtons(); 
+
+            } else if (panel === 'components') { // 3rd icon -> Templates
+                if (panels.components) { 
+                     panels.components.classList.remove('hidden');
+                     panels.components.classList.add('visible');
+                 }
+                 if(previewText) previewText.textContent = 'Select a template category.';
+                 if (previewGrid) previewGrid.innerHTML = '<p>Select a template category.</p>'; 
+                 initializeTemplatesPanel(); 
+
+            } else if (panel === 'design') { // 4th icon -> MCP/Design Options
+                if (panels.design) { 
+                     panels.design.classList.remove('hidden');
+                     panels.design.classList.add('visible');
+                 }
+                 if(previewText) previewText.textContent = 'Choose a design style or check status.';
+                 if (previewGrid) previewGrid.innerHTML = '<p>Select an MCP / Design Option.</p>';
+                 initializeMcpDesignPanel(); 
+
+             } else {
+                // Default case or handle other panels
+                if(previewText) previewText.textContent = 'Select an option from the sidebar.';
+                if (previewGrid) previewGrid.innerHTML = '<p>Select an option from the sidebar.</p>';
             }
         }
 
-        function updateSelection(containerId, selected) {
-            const container = document.getElementById(containerId);
-            if (!container) return;
+        // Update updateSelection to handle selector strings and use querySelectorAll for buttons
+        function updateSelection(containerIdOrSelector, selected) {
+            // Use standard string concatenation for logs
+            console.log('[updateSelection] Called with selector: "' + containerIdOrSelector + '", selected value: "' + selected + '"'); 
+            let container = document.getElementById(containerIdOrSelector);
+            if (!container) {
+                 container = document.querySelector(containerIdOrSelector);
+            }
+            console.log("[updateSelection] Found container:", container); 
+            if (!container) {
+                console.error("[updateSelection] Container not found for selector:", containerIdOrSelector); 
+                return;
+            }
 
-            const buttons = container.getElementsByClassName('option-button');
-            Array.from(buttons).forEach(button => {
+            const buttons = container.querySelectorAll('.option-button'); 
+            // Use standard string concatenation for logs
+            console.log('[updateSelection] Found ' + buttons.length + ' buttons with class .option-button', buttons); 
+            buttons.forEach(button => { 
+                 // Use standard string concatenation for logs
+                 console.log('[updateSelection] Checking button: "' + button.textContent + '" against selected: "' + selected + '"'); 
                 button.classList.remove('selected');
                 if (button.textContent === selected) {
+                    // Use standard string concatenation for logs
+                    console.log('[updateSelection] Match found! Adding .selected class to: "' + button.textContent + '"'); 
                     button.classList.add('selected');
                 }
             });
+            console.log("[updateSelection] Finished processing buttons."); 
         }
 
         function initializeFilters() {
@@ -872,6 +1232,86 @@ function getScriptContent(): string {
                 prompt: prompt
             });
             
+        }
+
+        // New function to initialize layout option buttons
+        function initializeLayoutOptions() {
+            const layoutContainer = document.getElementById('layoutOptions');
+            if (layoutContainer) {
+                layoutContainer.innerHTML = ''; // Clear previous options
+                layoutOptions.forEach(option => {
+                    const button = document.createElement('button');
+                    button.className = 'option-button'; // Reuse existing button style
+                    button.textContent = option;
+                    button.addEventListener('click', () => handleSelection('layoutOption', option)); // Use a unique type
+                    layoutContainer.appendChild(button);
+                });
+                // Apply selected state if returning to this panel
+                if (state.layout.selectedLayout) {
+                    updateSelection('layoutOptions', state.layout.selectedLayout);
+                }
+            }
+        }
+
+        // Renamed back to initializeTemplatesPanel
+        function initializeTemplatesPanel() {
+            const templatesContainer = document.querySelector('#elementsPanel .elements-list');
+            if (templatesContainer) {
+                templatesContainer.innerHTML = ''; // Clear previous options
+                templateCategories.forEach(category => { 
+                    const button = document.createElement('button');
+                    button.className = 'option-button'; // Start with base class
+                    button.textContent = category;
+                    // Remove the check for selected state during creation
+                    // if (category === state.selectedTemplateCategory) {
+                    //    button.classList.add('selected'); 
+                    // }
+                    button.addEventListener('click', () => handleSelection('templateCategory', category)); 
+                    templatesContainer.appendChild(button);
+                });
+                // Restore the updateSelection call to handle returning to the panel
+                if (state.selectedTemplateCategory) {
+                    updateSelection('#elementsPanel .elements-list', state.selectedTemplateCategory);
+                }
+            }
+        }
+
+        // Function to initialize Website Type buttons (for 'content' panel)
+        function initializeWebsiteTypeButtons() {
+            const websiteTypeContainer = document.getElementById('websiteTypeButtons');
+            if (websiteTypeContainer) {
+                websiteTypeContainer.innerHTML = ''; // Clear previous options
+                websiteTypes.forEach(type => {
+                    const button = document.createElement('button');
+                    button.className = 'option-button'; // Reuse existing button style
+                    button.textContent = type;
+                    button.addEventListener('click', () => handleSelection('websiteTypeOption', type)); // Use a unique type
+                    websiteTypeContainer.appendChild(button);
+                });
+                // Apply selected state if returning to this panel
+                if (state.layout.selectedWebsiteType) { // Assuming state is stored here
+                    updateSelection('websiteTypeButtons', state.layout.selectedWebsiteType);
+                }
+            }
+        }
+
+        // New function to initialize MCP/Design panel buttons
+        function initializeMcpDesignPanel() {
+            const designContainer = document.getElementById('mcpDesignOptions');
+            if (designContainer) {
+                designContainer.innerHTML = ''; // Clear previous options
+                mcpDesignOptions.forEach(option => {
+                    const button = document.createElement('button');
+                    button.className = 'option-button'; // Reuse existing button style
+                    button.textContent = option;
+                    button.addEventListener('click', () => handleSelection('mcpDesignOption', option)); // Use a unique type
+                    designContainer.appendChild(button);
+                });
+                // Apply selected state if returning to this panel
+                if (state.selectedMcpDesignOption) {
+                    updateSelection('mcpDesignOptions', state.selectedMcpDesignOption);
+                }
+            }
         }
     `;
 }
