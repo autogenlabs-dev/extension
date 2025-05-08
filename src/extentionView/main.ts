@@ -1,3 +1,22 @@
+// Add interface declarations for window object extensions
+declare global {
+    interface Window {
+        state?: {
+            activePanel: string;
+            layout?: {
+                selectedLayout?: string;
+            };
+        };
+        initializeFrameworkButtons?: () => void;
+        initializeLayoutOptions?: () => void;
+        renderFolderStructure?: (layout: string) => void;
+        initializeTemplatesPanel?: () => void;
+        initializeWebsiteTypeButtons?: () => void;
+        initializeMcpDesignPanel?: () => void;
+        handleSidebarClick?: (panel: string) => void;
+    }
+}
+
 export function getMainContentHtml(): string {
     return `
     <div class="main-content">
@@ -33,7 +52,7 @@ export function getMainContentHtml(): string {
             <div class="preview-container">
                 <div class="preview-header">
                     <h3 class="preview-title">Preview Area</h3>
-                    <p id="previewText" class="preview-subtitle">Select options to configure your components.</p>
+                    <p id="previewText" class="preview-subtitle">Select frameworks and a component category.</p>
                     <nav class="filter-nav">
                         <!-- Filter buttons will be added dynamically -->
                     </nav>
@@ -57,26 +76,30 @@ export function getMainContentHtml(): string {
 }
 
 function showPanel(panelId: string) {
-    const panels = [
-        'jsFrameworkContainer',
-        'cssFrameworkContainer',
-        'layoutPanel',
-        'websiteTypeContainer',
-        'elementsPanel'
-    ];
-    panels.forEach(id => {
+    // Map of panel IDs to their visibility state
+    const panels: Record<string, boolean> = {
+        'jsFrameworkContainer': false,
+        'cssFrameworkContainer': false,
+        'layoutPanel': false,
+        'websiteTypeContainer': false, 
+        'elementsPanel': false,
+        'mcpDesignPanel': false
+    };
+
+    // Special case for framework panel showing both JS and CSS
+    if (panelId === 'jsFrameworkContainer' || panelId === 'framework') {
+        panels['jsFrameworkContainer'] = true;
+        panels['cssFrameworkContainer'] = true;
+    } else if (panelId) {
+        // Set the selected panel to visible
+        panels[panelId] = true;
+    }
+    
+    // Apply visibility classes to all panels
+    Object.entries(panels).forEach(([id, isVisible]) => {
         const el = document.getElementById(id);
         if (el) {
-            // Show both JS and CSS frameworks for the "framework" icon
-            if (panelId === 'jsFrameworkContainer') {
-                if (id === 'jsFrameworkContainer' || id === 'cssFrameworkContainer') {
-                    el.classList.remove('hidden');
-                    el.classList.add('visible');
-                } else {
-                    el.classList.remove('visible');
-                    el.classList.add('hidden');
-                }
-            } else if (id === panelId) {
+            if (isVisible) {
                 el.classList.remove('hidden');
                 el.classList.add('visible');
             } else {
@@ -90,22 +113,76 @@ function showPanel(panelId: string) {
 document.addEventListener('DOMContentLoaded', () => {
     // Map sidebar data-panel values to panel IDs
     const panelMap: Record<string, string> = {
-        framework: 'jsFrameworkContainer',      // Only this shows JS Frameworks (and CSS if you want)
-        // Remove or comment out the design mapping for cssFrameworkContainer
-        layout: 'layoutPanel',
-        content: 'websiteTypeContainer',
-        components: 'elementsPanel',
-        // design: 'cssFrameworkContainer', // <-- Remove or comment out this line
-        // Add more mappings as needed
+        'framework': 'jsFrameworkContainer',
+        'layout': 'layoutPanel',
+        'components': 'elementsPanel',
+        'content': 'websiteTypeContainer',
+        'design': 'mcpDesignPanel',
+        'search': '',
+        'chat': '',
+        'settings': ''
     };
 
+    // Set up click handlers for sidebar icons
     document.querySelectorAll('.sidebar-icon').forEach(icon => {
         icon.addEventListener('click', () => {
+            // Update active state for sidebar icons
+            document.querySelectorAll('.sidebar-icon').forEach(i => {
+                i.classList.remove('active');
+            });
+            icon.classList.add('active');
+            
+            // Get panel ID from data attribute
             const panel = icon.getAttribute('data-panel');
-            if (panel && panelMap[panel]) {
+            if (!panel) { 
+                return; // Early return if no panel attribute
+            }
+
+            if (panelMap[panel]) {
                 showPanel(panelMap[panel]);
-            } else {
-                showPanel('');
+                
+                // Update global state if needed
+                if (window.state) {
+                    window.state.activePanel = panel;
+                }
+                
+                // Initialize panel contents based on selected panel
+                switch (panel) {
+                    case 'framework':
+                        if (window.initializeFrameworkButtons) {
+                            window.initializeFrameworkButtons();
+                        }
+                        break;
+                    case 'layout':
+                        if (window.initializeLayoutOptions) {
+                            window.initializeLayoutOptions();
+                            if (window.renderFolderStructure && 
+                                window.state?.layout?.selectedLayout) {
+                                window.renderFolderStructure(window.state.layout.selectedLayout);
+                            }
+                        }
+                        break;
+                    case 'components':
+                        if (window.initializeTemplatesPanel) {
+                            window.initializeTemplatesPanel();
+                        }
+                        break;
+                    case 'content':
+                        if (window.initializeWebsiteTypeButtons) {
+                            window.initializeWebsiteTypeButtons();
+                        }
+                        break;
+                    case 'design':
+                        if (window.initializeMcpDesignPanel) {
+                            window.initializeMcpDesignPanel();
+                        }
+                        break;
+                }
+            } else if (['chat', 'search', 'settings'].includes(panel)) {
+                // These will be handled by the event listeners in the main script
+                if (window.handleSidebarClick) {
+                    window.handleSidebarClick(panel);
+                }
             }
         });
     });

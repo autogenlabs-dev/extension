@@ -195,6 +195,7 @@ body {
   font-weight: 500;
   position: relative;
   overflow: hidden;
+  z-index: 1;
 }
 
 .element-button:before {
@@ -221,13 +222,33 @@ body {
 }
 
 .element-button.selected {
-  background: linear-gradient(to right, rgba(95, 111, 255, 0.15), var(--surface-2));
-  color: var(--primary-light);
+  background: linear-gradient(to right, rgba(95, 111, 255, 0.2), var(--surface-2));
+  color: white;
+  font-weight: 600;
   box-shadow: var(--shadow-sm);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
 .element-button.selected:before {
   opacity: 1;
+}
+
+.element-button.selected:after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 4px;
+  height: 100%;
+  background: linear-gradient(to top, var(--primary-light), var(--primary));
+  opacity: 1;
+  animation: pulseGlow 2s infinite;
+}
+
+@keyframes pulseGlow {
+  0% { opacity: 0.6; }
+  50% { opacity: 1; }
+  100% { opacity: 0.6; }
 }
 
 /* Preview area styles */
@@ -528,7 +549,6 @@ body {
   margin-right: 0;
 }
 
-
 .option-button {
   padding: 0.75rem 1.25rem;
   border-radius: 10px;
@@ -541,6 +561,8 @@ body {
   transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
   position: relative;
   overflow: hidden;
+  text-align: center;
+  z-index: 1;
 }
 
 .option-button:before {
@@ -553,12 +575,7 @@ body {
   background: linear-gradient(135deg, var(--primary), var(--primary-dark));
   opacity: 0;
   transition: opacity 0.3s ease;
-  z-index: 0;
-}
-
-.option-button span {
-  position: relative;
-  z-index: 1;
+  z-index: -1;
 }
 
 .option-button:hover {
@@ -569,13 +586,15 @@ body {
 }
 
 .option-button.selected {
-  background: linear-gradient(135deg, var(--accent), var(--primary));
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
   color: white;
-  border-color: var(--accent);
-  box-shadow: 0 4px 15px rgba(255, 111, 156, 0.4);
+  border-color: var(--primary);
+  box-shadow: 0 4px 15px rgba(95, 111, 255, 0.4);
   transform: translateY(-3px);
   position: relative;
   overflow: hidden;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  font-weight: 600;
 }
 
 .option-button.selected:before {
@@ -587,15 +606,17 @@ body {
   position: absolute;
   top: 0;
   left: -100%;
-  width: 100%;
+  width: 150%;
   height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-  animation: shimmerEffect 2s infinite;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+  transform: skewX(-20deg);
+  animation: buttonShimmer 2.5s infinite;
+  z-index: -1;
 }
 
-@keyframes shimmerEffect {
-  0% { left: -100%; }
-  100% { left: 100%; }
+@keyframes buttonShimmer {
+  0% { transform: translateX(-100%) skewX(-20deg); }
+  100% { transform: translateX(100%) skewX(-20deg); }
 }
 
 .section-title {

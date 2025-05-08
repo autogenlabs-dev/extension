@@ -81,6 +81,7 @@ class ExtensionView {
                                             hasAnimation: message.hasAnimation || false
                                         };
 
+                                        // Using string concatenation instead of template literals to avoid nesting issues
                                         const prompt = "Analyze the newly generated component with the following details:\\n" +
                                             "- Title: " + componentData.title + "\\n" +
                                             "- File path: " + componentData.filePath + "\\n" +
@@ -1135,26 +1136,25 @@ function getScriptContent(): string {
             if (!container) {
                  container = document.querySelector(containerIdOrSelector);
             }
-            console.log("[updateSelection] Found container:", container); 
+            
             if (!container) {
                 console.error("[updateSelection] Container not found for selector:", containerIdOrSelector); 
                 return;
             }
 
-            const buttons = container.querySelectorAll('.option-button'); 
-            // Use standard string concatenation for logs
-            console.log('[updateSelection] Found ' + buttons.length + ' buttons with class .option-button', buttons); 
+            // Look for option-button class or element-button class
+            const buttons = container.querySelectorAll('.option-button, .element-button'); 
+            console.log('[updateSelection] Found ' + buttons.length + ' buttons to process'); 
+            
             buttons.forEach(button => { 
-                 // Use standard string concatenation for logs
-                 console.log('[updateSelection] Checking button: "' + button.textContent + '" against selected: "' + selected + '"'); 
+                console.log('[updateSelection] Checking button: "' + button.textContent.trim() + '" against selected: "' + selected + '"'); 
                 button.classList.remove('selected');
-                if (button.textContent === selected) {
-                    // Use standard string concatenation for logs
-                    console.log('[updateSelection] Match found! Adding .selected class to: "' + button.textContent + '"'); 
+                // Trim whitespace for more reliable comparison
+                if (button.textContent.trim() === selected.trim()) {
+                    console.log('[updateSelection] Match found! Adding .selected class to: "' + button.textContent.trim() + '"'); 
                     button.classList.add('selected');
                 }
             });
-            console.log("[updateSelection] Finished processing buttons."); 
         }
 
         function initializeFilters() {

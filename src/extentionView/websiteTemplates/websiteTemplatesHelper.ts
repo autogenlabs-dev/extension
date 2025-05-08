@@ -13,6 +13,17 @@ export function showTypeCards(type: string, previewGrid: HTMLElement | null): vo
         const div = document.createElement('div');
         div.className = 'design-card';
         div.innerHTML = createCardHtml(card, type);
+        
+        // Add click handler to select the card
+        div.addEventListener('click', () => {
+            // Remove selected class from all other cards
+            const allCards = previewGrid.querySelectorAll('.design-card');
+            allCards.forEach(c => c.classList.remove('selected'));
+            
+            // Add selected class to this card
+            div.classList.add('selected');
+        });
+        
         previewGrid.appendChild(div);
     });
 }
@@ -24,6 +35,20 @@ export function handleWebsiteTypeSelection(
 ): void {
     state.selectedWebsiteType = type;
     updateSelection('websiteTypeButtons', type);
+    
+    // Make sure the correct button is visually selected
+    const buttons = document.querySelectorAll('#websiteTypeButtons .option-button');
+    buttons.forEach(button => {
+        if (button instanceof HTMLElement) {
+            button.classList.remove('selected');
+            if (button.textContent && button.textContent.trim() === type.trim()) {
+                button.classList.add('selected');
+            }
+        }
+    });
+    
+    // Log for debugging
+    console.log('[handleWebsiteTypeSelection] Selected type:', type);
 }
 
 function createCardHtml(card: { title: string; description: string; variants: number }, type: string): string {
