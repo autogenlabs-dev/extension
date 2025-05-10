@@ -25,7 +25,7 @@ export function getSidebarHtml(): string {
                 <rect width="7" height="7" x="3" y="14" rx="1"/>
             </svg>
         </div>
-        <div class="sidebar-icon" data-panel="design">
+        <div class="sidebar-icon" data-panel="figmadesign">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M12 19l7-7 3 3-7 7-3-3z"/>
                 <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/>

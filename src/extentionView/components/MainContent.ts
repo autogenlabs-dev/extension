@@ -14,12 +14,15 @@ export function getMainContentHtml(): string {
             <div id="layoutPanel" class="framework-section hidden">
                 <h3>Layout Options</h3>
                 <div id="layoutOptions"></div>
-            </div>
-            <div id="websiteTypeContainer" class="framework-section hidden">
+            </div>            <div id="websiteTypeContainer" class="framework-section hidden">
                 <h3></h3>
                 <div id="websiteTypeButtons"></div>
             </div>
-
+            
+            <div id="mcpDesignPanel" class="framework-section hidden">
+                <h3>Design Options</h3>
+                <div id="mcpDesignOptions" class="button-container"></div>
+            </div>
 
                <button id="debugButton" class="debug-button">
             Generate Code

@@ -3,6 +3,7 @@ import * as path from "path";
 import * as fs from "fs";
 import { getSidebarHtml } from "./components/Sidebar";
 import { getMainContentHtml } from "./components/MainContent";
+import { showDesignContent, getDesignPrompt } from "./components/DesignPanel";
 // Import AutoGenProvider to access its static methods and potentially types
 import { AutoGenProvider } from "../core/webview/AutogenProvider"; // Added import
 
@@ -404,7 +405,7 @@ function getScriptContent(): string {
 
 ];
         const templateCategories = ['Headers', 'Footers', 'Hero Sections', 'Cards', 'Forms'];
-        const mcpDesignOptions = ['Modern Minimal', 'Glassmorphism', 'Retro Theme', 'Check MCP Status']; // Added MCP/Design options
+        const mcpDesignOptions = [ 'Check MCP Status']; // Added MCP/Design options
 
         // Separate state for each sidebar icon functionality
         const state = {
@@ -561,8 +562,7 @@ function getScriptContent(): string {
                         previewGrid.innerHTML = '<div class="preview-placeholder">Selected Website Type: <strong>' + value + '</strong></div>';
                     }
                  }
-            }  
-            else if (type === 'mcpDesignOption') { 
+            }            else if (type === 'mcpDesignOption') { 
                 state.selectedMcpDesignOption = value;
                 updateSelection('mcpDesignOptions', value);
                 console.log('MCP/Design Option selected:', value);
@@ -571,9 +571,21 @@ function getScriptContent(): string {
                     if (value === 'Check MCP Status') {
                          // Placeholder for actual status check
                          previewGrid.innerHTML = '<div class="preview-placeholder">Checking MCP Server Status... (Placeholder)</div>'; 
-                         // TODO: Implement actual MCP status check if possible
-                    } else {
-                         previewGrid.innerHTML = '<div class="preview-placeholder">Selected Design Option: <strong>' + value + '</strong></div>';
+                         // TODO: Implement actual MCP status check if possible                    } else {
+                         // Display a visual representation of the selected design style using our helper function
+                         previewGrid.innerHTML = showDesignContent(value);
+                         
+                         // Add event listener to the Generate Components button
+                         const generateBtn = document.getElementById('generateDesignComponents');
+                         if (generateBtn) {
+                             generateBtn.addEventListener('click', () => {
+                                 const prompt = getDesignPrompt(value);
+                                 vscode.postMessage({
+                                     command: 'initializePrompt',
+                                     prompt: prompt
+                                 });
+                             });
+                         }
                     }
                 }
              }
@@ -846,7 +858,7 @@ function getScriptContent(): string {
                 layout: document.getElementById('layoutPanel'),
                 websiteType: document.getElementById('websiteTypeContainer'),
                 components: document.getElementById('elementsPanel'),
-                design: document.getElementById('mcpDesignPanel') // Map 'design' to the new panel ID
+                figmadesign: document.getElementById('mcpDesignPanel') // Map 'figmadesign' to the new panel ID
             };
 
             // Hide all panels first
@@ -907,12 +919,12 @@ function getScriptContent(): string {
                  if (previewGrid) previewGrid.innerHTML = '<p>Select a website type.</p>';
                  initializeWebsiteTypeButtons(); 
 
-            }  else if (panel === 'design') { // 4th icon -> MCP/Design Options
-                if (panels.design) { 
-                     panels.design.classList.remove('hidden');
-                     panels.design.classList.add('visible');
+            }  else if (panel === 'figmadesign') { // 4th icon -> MCP/Design Options
+                if (panels.figmadesign) { 
+                     panels.figmadesign.classList.remove('hidden');
+                     panels.figmadesign.classList.add('visible');
                  }
-                 if(previewText) previewText.textContent = 'Choose a design style or check status.';
+                 if(previewText) previewText.textContent = 'Choose a figmadesign style or check status.';
                  if (previewGrid) previewGrid.innerHTML = '<p>Select an MCP / Design Option.</p>';
                  initializeMcpDesignPanel(); 
 
@@ -1088,9 +1100,8 @@ function getScriptContent(): string {
                     updateSelection('websiteTypeButtons', state.layout.selectedWebsiteType);
                 }
             }
-        }
+        }        // This function has been moved to DesignPanel.ts and is now being imported
 
-        // New function to initialize MCP/Design panel buttons
         function initializeMcpDesignPanel() {
             const designContainer = document.getElementById('mcpDesignOptions');
             if (designContainer) {
