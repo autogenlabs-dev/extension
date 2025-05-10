@@ -166,83 +166,6 @@ class ExtensionView {
         );
     }
 
-    private async createComponentFile(
-        category: string,
-        componentName: string,
-        componentCode: string
-    ) {
-        if (!vscode.workspace.rootPath) {
-            throw new Error("No workspace found!");
-        }
-
-        // Clean category and component name
-        const cleanCategory = category.toLowerCase();
-        const cleanName = componentName.replace(/[^a-zA-Z0-9]/g, '');
-
-        console.log("Creating component:", {
-            category: cleanCategory,
-            name: cleanName,
-            codeLength: componentCode.length
-        });
-
-        // Create directory structure
-        const componentsDir = path.join(
-            vscode.workspace.rootPath,
-            "src",
-            "components",
-            cleanCategory
-        );
-
-        // Ensure directory exists
-        fs.mkdirSync(componentsDir, { recursive: true });
-
-        // Add imports for navbar-specific components if needed
-        let finalCode = componentCode;
-        if (cleanCategory === 'navbar') {
-            finalCode = `import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
-
-${componentCode}`;
-        }
-
-        // Create component file
-        const componentFilePath = path.join(componentsDir, `${cleanName}.tsx`);
-        fs.writeFileSync(componentFilePath, finalCode, "utf-8");
-
-        // Show success message
-        vscode.window.showInformationMessage(
-            `Component ${cleanName} created successfully in ${cleanCategory} category!`
-        );
-
-        return componentFilePath;
-    }
-
-    private async createFile(filePath: string, code: string): Promise<void> {
-        if (!vscode.workspace.rootPath) {
-            throw new Error("No workspace found!");
-        }
-
-        // Create full path
-        const fullPath = path.join(vscode.workspace.rootPath, filePath);
-        const targetDir = path.dirname(fullPath);
-
-        // Create directories if they don't exist
-        if (!fs.existsSync(targetDir)) {
-            console.log(`Creating directory: ${targetDir}`);
-            fs.mkdirSync(targetDir, { recursive: true });
-        }
-
-        // Write file
-        console.log(`Writing file: ${fullPath}`);
-        fs.writeFileSync(fullPath, code, 'utf-8');
-
-        // Verify file was created
-        if (fs.existsSync(fullPath)) {
-            console.log(`File created successfully: ${fullPath}`);
-            return;
-        }
-        throw new Error("Failed to create file");
-    }
 
     private getWebviewContent(
         webview: vscode.Webview,
@@ -345,96 +268,7 @@ function getScriptContent(): string {
                         { name: 'package.json' }, { name: 'tsconfig.json' }, { name: 'next.config.js' }
                     ];
                     break;
-                 case 'Vue':
-                     appName = option && option.startsWith('Nuxt') ? 'my-nuxt-app' : 'my-vue-app';
-                     if (option && option.startsWith('Nuxt')) {
-                         structure = [
-                             { name: 'components/', children: [{ name: 'AppHeader.vue' }]},
-                             { name: 'layouts/', children: [{ name: 'default.vue' }]},
-                             { name: 'pages/', children: [{ name: 'index.vue' }]},
-                             { name: 'server/', children: [{ name: 'api/', children: [] }]},
-                             { name: 'public/', children: [{ name: 'favicon.ico' }]},
-                             { name: 'assets/', children: [{ name: 'main.css' }]},
-                             { name: 'nuxt.config.ts' }, { name: 'package.json' }, { name: 'tsconfig.json' }
-                         ];
-                     } else {
-                         structure = [
-                            { name: 'src/', children: [
-                                { name: 'components/', children: [{ name: 'HelloWorld.vue' }]},
-                                { name: 'assets/', children: [{ name: 'logo.png' }]},
-                                { name: 'App.vue' }, { name: 'main.ts' }
-                            ]},
-                            { name: 'public/', children: [{ name: 'index.html' }]},
-                            { name: 'package.json' }, { name: 'vite.config.ts' }, { name: 'tsconfig.json' }
-                        ];
-                     }
-                     break;
-                 case 'Angular':
-                     appName = 'my-angular-app';
-                     structure = [
-                        { name: 'src/', children: [
-                            { name: 'app/', children: [
-                                 { name: 'app.component.css' }, { name: 'app.component.html' }, { name: 'app.component.spec.ts' },
-                                 { name: 'app.component.ts' }, { name: 'app.module.ts' },
-                             ]},
-                             { name: 'assets/', children: []},
-                             { name: 'environments/', children: [{ name: 'environment.prod.ts' }, { name: 'environment.ts' }]},
-                             { name: 'favicon.ico' }, { name: 'index.html' }, { name: 'main.ts' }, { name: 'polyfills.ts' }, { name: 'styles.css' }
-                        ]},
-                        { name: 'package.json' }, { name: 'angular.json' }, { name: 'tsconfig.json' }
-                    ];
-                     break;
-                 case 'Svelte':
-                     appName = 'my-svelte-app'; // SvelteKit is the default now
-                     structure = [
-                        { name: 'src/', children: [
-                            { name: 'lib/', children: [{ name: 'Counter.svelte' }]},
-                            { name: 'routes/', children: [{ name: '+page.svelte' }, { name: '+layout.svelte' }]},
-                            { name: 'app.html' }
-                        ]},
-                        { name: 'static/', children: [{ name: 'favicon.png' }]},
-                        { name: 'package.json' }, { name: 'svelte.config.js' }, { name: 'vite.config.ts' }, { name: 'tsconfig.json' }
-                    ];
-                     break;
-                 case 'Astro':
-                     appName = 'my-astro-app';
-                     structure = [
-                         { name: 'src/', children: [
-                             { name: 'components/', children: [{ name: 'Card.astro'}] },
-                             { name: 'layouts/', children: [{ name: 'Layout.astro' }] },
-                             { name: 'pages/', children: [{ name: 'index.astro' }] },
-                             { name: 'styles/', children: [{ name: 'global.css' }] },
-                         ]},
-                         { name: 'public/', children: [{ name: 'favicon.svg' }]},
-                         { name: 'astro.config.mjs' }, { name: 'package.json' }, { name: 'tsconfig.json' }
-                     ];
-                     break;
-                 case 'ReactNative':
-                     appName = option && option.startsWith('Expo') ? 'my-expo-app' : 'my-rn-app';
-                     structure = [
-                         { name: 'components/', children: [{ name: 'Button.tsx' }] },
-                         { name: 'screens/', children: [{ name: 'HomeScreen.tsx' }] },
-                         { name: 'assets/', children: [{ name: 'icon.png' }] },
-                         { name: 'App.tsx' },
-                         { name: 'package.json' },
-                         (option && option.startsWith('Expo')) ? { name: 'app.json' } : { name: 'index.js' }
-                     ];
-                     break;
-                 // Add cases for SolidJS, Qwik if needed, otherwise they fall through to React
-                 case 'SolidJS':
-                 case 'Qwik':
-                 case 'React':
-                 default:
-                     appName = 'my-react-app';
-                     structure = [
-                        { name: 'src/', children: [
-                            { name: 'components/', children: [{ name: 'Header.tsx' }, { name: 'Footer.tsx' }]},
-                            { name: 'App.tsx' }, { name: 'index.tsx' }, { name: 'index.css' }
-                        ]},
-                        { name: 'public/', children: [{ name: 'index.html' }]},
-                        { name: 'package.json' }, { name: 'tsconfig.json' }, { name: 'vite.config.ts' } // Assuming Vite
-                    ];
-                    break;
+                
             }
 
             // Conditionally add files/folders based on keywords in the option
@@ -455,7 +289,6 @@ function getScriptContent(): string {
                      else if(baseFramework === 'React') { cssPath = ['src']; cssFile = 'index.css'; }
                      // If we found a path, add a comment/placeholder node
                      if(cssPath.length > 0 || cssFile) {
-                          // Note: Can't easily *modify* file content here, so add a placeholder
                           // Use string concatenation for the node name
                           addNodeToStructure(structure, cssPath, { name: '(add Tailwind directives to ' + cssFile + ')' });
                      }
@@ -728,23 +561,8 @@ function getScriptContent(): string {
                         previewGrid.innerHTML = '<div class="preview-placeholder">Selected Website Type: <strong>' + value + '</strong></div>';
                     }
                  }
-            } else if (state.activePanel === 'components') { 
-                 if (type === 'templateCategory') { 
-                    state.selectedTemplateCategory = value;
-                    console.log('Template Category selected:', value);
-                    updateSelection('#elementsPanel .elements-list', value);
-                    // Fetch/show components/templates for this category, which updates preview
-                    if (state.framework.selectedJS && state.framework.selectedCSS) {
-                        showFrameworkCards(state.framework.selectedCSS, value); 
-                    } else {
-                        if (previewGrid) {
-                            previewGrid.innerHTML = '<div class="preview-placeholder">Please select JS and CSS frameworks first to see templates for: <strong>' + value + '</strong></div>';
-                        }
-                    }
-                 }
-             } 
-            // Potentially handle 'css' selection if made while 'design' panel is active (Now handled by mcpDesignOption)
-            else if (type === 'mcpDesignOption') { // Handle MCP/Design option selection
+            }  
+            else if (type === 'mcpDesignOption') { 
                 state.selectedMcpDesignOption = value;
                 updateSelection('mcpDesignOptions', value);
                 console.log('MCP/Design Option selected:', value);
@@ -962,21 +780,7 @@ function getScriptContent(): string {
             console.log('Updated state:', state);
         }
 
-        function showElementsPanel() {
-            const elementsPanel = document.getElementById('elementsPanel');
-            const elementsList = elementsPanel.querySelector('.elements-list');
 
-            elementsList.innerHTML = '';
-            elementCategories.forEach(category => {
-                const button = document.createElement('button');
-                button.className = 'element-button';
-                button.textContent = category;
-                button.onclick = () => handleElementSelection(category);
-                elementsList.appendChild(button);
-            });
-
-            elementsPanel.classList.remove('hidden');
-        }
 
         function handleElementSelection(category) {
             const buttons = document.querySelectorAll('.element-button');
@@ -1094,7 +898,7 @@ function getScriptContent(): string {
                  renderFolderStructure(state.layout.selectedLayout || layoutOptions[0]); // Show structure for current or default
                  initializeLayoutOptions(); 
 
-             } else if (panel === 'content') { 
+            } else if (panel === 'content') { 
                 if (panels.websiteType) {
                      panels.websiteType.classList.remove('hidden');
                      panels.websiteType.classList.add('visible');
@@ -1103,16 +907,7 @@ function getScriptContent(): string {
                  if (previewGrid) previewGrid.innerHTML = '<p>Select a website type.</p>';
                  initializeWebsiteTypeButtons(); 
 
-            } else if (panel === 'components') { // 3rd icon -> Templates
-                if (panels.components) { 
-                     panels.components.classList.remove('hidden');
-                     panels.components.classList.add('visible');
-                 }
-                 if(previewText) previewText.textContent = 'Select a template category.';
-                 if (previewGrid) previewGrid.innerHTML = '<p>Select a template category.</p>'; 
-                 initializeTemplatesPanel(); 
-
-            } else if (panel === 'design') { // 4th icon -> MCP/Design Options
+            }  else if (panel === 'design') { // 4th icon -> MCP/Design Options
                 if (panels.design) { 
                      panels.design.classList.remove('hidden');
                      panels.design.classList.add('visible');
@@ -1121,7 +916,7 @@ function getScriptContent(): string {
                  if (previewGrid) previewGrid.innerHTML = '<p>Select an MCP / Design Option.</p>';
                  initializeMcpDesignPanel(); 
 
-             } else {
+            } else {
                 // Default case or handle other panels
                 if(previewText) previewText.textContent = 'Select an option from the sidebar.';
                 if (previewGrid) previewGrid.innerHTML = '<p>Select an option from the sidebar.</p>';

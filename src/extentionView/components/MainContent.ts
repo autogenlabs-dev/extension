@@ -19,10 +19,7 @@ export function getMainContentHtml(): string {
                 <h3></h3>
                 <div id="websiteTypeButtons"></div>
             </div>
-            <div id="elementsPanel" class="elements-panel hidden">
-                <h3 class="elements-title">Elements</h3>
-                <div class="elements-list"></div>
-            </div>
+
 
                <button id="debugButton" class="debug-button">
             Generate Code

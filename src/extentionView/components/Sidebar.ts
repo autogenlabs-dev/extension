@@ -17,7 +17,7 @@ export function getSidebarHtml(): string {
                 <path d="M9 21V9"/>
             </svg>
         </div>
-        <div class="sidebar-icon" data-panel="components">
+        <div class="sidebar-icon" data-panel="content">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <rect width="7" height="7" x="3" y="3" rx="1"/>
                 <rect width="7" height="7" x="14" y="3" rx="1"/>
@@ -33,24 +33,13 @@ export function getSidebarHtml(): string {
                 <circle cx="11" cy="11" r="2"/>
             </svg>
         </div>
-        <div class="sidebar-icon" data-panel="content">
+        <div class="sidebar-icon" data-panel="documentation">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
                 <path d="M14 2v6h6"/>
                 <line x1="16" y1="13" x2="8" y2="13"/>
                 <line x1="16" y1="17" x2="8" y2="17"/>
                 <line x1="10" y1="9" x2="8" y2="9"/>
-            </svg>
-        </div>
-        <div class="sidebar-icon" data-panel="chat">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-            </svg>
-        </div>
-        <div class="sidebar-icon" data-panel="search">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="11" cy="11" r="8"></circle>
-                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
             </svg>
         </div>
         <div class="sidebar-icon" style="margin-top: auto;" data-panel="settings">
