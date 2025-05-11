@@ -4,6 +4,7 @@ import * as fs from "fs";
 import { getSidebarHtml } from "./components/Sidebar";
 import { getMainContentHtml } from "./components/MainContent";
 import { showDesignContent, getDesignPrompt } from "./components/DesignPanel";
+import { showDocumentationContent } from "./components/DocumentationPanel";
 // Import AutoGenProvider to access its static methods and potentially types
 import { AutoGenProvider } from "../core/webview/AutogenProvider"; // Added import
 
@@ -405,9 +406,7 @@ function getScriptContent(): string {
 
 ];
         const templateCategories = ['Headers', 'Footers', 'Hero Sections', 'Cards', 'Forms'];
-        const mcpDesignOptions = [ 'Check MCP Status']; // Added MCP/Design options
-
-        // Separate state for each sidebar icon functionality
+        const mcpDesignOptions = [ 'Check MCP Status']; // Added MCP/Design options        // Separate state for each sidebar icon functionality
         const state = {
             // Current active panel
             activePanel: 'framework',
@@ -434,7 +433,8 @@ function getScriptContent(): string {
             filePath: '',
             selectedTemplateCategory: '', 
             selectedWebsiteTemplate: '', 
-            selectedMcpDesignOption: '' // Added state for selected MCP/Design option
+            selectedMcpDesignOption: '', // Added state for selected MCP/Design option
+            selectedDocType: '' // Added state for selected documentation type
         };
 
         // Main initialization function
@@ -510,11 +510,10 @@ function getScriptContent(): string {
                     if (panel) handleSidebarClick(panel);
                 });
             });
-        }
-
-        function handleSelection(type, value) {
+        }        function handleSelection(type, value) {
             console.log('Selection:', type, value);
             const previewGrid = document.getElementById('previewGrid'); // Get previewGrid once
+            const docContentContainer = document.getElementById('docContentContainer'); // Get doc content container
 
             if (state.activePanel === 'framework') {
                 if (type === 'js') {
@@ -562,7 +561,7 @@ function getScriptContent(): string {
                         previewGrid.innerHTML = '<div class="preview-placeholder">Selected Website Type: <strong>' + value + '</strong></div>';
                     }
                  }
-            }            else if (type === 'mcpDesignOption') { 
+            } else if (type === 'mcpDesignOption') { 
                 state.selectedMcpDesignOption = value;
                 updateSelection('mcpDesignOptions', value);
                 console.log('MCP/Design Option selected:', value);
@@ -587,6 +586,52 @@ function getScriptContent(): string {
                              });
                          }
                     }
+                }             } else if (type === 'docType') { 
+                // Handle documentation type selection
+                state.selectedDocType = value;
+                console.log('Documentation type selected:', value);
+                
+                // First, try to update the docContentContainer specifically
+                if (docContentContainer) {
+                    // Show loading indicator before content loads
+                    docContentContainer.innerHTML = '<div class="loading-indicator">Loading documentation...</div>';
+                    
+                    // Short delay to simulate loading for better UX
+                    setTimeout(() => {
+                        const content = showDocumentationContent(value);
+                        docContentContainer.innerHTML = content;
+                        
+                        // Add event listeners to any buttons in the documentation cards
+                        const docButtons = docContentContainer.querySelectorAll('.doc-button, .doc-button-small');
+                        docButtons.forEach(btn => {
+                            btn.addEventListener('click', (e) => {
+                                // Handle button clicks in documentation cards
+                                console.log('Documentation button clicked:', e.target.textContent);
+                                // You can add specific handling for each button if needed
+                            });
+                        });
+                    }, 300);
+                } 
+                // Fallback to previewGrid if docContentContainer is not found
+                else if (previewGrid) {
+                    // Show loading indicator before content loads
+                    previewGrid.innerHTML = '<div class="loading-indicator">Loading documentation...</div>';
+                    
+                    // Short delay to simulate loading for better UX
+                    setTimeout(() => {
+                        const content = showDocumentationContent(value);
+                        previewGrid.innerHTML = content;
+                        
+                        // Add event listeners to any buttons in the documentation cards
+                        const docButtons = previewGrid.querySelectorAll('.doc-button, .doc-button-small');
+                        docButtons.forEach(btn => {
+                            btn.addEventListener('click', (e) => {
+                                // Handle button clicks in documentation cards
+                                console.log('Documentation button clicked:', e.target.textContent);
+                                // You can add specific handling for each button if needed
+                            });
+                        });
+                    }, 300);
                 }
              }
         }
@@ -849,16 +894,15 @@ function getScriptContent(): string {
             } else if (panel === 'chat') {
                 vscode.postMessage({ command: 'openChat' });
                 return; // Exit early
-            }
-
-            // Define all relevant panel containers
+            }            // Define all relevant panel containers
              const panels = {
                 jsFramework: document.getElementById('jsFrameworkContainer'),
                 cssFramework: document.getElementById('cssFrameworkContainer'),
                 layout: document.getElementById('layoutPanel'),
                 websiteType: document.getElementById('websiteTypeContainer'),
                 components: document.getElementById('elementsPanel'),
-                figmadesign: document.getElementById('mcpDesignPanel') // Map 'figmadesign' to the new panel ID
+                figmadesign: document.getElementById('mcpDesignPanel'), // Map 'figmadesign' to the new panel ID
+                documentation: document.getElementById('documentationPanel') // Add documentation panel
             };
 
             // Hide all panels first
@@ -917,18 +961,42 @@ function getScriptContent(): string {
                  }
                   if(previewText) previewText.textContent = 'Select a website type.';
                  if (previewGrid) previewGrid.innerHTML = '<p>Select a website type.</p>';
-                 initializeWebsiteTypeButtons(); 
-
-            }  else if (panel === 'figmadesign') { // 4th icon -> MCP/Design Options
+                 initializeWebsiteTypeButtons();            }  else if (panel === 'figmadesign') { // 4th icon -> MCP/Design Options
                 if (panels.figmadesign) { 
                      panels.figmadesign.classList.remove('hidden');
                      panels.figmadesign.classList.add('visible');
                  }
                  if(previewText) previewText.textContent = 'Choose a figmadesign style or check status.';
                  if (previewGrid) previewGrid.innerHTML = '<p>Select an MCP / Design Option.</p>';
-                 initializeMcpDesignPanel(); 
-
-            } else {
+                 initializeMcpDesignPanel();            } else if (panel === 'documentation') { // Documentation panel
+                if (panels.documentation) {
+                    panels.documentation.classList.remove('hidden');
+                    panels.documentation.classList.add('visible');
+                }
+                if(previewText) previewText.textContent = 'Browse documentation, tutorials, and examples.';
+                
+                // Initialize documentation panel and display default content
+                initializeDocumentationPanel();
+                
+                // Show default documentation content or previously selected
+                if (previewGrid) {
+                    // Use previously selected doc type or default to API Reference
+                    const docType = state.selectedDocType || 'API Reference';
+                    // Update state to ensure consistency
+                    state.selectedDocType = docType;
+                    // Show documentation content
+                    previewGrid.innerHTML = showDocumentationContent(docType);
+                    
+                    // Update the active button in the doc options
+                    const docButtons = document.querySelectorAll('#documentationPanel .flat-button');
+                    docButtons.forEach(btn => {
+                        btn.classList.remove('active');
+                        if (btn.getAttribute('data-doc-type') === docType) {
+                            btn.classList.add('active');
+                        }
+                    });
+                }
+            }else {
                 // Default case or handle other panels
                 if(previewText) previewText.textContent = 'Select an option from the sidebar.';
                 if (previewGrid) previewGrid.innerHTML = '<p>Select an option from the sidebar.</p>';
@@ -1116,6 +1184,44 @@ function getScriptContent(): string {
                 // Apply selected state if returning to this panel
                 if (state.selectedMcpDesignOption) {
                     updateSelection('mcpDesignOptions', state.selectedMcpDesignOption);
+                }
+            }
+        }        // Function to initialize Documentation panel options
+        function initializeDocumentationPanel() {
+            const docContainer = document.getElementById('documentationPanel');
+            if (docContainer) {
+                // Add event listeners to documentation option buttons
+                const docButtons = docContainer.querySelectorAll('.flat-button');
+                if (docButtons.length > 0) {
+                    docButtons.forEach(button => {
+                        const docType = button.getAttribute('data-doc-type');
+                        if (docType) {
+                            button.addEventListener('click', () => {
+                                // Remove active class from all buttons
+                                docButtons.forEach(btn => btn.classList.remove('active'));
+                                // Add active class to clicked button
+                                button.classList.add('active');
+                                // Handle the selection
+                                handleSelection('docType', docType);
+                            });
+                            
+                            // Apply active state if returning to this panel with a previously selected doc type
+                            if (docType === state.selectedDocType) {
+                                button.classList.add('active');
+                            }
+                        }
+                    });
+                }
+                
+                // If no doc type has been selected yet, select the default "API Reference"
+                if (!state.selectedDocType) {
+                    const defaultButton = docContainer.querySelector('[data-doc-type="API Reference"]');
+                    if (defaultButton) {
+                        state.selectedDocType = "API Reference";
+                        defaultButton.classList.add('active');
+                        // Trigger content display for the default selection
+                        handleSelection('docType', "API Reference");
+                    }
                 }
             }
         }

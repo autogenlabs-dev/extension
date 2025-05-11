@@ -1,3 +1,5 @@
+import { getDocumentationPanelHtml } from "./DocumentationPanel";
+
 export function getMainContentHtml(): string {
     return `
     <div class="main-content">
@@ -23,6 +25,8 @@ export function getMainContentHtml(): string {
                 <h3>Design Options</h3>
                 <div id="mcpDesignOptions" class="button-container"></div>
             </div>
+            
+            ${getDocumentationPanelHtml()}
 
                <button id="debugButton" class="debug-button">
             Generate Code

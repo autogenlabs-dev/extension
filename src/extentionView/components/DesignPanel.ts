@@ -123,3 +123,4 @@ export function getDesignPrompt(designStyle: string): string {
     
     return prompt;
 }
+  
