@@ -7,6 +7,7 @@ import { showDesignContent, getDesignPrompt } from "./components/DesignPanel";
 import { showDocumentationContent } from "./components/DocumentationPanel";
 // Import AutoGenProvider to access its static methods and potentially types
 import { AutoGenProvider } from "../core/webview/AutogenProvider"; // Added import
+import { reactWithtTailiwnd } from "./components/setups/reactWithTailwindSetup"; // Import for React + Tailwind setup
 
 class ExtensionView {
     private panel: vscode.WebviewPanel;
@@ -150,8 +151,32 @@ class ExtensionView {
                                 } else {
                                     console.warn("AutoGenProvider instance not found. Cannot trigger analysis task.");
                                     vscode.window.showWarningMessage("Component created, but couldn't automatically start analysis task. Please open the AutoGen chat manually.");
-                                }
+                                }                            }
+                            break;
+                            
+                        case 'setupReactTailwind': // New case to handle React + Tailwind setup
+                            console.log('Received setupReactTailwind command from webview');
+                            try {
+                                await reactWithtTailiwnd();
+                                this.panel.webview.postMessage({
+                                    command: 'info',
+                                    message: 'React + Tailwind CSS project setup initiated successfully!'
+                                });
+                            } catch (error) {
+                                console.error('Error setting up React + Tailwind project from extension host:', error);
+                                this.panel.webview.postMessage({
+                                    command: 'error',
+                                    message: 'Failed to create React + Tailwind CSS project: ' + (error as Error).message
+                                });
                             }
+                            break;
+
+                        case "info":
+                            vscode.window.showInformationMessage(message.message);
+                            break;
+
+                        case "error":
+                            vscode.window.showErrorMessage(message.message);
                             break;
 
                         default:
@@ -241,7 +266,7 @@ function getScriptContent(): string {
             if (typeof option === 'string') {
                 option = option.trim(); // Trim whitespace
                 if (option.startsWith('Vue') || option.startsWith('Nuxt')) baseFramework = 'Vue';
-                else if (option.startsWith('Angular')) baseFramework = 'Angular';
+                else if (option.startsWith('Angular')) baseFramework = 'Angular';   
                 else if (option.startsWith('Svelte') || option.startsWith('SvelteKit')) baseFramework = 'Svelte';
                 else if (option.startsWith('Next')) baseFramework = 'Next.js';
                 else if (option.startsWith('Solid')) baseFramework = 'SolidJS';
@@ -270,7 +295,19 @@ function getScriptContent(): string {
                         { name: 'package.json' }, { name: 'tsconfig.json' }, { name: 'next.config.js' }
                     ];
                     break;
-                
+                case 'React': // Added case for React
+                    appName = 'my-react-app';
+                    structure = [
+                        { name: 'public/', children: [
+                            { name: 'index.html' }, { name: 'favicon.ico' }
+                        ]},
+                        { name: 'src/', children: [
+                            { name: 'App.js' }, { name: 'index.js' }, { name: 'index.css' }
+                        ]},
+                        { name: 'package.json' }
+                    ];
+                    break;
+                // Add other baseFramework cases here if needed
             }
 
             // Conditionally add files/folders based on keywords in the option
@@ -396,15 +433,7 @@ function getScriptContent(): string {
         const jsFrameworks = ['React', 'Next.js', 'Vue'];
         const cssFrameworks = ['Tailwind CSS', 'Bootstrap', 'Custom CSS'];
         const websiteTypes = ['E-commerce', 'Portfolio', 'Management Dashboard', 'Blog', 'Animated Showcase', 'Landing Page'];
-        const layoutOptions = [
-  'React + Tailwind CSS',
-  'React + Redux Setup',
-  'React + Next.js',
-  'React + Tailwind + Framer Motion',
-  'Vue.js + Vuetify',
-  'Vue.js + Pinia',
-
-];
+        const layoutOptions = ["React + Tailwind CSS", "React + Bootstrap", "Next.js + Tailwind CSS", "Next.js + Bootstrap"];
         const templateCategories = ['Headers', 'Footers', 'Hero Sections', 'Cards', 'Forms'];
         const mcpDesignOptions = [ 'Check MCP Status']; // Added MCP/Design options        // Separate state for each sidebar icon functionality
         const state = {
@@ -505,9 +534,11 @@ function getScriptContent(): string {
 
             // Sidebar icons
             document.querySelectorAll('.sidebar-icon').forEach(icon => {
-                icon.addEventListener('click', (event) => {
-                    const panel = icon.getAttribute('data-panel');
-                    if (panel) handleSidebarClick(panel);
+                icon.addEventListener('click', (event) => { // event is the MouseEvent
+                    const panelAttributeValue = icon.getAttribute('data-panel'); // icon is event.currentTarget
+                    if (panelAttributeValue) {
+                        handleSidebarClick(panelAttributeValue, icon); // Pass icon as the clickedElement
+                    }
                 });
             });
         }        function handleSelection(type, value) {
@@ -737,7 +768,6 @@ function getScriptContent(): string {
             // Content container
             const contentContainer = document.createElement('div');
             contentContainer.className = 'p-8 bg-gray-900/50';
-
             const img = document.createElement('img');
             const timestamp = new Date().getTime();
             img.src = BASE_URL + component.image + '?t=' + timestamp;
@@ -853,15 +883,15 @@ function getScriptContent(): string {
         }
 
 
-        function handleSidebarClick(panel) {
+        function handleSidebarClick(panel, clickedIconElement) { // Added clickedIconElement parameter
             console.log('Sidebar clicked:', panel);
 
             // Update active icon
-            document.querySelectorAll('.sidebar-icon').forEach(icon => {
-                icon.classList.remove('active');
+            document.querySelectorAll('.sidebar-icon').forEach(sidebarIcon => { // Renamed loop var to avoid confusion
+                sidebarIcon.classList.remove('active');
             });
-             if (event && event.currentTarget instanceof Element) {
-                event.currentTarget.classList.add('active');
+            if (clickedIconElement) { // Check if it was passed
+                clickedIconElement.classList.add('active'); // Set active on the actually clicked icon
             }
 
             // Update active panel in state
@@ -1049,6 +1079,15 @@ function getScriptContent(): string {
         function handleGenerateCode() {
             console.log('Generate button clicked');
             console.log('Current state:', state);
+            
+            // Check if "React + Tailwind CSS" layout is selected
+            if (state.layout.selectedLayout === "React + Tailwind CSS") {
+                console.log('React + Tailwind CSS layout selected, posting message to extension host...');
+                vscode.postMessage({
+                    command: 'setupReactTailwind'
+                });
+                return;
+            }
 
             if (!state.selectedComponentCode || !state.filePath) {
                 vscode.postMessage({
@@ -1058,8 +1097,8 @@ function getScriptContent(): string {
                 return;
             }
 
-            // Use the exact path from API response
-            vscode.postMessage({
+            // Data for creating the component file
+            const createFileMessage = {
                 command: 'createComponentFile',
                 filePath: state.filePath,
                 componentCode: state.selectedComponentCode,
@@ -1072,34 +1111,35 @@ function getScriptContent(): string {
                 type: state.selectedType || "unknown",
                 difficulty: state.selectedDifficulty || "unknown",
                 hasAnimation: state.selectedHasAnimation || false,
-                // Additional metadata from API response if available
                 apiData: state.selectedComponentData || {}
-            });
+            };
+            vscode.postMessage(createFileMessage);
 
-            const componentData = {
-                title: message.title || "unknown",
-                filePath: message.filePath || "unknown",
-                dependencies: message.dependencies || [],
-                language: message.language || "JavaScript",
-                framework: message.framework || "React",
-                cssFramework: message.cssFramework || "unknown",
-                category: message.category || "unknown",
-                type: message.type || "unknown",
-                difficulty: message.difficulty || "unknown",
-                hasAnimation: message.hasAnimation || false
+            // Data for the AutoGen prompt, sourced from state
+            const componentDataForPrompt = {
+                title: state.selectedComponentTitle || "unknown",
+                filePath: state.filePath, // Use state.filePath which is already validated
+                dependencies: state.selectedDependencies || [],
+                language: state.selectedLanguage || "JavaScript",
+                framework: state.selectedFramework || "React",
+                cssFramework: state.selectedCssFramework || "unknown",
+                category: state.selectedCategory || "unknown",
+                type: state.selectedType || "unknown",
+                difficulty: state.selectedDifficulty || "unknown",
+                hasAnimation: state.selectedHasAnimation || false
             };
 
             const prompt = "Analyze the newly generated component with the following details:\\n" +
-                "- Title: " + componentData.title + "\\n" +
-                "- File path: " + componentData.filePath + "\\n" +
-                "- Dependencies: " + JSON.stringify(componentData.dependencies) + "\\n" +
-                "- Language: " + componentData.language + "\\n" +
-                "- Framework: " + componentData.framework + "\\n" +
-                "- CSS Framework: " + componentData.cssFramework + "\\n" +
-                "- Category: " + componentData.category + "\\n" +
-                "- Type: " + componentData.type + "\\n" +
-                "- Difficulty: " + componentData.difficulty + "\\n" +
-                "- Has animation: " + componentData.hasAnimation + "\\n" +
+                "- Title: " + componentDataForPrompt.title + "\\n" +
+                "- File path: " + componentDataForPrompt.filePath + "\\n" +
+                "- Dependencies: " + JSON.stringify(componentDataForPrompt.dependencies) + "\\n" +
+                "- Language: " + componentDataForPrompt.language + "\\n" +
+                "- Framework: " + componentDataForPrompt.framework + "\\n" +
+                "- CSS Framework: " + componentDataForPrompt.cssFramework + "\\n" +
+                "- Category: " + componentDataForPrompt.category + "\\n" +
+                "- Type: " + componentDataForPrompt.type + "\\n" +
+                "- Difficulty: " + componentDataForPrompt.difficulty + "\\n" +
+                "- Has animation: " + componentDataForPrompt.hasAnimation + "\\n" +
                 "Please check the file, install any dependencies if needed, fix imports and navigation, run the project, and make any necessary adjustments based on this component data.";
 
             vscode.postMessage({
