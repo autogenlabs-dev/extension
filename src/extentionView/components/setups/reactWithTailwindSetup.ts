@@ -2,12 +2,12 @@ import * as fs from "fs";
 import * as path from "path";
 import * as vscode from "vscode";
 
-// Function to create a basic React app structure
-export async function reactWithtTailiwnd(): Promise<void> {
+// Function to create a basic React app structure with Tailwind CSS
+export async function reactWithTailwind(): Promise<void> {
   const workspaceFolders = vscode.workspace.workspaceFolders;
   if (workspaceFolders && workspaceFolders.length > 0) {
     const rootPath = workspaceFolders[0].uri.fsPath;
-    console.log("🚀 ~ createPortfolio ~ rootPath:", rootPath);
+    console.log("🚀 ~ reactWithTailwind ~ rootPath:", rootPath);
 
     function getFileContent(filePath: any) {
       try {

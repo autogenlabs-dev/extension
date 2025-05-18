@@ -7,7 +7,10 @@ import { showDesignContent, getDesignPrompt } from "./components/DesignPanel";
 import { showDocumentationContent } from "./components/DocumentationPanel";
 // Import AutoGenProvider to access its static methods and potentially types
 import { AutoGenProvider } from "../core/webview/AutogenProvider"; // Added import
-import { reactWithtTailiwnd } from "./components/setups/reactWithTailwindSetup"; // Import for React + Tailwind setup
+import { reactWithTailwind } from "./components/setups/reactWithTailwindSetup"; // Import for React + Tailwind setup
+import { nextjsWithTailwind } from "./components/setups/nextjsWithTailwindSetup"; // Import for Next.js + Tailwind setup
+import { reactWithBootstrap } from "./components/setups/reactWithBootstrapSetup"; // Import for React + Bootstrap setup
+import { nextjsWithBootstrap } from "./components/setups/nextjsWithBootstrapSetup"; // Import for Next.js + Bootstrap setup
 
 class ExtensionView {
     private panel: vscode.WebviewPanel;
@@ -152,12 +155,10 @@ class ExtensionView {
                                     console.warn("AutoGenProvider instance not found. Cannot trigger analysis task.");
                                     vscode.window.showWarningMessage("Component created, but couldn't automatically start analysis task. Please open the AutoGen chat manually.");
                                 }                            }
-                            break;
-                            
-                        case 'setupReactTailwind': // New case to handle React + Tailwind setup
+                            break;                              case 'setupReactTailwind': // New case to handle React + Tailwind setup
                             console.log('Received setupReactTailwind command from webview');
                             try {
-                                await reactWithtTailiwnd();
+                                await reactWithTailwind();
                                 this.panel.webview.postMessage({
                                     command: 'info',
                                     message: 'React + Tailwind CSS project setup initiated successfully!'
@@ -167,6 +168,57 @@ class ExtensionView {
                                 this.panel.webview.postMessage({
                                     command: 'error',
                                     message: 'Failed to create React + Tailwind CSS project: ' + (error as Error).message
+                                });
+                            }
+                            break;
+                            
+                        case 'setupNextjsTailwind': // Case to handle Next.js + Tailwind setup
+                            console.log('Received setupNextjsTailwind command from webview');
+                            try {
+                                await nextjsWithTailwind();
+                                this.panel.webview.postMessage({
+                                    command: 'info',
+                                    message: 'Next.js + Tailwind CSS project setup initiated successfully!'
+                                });
+                            } catch (error) {
+                                console.error('Error setting up Next.js + Tailwind project from extension host:', error);
+                                this.panel.webview.postMessage({
+                                    command: 'error',
+                                    message: 'Failed to create Next.js + Tailwind CSS project: ' + (error as Error).message
+                                });
+                            }
+                            break;
+                            
+                        case 'setupReactBootstrap': // Case to handle React + Bootstrap setup
+                            console.log('Received setupReactBootstrap command from webview');
+                            try {
+                                await reactWithBootstrap();
+                                this.panel.webview.postMessage({
+                                    command: 'info',
+                                    message: 'React + Bootstrap project setup initiated successfully!'
+                                });
+                            } catch (error) {
+                                console.error('Error setting up React + Bootstrap project from extension host:', error);
+                                this.panel.webview.postMessage({
+                                    command: 'error',
+                                    message: 'Failed to create React + Bootstrap project: ' + (error as Error).message
+                                });
+                            }
+                            break;
+                            
+                        case 'setupNextjsBootstrap': // Case to handle Next.js + Bootstrap setup
+                            console.log('Received setupNextjsBootstrap command from webview');
+                            try {
+                                await nextjsWithBootstrap();
+                                this.panel.webview.postMessage({
+                                    command: 'info',
+                                    message: 'Next.js + Bootstrap project setup initiated successfully!'
+                                });
+                            } catch (error) {
+                                console.error('Error setting up Next.js + Bootstrap project from extension host:', error);
+                                this.panel.webview.postMessage({
+                                    command: 'error',
+                                    message: 'Failed to create Next.js + Bootstrap project: ' + (error as Error).message
                                 });
                             }
                             break;
@@ -1074,25 +1126,55 @@ function getScriptContent(): string {
                     showFrameworkCards(state.selectedCSS, filter);
                 });
             });
-        }
-
-        function handleGenerateCode() {
+        }        function handleGenerateCode() {
             console.log('Generate button clicked');
             console.log('Current state:', state);
             
-            // Check if "React + Tailwind CSS" layout is selected
-            if (state.layout.selectedLayout === "React + Tailwind CSS") {
-                console.log('React + Tailwind CSS layout selected, posting message to extension host...');
-                vscode.postMessage({
-                    command: 'setupReactTailwind'
-                });
-                return;
-            }
-
-            if (!state.selectedComponentCode || !state.filePath) {
+            // First check which panel is active to determine the appropriate action
+            if (state.activePanel === 'layout' && state.layout.selectedLayout) {
+                const selectedLayout = state.layout.selectedLayout;
+                console.log('Selected layout: ' + selectedLayout);
+                
+                // Handle different layout combinations
+                if (selectedLayout === "React + Tailwind CSS") {
+                    console.log('React + Tailwind CSS layout selected, posting message to extension host...');
+                    vscode.postMessage({
+                        command: 'setupReactTailwind'
+                    });
+                    return;
+                } else if (selectedLayout === "React + Bootstrap") {
+                    console.log('React + Bootstrap layout selected, posting message to extension host...');
+                    vscode.postMessage({
+                        command: 'setupReactBootstrap'
+                    });
+                    return;
+                } else if (selectedLayout === "Next.js + Tailwind CSS") {
+                    console.log('Next.js + Tailwind CSS layout selected, posting message to extension host...');
+                    vscode.postMessage({
+                        command: 'setupNextjsTailwind'
+                    });
+                    return;
+                } else if (selectedLayout === "Next.js + Bootstrap") {
+                    console.log('Next.js + Bootstrap layout selected, posting message to extension host...');
+                    vscode.postMessage({
+                        command: 'setupNextjsBootstrap'
+                    });
+                    return;
+                }
+            } else if (state.activePanel === 'framework') {
+                // If in framework panel, check for component selection
+                if (!state.selectedComponentCode || !state.filePath) {
+                    vscode.postMessage({
+                        command: 'error',
+                        message: 'Please select a component first'
+                    });
+                    return;
+                }
+            } else {
+                // If no layout is selected and not in framework panel, show generic message
                 vscode.postMessage({
                     command: 'error',
-                    message: 'Please select a component first'
+                    message: 'Please select a component or layout option first'
                 });
                 return;
             }
@@ -1146,7 +1228,6 @@ function getScriptContent(): string {
                 command: 'initializePrompt',
                 prompt: prompt
             });
-            
         }
 
         // New function to initialize layout option buttons
