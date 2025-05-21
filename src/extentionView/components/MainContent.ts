@@ -1,4 +1,5 @@
 import { getDocumentationPanelHtml } from "./DocumentationPanel";
+import { getSettingsPanelHtml } from "./SettingsPanel"; // Add import for Settings Panel
 
 export function getMainContentHtml(): string {
     return `
@@ -27,6 +28,7 @@ export function getMainContentHtml(): string {
             </div>
             
             ${getDocumentationPanelHtml()}
+            ${getSettingsPanelHtml()}
 
                <button id="debugButton" class="debug-button">
             Generate Code

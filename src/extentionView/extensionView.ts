@@ -946,6 +946,43 @@ function getScriptContent(): string {
                 clickedIconElement.classList.add('active'); // Set active on the actually clicked icon
             }
 
+            // Get main content element for adding/removing settings-active class
+            const mainContent = document.querySelector('.main-content');
+            
+            // Handle settings panel special styling
+            if (panel === 'settings') {
+                // Add settings-active class to main content for special styling
+                mainContent?.classList.add('settings-active');
+                
+                // Hide the components-panel when settings panel is active
+                const componentsPanel = document.querySelector('.components-panel');
+                if (componentsPanel) {
+                    componentsPanel.classList.add('hidden');
+                }
+                
+                // Make the preview area take full width
+                const previewArea = document.querySelector('.preview-area');
+                if (previewArea) {
+                    previewArea.classList.add('full-width');
+                }
+            } else {
+                // Remove settings-active class when not on settings panel
+                mainContent?.classList.remove('settings-active');
+                
+                // Restore components panel when leaving settings panel
+                if (state.activePanel === 'settings') {
+                    const componentsPanel = document.querySelector('.components-panel');
+                    if (componentsPanel) {
+                        componentsPanel.classList.remove('hidden');
+                    }
+                    
+                    const previewArea = document.querySelector('.preview-area');
+                    if (previewArea) {
+                        previewArea.classList.remove('full-width');
+                    }
+                }
+            }
+
             // Update active panel in state
             state.activePanel = panel;
 
@@ -984,7 +1021,8 @@ function getScriptContent(): string {
                 websiteType: document.getElementById('websiteTypeContainer'),
                 components: document.getElementById('elementsPanel'),
                 figmadesign: document.getElementById('mcpDesignPanel'), // Map 'figmadesign' to the new panel ID
-                documentation: document.getElementById('documentationPanel') // Add documentation panel
+                documentation: document.getElementById('documentationPanel'), // Add documentation panel
+                settings: document.getElementById('settingsPanel') // Add settings panel
             };
 
             // Hide all panels first
@@ -997,6 +1035,12 @@ function getScriptContent(): string {
 
             // Show the relevant panel based on the clicked icon's data-panel attribute
              if (panel === 'framework') {
+                // If we're coming from settings, restore the components panel display
+                if (state.activePanel === 'settings') {
+                    document.querySelector('.components-panel')?.classList.remove('hidden');
+                    document.querySelector('.preview-area')?.classList.remove('full-width');
+                }
+                
                 if (panels.jsFramework) {
                      panels.jsFramework.classList.remove('hidden');
                      panels.jsFramework.classList.add('visible');
@@ -1027,7 +1071,13 @@ function getScriptContent(): string {
                 });
 
             } else if (panel === 'layout') {
-                 if (panels.layout) {
+                // If we're coming from settings, restore the components panel display
+                if (state.activePanel === 'settings') {
+                    document.querySelector('.components-panel')?.classList.remove('hidden');
+                    document.querySelector('.preview-area')?.classList.remove('full-width');
+                }
+                
+                if (panels.layout) {
                      panels.layout.classList.remove('hidden');
                      panels.layout.classList.add('visible');
                  }
@@ -1037,20 +1087,40 @@ function getScriptContent(): string {
                  initializeLayoutOptions(); 
 
             } else if (panel === 'content') { 
+                // If we're coming from settings, restore the components panel display
+                if (state.activePanel === 'settings') {
+                    document.querySelector('.components-panel')?.classList.remove('hidden');
+                    document.querySelector('.preview-area')?.classList.remove('full-width');
+                }
+                
                 if (panels.websiteType) {
                      panels.websiteType.classList.remove('hidden');
                      panels.websiteType.classList.add('visible');
                  }
                   if(previewText) previewText.textContent = 'Select a website type.';
                  if (previewGrid) previewGrid.innerHTML = '<p>Select a website type.</p>';
-                 initializeWebsiteTypeButtons();            }  else if (panel === 'figmadesign') { // 4th icon -> MCP/Design Options
+                 initializeWebsiteTypeButtons();            
+            } else if (panel === 'figmadesign') { // 4th icon -> MCP/Design Options
+                // If we're coming from settings, restore the components panel display
+                if (state.activePanel === 'settings') {
+                    document.querySelector('.components-panel')?.classList.remove('hidden');
+                    document.querySelector('.preview-area')?.classList.remove('full-width');
+                }
+                
                 if (panels.figmadesign) { 
                      panels.figmadesign.classList.remove('hidden');
                      panels.figmadesign.classList.add('visible');
                  }
                  if(previewText) previewText.textContent = 'Choose a figmadesign style or check status.';
                  if (previewGrid) previewGrid.innerHTML = '<p>Select an MCP / Design Option.</p>';
-                 initializeMcpDesignPanel();            } else if (panel === 'documentation') { // Documentation panel
+                 initializeMcpDesignPanel();            
+            } else if (panel === 'documentation') { // Documentation panel
+                // If we're coming from settings, restore the components panel display
+                if (state.activePanel === 'settings') {
+                    document.querySelector('.components-panel')?.classList.remove('hidden');
+                    document.querySelector('.preview-area')?.classList.remove('full-width');
+                }
+                
                 if (panels.documentation) {
                     panels.documentation.classList.remove('hidden');
                     panels.documentation.classList.add('visible');
@@ -1078,7 +1148,152 @@ function getScriptContent(): string {
                         }
                     });
                 }
-            }else {
+            } else if (panel === 'settings') { // Settings panel
+                // Hide the components-panel when settings panel is active
+                const componentsPanel = document.querySelector('.components-panel');
+                if (componentsPanel) {
+                    componentsPanel.classList.add('hidden');
+                }
+                
+                // Make the preview area take full width
+                const previewArea = document.querySelector('.preview-area');
+                if (previewArea) {
+                    previewArea.classList.add('full-width');
+                }
+                
+                if (panels.settings) {
+                    panels.settings.classList.remove('hidden');
+                    panels.settings.classList.add('visible');
+                }
+                
+                // Hide the preview text completely for the settings panel
+                if(previewText) {
+                    previewText.textContent = '';
+                    previewText.style.display = 'none';
+                }
+                
+                // Hide the preview title when in settings panel
+                const previewTitle = document.querySelector('.preview-title');
+                if (previewTitle) {
+                    previewTitle.style.display = 'none';
+                }
+                
+                // Show settings content in the preview area
+                if (previewGrid) {
+                    previewGrid.innerHTML = 
+                        '<div class="settings-full-content">' +
+                            '<div class="settings-header">' +
+                                '<h2>Developer Profile</h2>' +
+                                '<p class="profile-preview-email">developer@example.com</p>' +
+                                '<span class="profile-preview-badge">Pro</span>' +
+                            '</div>' +
+                            
+                            '<div class="settings-stats">' +
+                                '<div class="stat-preview-item">' +
+                                    '<span class="stat-preview-value">12</span>' +
+                                    '<span class="stat-preview-label">Projects</span>' +
+                                '</div>' +
+                                '<div class="stat-preview-item">' +
+                                    '<span class="stat-preview-value">156</span>' +
+                                    '<span class="stat-preview-label">Components</span>' +
+                                '</div>' +
+                                '<div class="stat-preview-item">' +
+                                    '<span class="stat-preview-value">8</span>' +
+                                    '<span class="stat-preview-label">Templates</span>' +
+                                '</div>' +
+                            '</div>' +
+                            
+                            '<div class="settings-actions">' +
+                                '<button class="settings-btn primary">Edit Profile</button>' +
+                                '<button class="settings-btn">Change Avatar</button>' +
+                            '</div>' +
+                            
+                            '<div class="settings-section">' +
+                                '<h3 class="settings-heading">General Settings</h3>' +
+                                
+                                '<div class="setting-item">' +
+                                    '<label class="setting-label">' +
+                                        '<span>Theme</span>' +
+                                        '<select class="setting-select">' +
+                                            '<option value="dark" selected>Dark</option>' +
+                                            '<option value="light">Light</option>' +
+                                            '<option value="system">System Default</option>' +
+                                        '</select>' +
+                                    '</label>' +
+                                '</div>' +
+                                
+                                '<div class="setting-item">' +
+                                    '<label class="setting-label">' +
+                                        '<span>Auto-save Components</span>' +
+                                        '<input type="checkbox" class="setting-toggle" checked>' +
+                                    '</label>' +
+                                '</div>' +
+                                
+                                '<div class="setting-item">' +
+                                    '<label class="setting-label">' +
+                                        '<span>Default JavaScript Framework</span>' +
+                                        '<select class="setting-select">' +
+                                            '<option value="react" selected>React</option>' +
+                                            '<option value="nextjs">Next.js</option>' +
+                                            '<option value="vue">Vue</option>' +
+                                        '</select>' +
+                                    '</label>' +
+                                '</div>' +
+                                
+                                '<div class="setting-item">' +
+                                    '<label class="setting-label">' +
+                                        '<span>Default CSS Framework</span>' +
+                                        '<select class="setting-select">' +
+                                            '<option value="tailwind" selected>Tailwind CSS</option>' +
+                                            '<option value="bootstrap">Bootstrap</option>' +
+                                            '<option value="custom">Custom CSS</option>' +
+                                        '</select>' +
+                                    '</label>' +
+                                '</div>' +
+                            '</div>' +
+                            
+                            '<div class="settings-activity">' +
+                                '<h3>Recent Activity</h3>' +
+                                '<div class="activity-item">' +
+                                    '<span class="activity-icon">🚀</span>' +
+                                    '<div class="activity-details">' +
+                                        '<span class="activity-title">Created new React component</span>' +
+                                        '<span class="activity-time">2 hours ago</span>' +
+                                    '</div>' +
+                                '</div>' +
+                                '<div class="activity-item">' +
+                                    '<span class="activity-icon">⚙️</span>' +
+                                    '<div class="activity-details">' +
+                                        '<span class="activity-title">Updated project settings</span>' +
+                                        '<span class="activity-time">Yesterday</span>' +
+                                    '</div>' +
+                                '</div>' +
+                                '<div class="activity-item">' +
+                                    '<span class="activity-icon">🔍</span>' +
+                                    '<div class="activity-details">' +
+                                        '<span class="activity-title">Searched for Tailwind components</span>' +
+                                        '<span class="activity-time">3 days ago</span>' +
+                                    '</div>' +
+                                '</div>' +
+                            '</div>' +
+                            
+                            '<button class="settings-save-btn">Save Settings</button>' +
+                        '</div>';
+                }
+                
+                // Add a listener to restore the sidebar when switching to another panel
+                const previousPanel = state.activePanel;
+                if (previousPanel !== 'settings') {
+                    // Store this for cleanup
+                    state.lastPanelBeforeSettings = previousPanel;
+                }
+            } else {
+                // If we're coming from settings, restore the components panel display
+                if (state.activePanel === 'settings') {
+                    document.querySelector('.components-panel')?.classList.remove('hidden');
+                    document.querySelector('.preview-area')?.classList.remove('full-width');
+                }
+                
                 // Default case or handle other panels
                 if(previewText) previewText.textContent = 'Select an option from the sidebar.';
                 if (previewGrid) previewGrid.innerHTML = '<p>Select an option from the sidebar.</p>';
