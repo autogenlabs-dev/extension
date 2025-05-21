@@ -1,21 +1,12 @@
 {
     "servers": {
-        "copilotMCP": {
-            "type": "sse",
-            "url": "http://localhost:39300/model_context_protocol/2024-11-05/sse"
-        },
-        "peacsMCP": {
-            "type": "sse",
-            "url": "http://localhost:39300/model_context_protocol/2024-11-05/sse"
-        },
         "filesystem": {
-            "command": "node",
+            "command": "npx",
             "args": [
-              "C:/Users/Asus/AppData/Roaming/npm/node_modules/@modelcontextprotocol/server-filesystem/dist/index.js",
-              "C:/Users/Asus/Desktop/workspace/chatIdee"
-            ],
-            "env": {}
-          }
+                "-y",
+                "@modelcontextprotocol/server-filesystem",
+                "/home/cis/Desktop/extension"
+            ]
+        }
     }
-    
 }
