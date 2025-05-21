@@ -19,86 +19,356 @@ export async function reactWithBootstrap(): Promise<void> {
     }
     const bootstrapStructure = [
       {
+        folder: "public",
+        files: [],
+      },
+      {
+        folder: "src",
+        files: [
+          { name: "App.css", content: `
+            #root {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 2rem;
+      text-align: center;
+    }
+    
+    .logo {
+      height: 6em;
+      padding: 1.5em;
+      will-change: filter;
+      transition: filter 300ms;
+    }
+    .logo:hover {
+      filter: drop-shadow(0 0 2em #646cffaa);
+    }
+    .logo.react:hover {
+      filter: drop-shadow(0 0 2em #61dafbaa);
+    }
+    
+    @keyframes logo-spin {
+      from {
+        transform: rotate(0deg);
+      }
+      to {
+        transform: rotate(360deg);
+      }
+    }
+    
+    @media (prefers-reduced-motion: no-preference) {
+      a:nth-of-type(2) .logo {
+        animation: logo-spin infinite 20s linear;
+      }
+    }
+    
+    .card {
+      padding: 2em;
+    }
+    
+    .read-the-docs {
+      color: #888;
+    }
+    ` },
+          { name: "App.jsx", content: `
+            
+    import React from 'react';
+    import './App.css';
+    import Welcome from './components/Welcome';
+    
+    function App() {
+      return (
+        <div className="App">
+          <Welcome />
+        </div>
+      );
+    }
+    
+    export default App;
+    
+    ` },
+          { name: "index.css", content: `
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", "Noto Sans", "Liberation Sans", Arial, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+    
+    code {
+      font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
+    }
+    
+    .bg-gradient {
+      background: linear-gradient(135deg, #6f42c1 0%, #6610f2 100%);
+    }
+    
+    a {
+      font-weight: 500;
+      color: #6610f2;
+      text-decoration: inherit;
+    }
+    
+    a:hover {
+      color: #5a00e6;
+    }
+    
+    button:focus,
+    button:focus-visible {
+      outline: 4px auto -webkit-focus-ring-color;
+    }
+    ` },
+          { name: "main.jsx", content: `
+    import { StrictMode } from 'react'
+    import { createRoot } from 'react-dom/client'
+    import 'bootstrap/dist/css/bootstrap.min.css'
+    import 'bootstrap/dist/js/bootstrap.bundle.min.js'
+    import './index.css'
+    import App from './App.jsx'
+    
+    createRoot(document.getElementById('root')).render(
+      <StrictMode>
+        <App />
+      </StrictMode>,
+    )
+    ` },
+        ],
+      },
+      {
         folder: "src/assets",
         files: [],
       },
       {
         folder: "src/components",
         files: [
-          {
-            name: "Navbar.jsx",
-            content: `
-              import React from "react";
-              
-              const Navbar = () => {
-                return (
-                  <nav className="navbar navbar-expand-lg navbar-light bg-light">
-                    <div className="container">
-                      <a className="navbar-brand" href="#">React Bootstrap</a>
-                      <button className="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-                        <span className="navbar-toggler-icon"></span>
-                      </button>
-                      <div className="collapse navbar-collapse" id="navbarNav">
-                        <ul className="navbar-nav ms-auto">
-                          <li className="nav-item">
-                            <a className="nav-link active" aria-current="page" href="#">Home</a>
-                          </li>
-                          <li className="nav-item">
-                            <a className="nav-link" href="#">Features</a>
-                          </li>
-                          <li className="nav-item">
-                            <a className="nav-link" href="#">Pricing</a>
-                          </li>
-                          <li className="nav-item">
-                            <a className="nav-link" href="#">About</a>
-                          </li>
-                        </ul>
-                      </div>
+          { name: "Welcome.jsx", content: `
+    import {  Container,  Card } from 'react-bootstrap';
+        
+        function Welcome() {
+          return (
+            <div className="min-vh-100 d-flex align-items-center justify-content-center bg-gradient">
+              <Container className="py-5">
+                <Card className="shadow-lg mx-auto" style={{ maxWidth: '550px' }}>
+                  <Card.Body className="p-4 text-center">
+                    <div className="bg-light p-4 rounded-circle d-inline-flex mb-4">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" fill="#6610f2" className="bi bi-lightning-charge" viewBox="0 0 16 16">
+                        <path d="M11.251.068a.5.5 0 0 1 .227.58L9.677 6.5H13a.5.5 0 0 1 .364.843l-8 8.5a.5.5 0 0 1-.842-.49L6.323 9.5H3a.5.5 0 0 1-.364-.843l8-8.5a.5.5 0 0 1 .615-.09z"/>
+                      </svg>
                     </div>
-                  </nav>
-                );
-              };
-              
-              export default Navbar;
-            `,
-          },
-          {
-            name: "Hero.jsx",
-            content: `
-              import React from "react";
-              
-              const Hero = () => {
-                return (
-                  <div className="container py-5 mt-5">
-                    <div className="row align-items-center">
-                      <div className="col-lg-6">
-                        <h1 className="display-4 fw-bold">React with Bootstrap</h1>
-                        <p className="lead">This is a simple hero unit, a simple jumbotron-style component for calling extra attention to featured content or information.</p>
-                        <hr className="my-4" />
-                        <p>It uses utility classes for typography and spacing to space content out within the larger container.</p>
-                        <div className="d-grid gap-2 d-md-flex justify-content-md-start">
-                          <button type="button" className="btn btn-primary btn-lg px-4 me-md-2">Primary action</button>
-                          <button type="button" className="btn btn-outline-secondary btn-lg px-4">Secondary</button>
-                        </div>
-                      </div>
-                      <div className="col-lg-6">
-                        <div className="bg-light p-5 rounded-3 shadow">
-                          <h2 className="fs-4 fw-bold">Welcome to your new application</h2>
-                          <p>Your React + Bootstrap project has been set up successfully!</p>
-                        </div>
-                      </div>
+                    
+                    <h1 className="display-5 fw-bold mb-2">Welcome to Autogen Labs</h1>
+                    <p className="fs-4 text-muted mb-4">Pioneering the future of automated intelligence</p>
+                    
+                    <div className="mx-auto bg-primary mb-4" style={{ height: '4px', width: '100px' }}></div>
+                    
+                    <p className="mb-4">
+                      Discover how our cutting-edge AI systems are transforming industries and creating new possibilities for businesses worldwide.
+                    </p>
+                    
+                    <div className="d-grid gap-3 d-sm-flex justify-content-sm-center">
+                      <a 
+                        href="https://autogenlabs.com" 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="btn btn-primary btn-lg px-4"
+                      >
+                        Visit Our Website
+                      </a>
                     </div>
-                  </div>
-                );
-              };
-              
-              export default Hero;
-            `,
-          },
+                    
+                    <div className="mt-3 text-muted small">
+                      <a 
+                        href="https://autogenlabs.com" 
+                        target="_blank" 
+                        rel="noopener noreferrer" 
+                        className="text-primary text-decoration-none"
+                      >
+                        autogenlabs.com
+                      </a>
+                    </div>
+                  </Card.Body>
+                </Card>
+              </Container>
+            </div>
+          );
+        }
+        
+        export default Welcome;
+    
+    ` },
         ],
       },
-     
-    ];    try {
+      {
+        folder: "src/config",
+        files: [],
+      },
+      {
+        folder: "src/context",
+        files: [],
+      },
+      {
+        folder: "src/hooks",
+        files: [],
+      },
+      {
+        folder: "src/services",
+        files: [],
+      },
+      {
+        folder: "src/styles",
+        files: [
+          { name: "custom.scss", content: `
+    // Override Bootstrap variables here
+    $primary: #6610f2;
+    $secondary: #6c757d;
+    $success: #198754;
+    $info: #0dcaf0;
+    $warning: #ffc107;
+    $danger: #dc3545;
+    $light: #f8f9fa;
+    $dark: #212529;
+    
+    // Import Bootstrap
+    @import "~bootstrap/scss/bootstrap";
+    
+    // Custom styles
+    .bg-gradient-primary {
+      background: linear-gradient(135deg, #6f42c1 0%, #6610f2 100%);
+    }
+    
+    // Add your custom styles here
+    ` }
+        ],
+      },
+      {
+        folder: "src/utils",
+        files: [],
+      },
+      {
+        folder: "",
+        files: [
+          { name: "index.html", content: `<!doctype html>
+    <html lang="en">
+      <head>
+        <meta charset="UTF-8" />
+        <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>React Bootstrap App</title>
+      </head>
+      <body>
+        <div id="root"></div>
+        <script type="module" src="/src/main.jsx"></script>
+      </body>
+    </html>
+    ` },
+          { name: "eslint.config.js", content: `
+    import js from '@eslint/js'
+    import globals from 'globals'
+    import reactHooks from 'eslint-plugin-react-hooks'
+    import reactRefresh from 'eslint-plugin-react-refresh'
+    
+    export default [
+      { ignores: ['dist'] },
+      {
+        files: ['**/*.{js,jsx}'],
+        languageOptions: {
+          ecmaVersion: 2020,
+          globals: globals.browser,
+          parserOptions: {
+            ecmaVersion: 'latest',
+            ecmaFeatures: { jsx: true },
+            sourceType: 'module',
+          },
+        },
+        plugins: {
+          'react-hooks': reactHooks,
+          'react-refresh': reactRefresh,
+        },
+        rules: {
+          ...js.configs.recommended.rules,
+          ...reactHooks.configs.recommended.rules,
+          'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]' }],
+          'react-refresh/only-export-components': [
+            'warn',
+            { allowConstantExport: true },
+          ],
+        },
+      },
+    ]
+    ` },
+          { name: ".env", content: `` },
+          { name: ".gitignore", content: `
+    # Logs
+    logs
+    *.log
+    npm-debug.log*
+    yarn-debug.log*
+    yarn-error.log*
+    pnpm-debug.log*
+    lerna-debug.log*
+    
+    node_modules
+    dist
+    dist-ssr
+    *.local
+    
+    # Editor directories and files
+    .vscode/*
+    !.vscode/extensions.json
+    .idea
+    .DS_Store
+    *.suo
+    *.ntvs*
+    *.njsproj
+    *.sln
+    *.sw?
+    ` },
+          { name: "vite.config.js", content: `
+    import { defineConfig } from 'vite'
+    import react from '@vitejs/plugin-react'
+    
+    // https://vitejs.dev/config/
+    export default defineConfig({
+      plugins: [react()],
+    })
+    ` },
+          { name: "package.json", content: `
+    {
+      "name": "react-bootstrap-app",
+      "private": true,
+      "version": "0.0.0",
+      "type": "module",
+      "scripts": {
+        "dev": "vite",
+        "build": "vite build",
+        "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0",
+        "preview": "vite preview"
+      },
+      "dependencies": {
+        "bootstrap": "^5.3.2",
+        "react": "^18.2.0",
+        "react-bootstrap": "^2.9.1",
+        "react-dom": "^18.2.0"
+      },
+      "devDependencies": {
+        "@eslint/js": "^8.54.0",
+        "@types/react": "^18.2.37",
+        "@types/react-dom": "^18.2.15",
+        "@vitejs/plugin-react": "^4.2.0",
+        "eslint": "^8.54.0",
+        "eslint-plugin-react-hooks": "^4.6.0",
+        "eslint-plugin-react-refresh": "^0.4.4",
+        "globals": "^13.24.0",
+        "sass": "^1.69.5",
+        "vite": "^5.0.0"
+      }
+    }
+    ` },
+        ],
+      },
+    ];
+    
+    
+        try {
       for (const { folder, files } of bootstrapStructure) {
         const newFolder = path.join(rootPath, folder);
 
@@ -115,79 +385,7 @@ export async function reactWithBootstrap(): Promise<void> {
           console.log(`Created file: ${newFile}`);
         }
       }      // Create index.html with Bootstrap CDN
-      const indexHtmlContent = `
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>React + Bootstrap App</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-  </body>
-</html>
-`;
-      
-      // Create main.jsx
-      const mainJsxContent = `
-import React from 'react'
-import ReactDOM from 'react-dom/client'
-import App from './App.jsx'
-import './index.css'
-
-ReactDOM.createRoot(document.getElementById('root')).render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>,
-)
-`;
-
-      // Create App.jsx
-      const appJsxContent = `
-import React from 'react';
-import Navbar from './components/Navbar';
-import Hero from './components/Hero';
-import './App.css';
-
-function App() {
-  return (
-    <div className="App">
-      <Navbar />
-      <Hero />
-    </div>
-  );
-}
-
-export default App;
-`;
-
-      // Create App.css
-      const appCssContent = `
-.App {
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
-}
-`;
-
-      // Create index.css
-      const indexCssContent = `
-body {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-`;
-
-      // Write the files to disk
-      fs.writeFileSync(path.join(rootPath, "index.html"), indexHtmlContent);
-      fs.writeFileSync(path.join(rootPath, "src/main.jsx"), mainJsxContent);
-      fs.writeFileSync(path.join(rootPath, "src/App.jsx"), appJsxContent);
-      fs.writeFileSync(path.join(rootPath, "src/App.css"), appCssContent);
-      fs.writeFileSync(path.join(rootPath, "src/index.css"), indexCssContent);
-
+   
       // Create package.json with watch script
       const packageJson = {
         name: "react-bootstrap-app",
