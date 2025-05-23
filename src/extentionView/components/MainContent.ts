@@ -1,5 +1,5 @@
-import { getDocumentationPanelHtml } from "./DocumentationPanel";
 import { getSettingsPanelHtml } from "./SettingsPanel"; // Add import for Settings Panel
+import { getDocumentationPanelHtml } from "./DocumentationPanel"; // Add import for Documentation Panel
 
 export function getMainContentHtml(): string {
     return `
@@ -18,7 +18,7 @@ export function getMainContentHtml(): string {
                 <h3>Layout Options</h3>
                 <div id="layoutOptions"></div>
             </div>            <div id="websiteTypeContainer" class="framework-section hidden">
-                <h3></h3>
+                <h3>Website Templates</h3>
                 <div id="websiteTypeButtons"></div>
             </div>
             
@@ -28,6 +28,7 @@ export function getMainContentHtml(): string {
             </div>
             
             ${getDocumentationPanelHtml()}
+            
             ${getSettingsPanelHtml()}
 
                <button id="debugButton" class="debug-button">
@@ -44,7 +45,9 @@ export function getMainContentHtml(): string {
                         <!-- Filter buttons will be added dynamically -->
                     </nav>
                 </div>
+                <!-- Main content display area - grid for components, docContentContainer for documentation -->
                 <div id="previewGrid" class="showcase-grid"></div>
+                <div id="docContentContainer" class="doc-content-container"></div>
                 <div id="consoleOutput" class="console-output"></div>
             </div>
         </div>
@@ -52,8 +55,8 @@ export function getMainContentHtml(): string {
      
 
         <button id="openChatButton" class="chat-button-hidden">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
             </svg>
             Open Chat
         </button>

@@ -4,7 +4,7 @@ import * as fs from "fs";
 import { getSidebarHtml } from "./components/Sidebar";
 import { getMainContentHtml } from "./components/MainContent";
 import { showDesignContent, getDesignPrompt } from "./components/DesignPanel";
-import { showDocumentationContent } from "./components/DocumentationPanel";
+import { showDocumentationContent } from "./components/DocumentationPanel"; // Import for documentation content
 // Import AutoGenProvider to access its static methods and potentially types
 import { AutoGenProvider } from "../core/webview/AutogenProvider"; // Added import
 import { reactWithTailwind } from "./components/setups/reactWithTailwindSetup"; // Import for React + Tailwind setup
@@ -255,6 +255,13 @@ class ExtensionView {
                 path.join(extensionUri.fsPath, "src", "extentionView", "styles.css")
             )
         );
+        
+        // Add the documentation-specific styles
+        const docStylesUri = webview.asWebviewUri(
+            vscode.Uri.file(
+                path.join(extensionUri.fsPath, "src", "extentionView", "components", "documentation-styles.css")
+            )
+        );
 
         return `<!DOCTYPE html>
 <html lang="en">
@@ -263,6 +270,7 @@ class ExtensionView {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AutoGen Code Builder</title>
     <link href="${stylesUri}" rel="stylesheet" />
+    <link href="${docStylesUri}" rel="stylesheet" />
 </head>
 <body>
     <div class="container">
@@ -280,6 +288,9 @@ class ExtensionView {
 function getScriptContent(): string {
     return `
         const vscode = acquireVsCodeApi();
+
+        // Import the documentation content rendering function
+        ${showDocumentationContent.toString()}
 
         // Helper function to find a directory and add a node to it
         function addNodeToStructure(structure, targetPathParts, nodeToAdd) {
@@ -487,7 +498,7 @@ function getScriptContent(): string {
         const websiteTypes = ['E-commerce', 'Portfolio', 'Management Dashboard', 'Blog', 'Animated Showcase', 'Landing Page'];
         const layoutOptions = ["React + Tailwind CSS", "React + Bootstrap", "Next.js + Tailwind CSS", "Next.js + Bootstrap"];
         const templateCategories = ['Headers', 'Footers', 'Hero Sections', 'Cards', 'Forms'];
-        const mcpDesignOptions = [ 'Check MCP Status']; // Added MCP/Design options        // Separate state for each sidebar icon functionality
+        const mcpDesignOptions = ['Modern Minimal', 'Glassmorphism', 'Retro Theme', 'Check MCP Status']; // Added design style options        // Separate state for each sidebar icon functionality
         const state = {
             // Current active panel
             activePanel: 'framework',
@@ -676,13 +687,27 @@ function getScriptContent(): string {
                 
                 // First, try to update the docContentContainer specifically
                 if (docContentContainer) {
-                    // Show loading indicator before content loads
-                    docContentContainer.innerHTML = '<div class="loading-indicator">Loading documentation...</div>';
+                    // Clear any existing content
+                    docContentContainer.innerHTML = '';
+                    
+                    // Create and add loading indicator element
+                    const loadingIndicator = document.createElement('div');
+                    loadingIndicator.className = 'loading-indicator';
+                    docContentContainer.appendChild(loadingIndicator);
+                    
+                    // Add loading class to container for styling
+                    docContentContainer.classList.add('loading');
+                    
+                    // Hide previewGrid and show docContentContainer
+                    const previewGrid = document.getElementById('previewGrid');
+                    if (previewGrid) previewGrid.classList.add('hidden');
+                    docContentContainer.classList.remove('hidden');
                     
                     // Short delay to simulate loading for better UX
                     setTimeout(() => {
                         const content = showDocumentationContent(value);
                         docContentContainer.innerHTML = content;
+                        docContentContainer.classList.remove('loading');
                         
                         // Add event listeners to any buttons in the documentation cards
                         const docButtons = docContentContainer.querySelectorAll('.doc-button, .doc-button-small');
@@ -693,17 +718,24 @@ function getScriptContent(): string {
                                 // You can add specific handling for each button if needed
                             });
                         });
-                    }, 300);
+                    }, 800); // Slightly longer delay to ensure animation is visible
                 } 
                 // Fallback to previewGrid if docContentContainer is not found
                 else if (previewGrid) {
                     // Show loading indicator before content loads
-                    previewGrid.innerHTML = '<div class="loading-indicator">Loading documentation...</div>';
+                    previewGrid.innerHTML = '';
+                    
+                    // Create and add loading indicator element
+                    const loadingIndicator = document.createElement('div');
+                    loadingIndicator.className = 'loading-indicator';
+                    previewGrid.appendChild(loadingIndicator);
+                    previewGrid.classList.add('loading');
                     
                     // Short delay to simulate loading for better UX
                     setTimeout(() => {
                         const content = showDocumentationContent(value);
                         previewGrid.innerHTML = content;
+                        previewGrid.classList.remove('loading');
                         
                         // Add event listeners to any buttons in the documentation cards
                         const docButtons = previewGrid.querySelectorAll('.doc-button, .doc-button-small');
@@ -714,7 +746,7 @@ function getScriptContent(): string {
                                 // You can add specific handling for each button if needed
                             });
                         });
-                    }, 300);
+                    }, 800); // Slightly longer delay to ensure animation is visible
                 }
              }
         }
@@ -990,17 +1022,27 @@ function getScriptContent(): string {
             const previewGrid = document.getElementById('previewGrid');
             const previewText = document.getElementById('previewText');
             const filterNav = document.querySelector('.filter-nav');
+            const docContentContainer = document.getElementById('docContentContainer');
 
-            // Clear preview grid and hide filter nav by default
+            // Always reset display properties for previewText and previewGrid
+            if (previewText) {
+                previewText.style.display = ''; // Reset to default
+                previewText.textContent = ''; // Clear subtitle by default
+            }
+            
+            // Always show previewGrid and hide docContentContainer by default when switching panels
             if (previewGrid) {
+                previewGrid.classList.remove('hidden');
                 previewGrid.innerHTML = ''; 
             }
+            
+            if (docContentContainer) {
+                docContentContainer.classList.add('hidden');
+            }
+            
             if (filterNav) {
                 filterNav.style.display = 'none'; // Hide filters by default
                 filterNav.innerHTML = ''; // Clear old filters
-            }
-            if(previewText) {
-                previewText.textContent = ''; // Clear subtitle by default
             }
 
             // External commands (handle first)
@@ -1013,8 +1055,10 @@ function getScriptContent(): string {
             } else if (panel === 'chat') {
                 vscode.postMessage({ command: 'openChat' });
                 return; // Exit early
-            }            // Define all relevant panel containers
-             const panels = {
+            }
+            
+            // Define all relevant panel containers
+            const panels = {
                 jsFramework: document.getElementById('jsFrameworkContainer'),
                 cssFramework: document.getElementById('cssFrameworkContainer'),
                 layout: document.getElementById('layoutPanel'),
@@ -1026,7 +1070,7 @@ function getScriptContent(): string {
             };
 
             // Hide all panels first
-             Object.values(panels).forEach(p => {
+            Object.values(panels).forEach(p => {
                 if (p) {
                     p.classList.add('hidden');
                     p.classList.remove('visible'); // Ensure 'visible' class is removed too
@@ -1034,7 +1078,7 @@ function getScriptContent(): string {
             });
 
             // Show the relevant panel based on the clicked icon's data-panel attribute
-             if (panel === 'framework') {
+            if (panel === 'framework') {
                 // If we're coming from settings, restore the components panel display
                 if (state.activePanel === 'settings') {
                     document.querySelector('.components-panel')?.classList.remove('hidden');
@@ -1114,40 +1158,6 @@ function getScriptContent(): string {
                  if(previewText) previewText.textContent = 'Choose a figmadesign style or check status.';
                  if (previewGrid) previewGrid.innerHTML = '<p>Select an MCP / Design Option.</p>';
                  initializeMcpDesignPanel();            
-            } else if (panel === 'documentation') { // Documentation panel
-                // If we're coming from settings, restore the components panel display
-                if (state.activePanel === 'settings') {
-                    document.querySelector('.components-panel')?.classList.remove('hidden');
-                    document.querySelector('.preview-area')?.classList.remove('full-width');
-                }
-                
-                if (panels.documentation) {
-                    panels.documentation.classList.remove('hidden');
-                    panels.documentation.classList.add('visible');
-                }
-                if(previewText) previewText.textContent = 'Browse documentation, tutorials, and examples.';
-                
-                // Initialize documentation panel and display default content
-                initializeDocumentationPanel();
-                
-                // Show default documentation content or previously selected
-                if (previewGrid) {
-                    // Use previously selected doc type or default to API Reference
-                    const docType = state.selectedDocType || 'API Reference';
-                    // Update state to ensure consistency
-                    state.selectedDocType = docType;
-                    // Show documentation content
-                    previewGrid.innerHTML = showDocumentationContent(docType);
-                    
-                    // Update the active button in the doc options
-                    const docButtons = document.querySelectorAll('#documentationPanel .flat-button');
-                    docButtons.forEach(btn => {
-                        btn.classList.remove('active');
-                        if (btn.getAttribute('data-doc-type') === docType) {
-                            btn.classList.add('active');
-                        }
-                    });
-                }
             } else if (panel === 'settings') { // Settings panel
                 // Hide the components-panel when settings panel is active
                 const componentsPanel = document.querySelector('.components-panel');
@@ -1287,6 +1297,30 @@ function getScriptContent(): string {
                     // Store this for cleanup
                     state.lastPanelBeforeSettings = previousPanel;
                 }
+            } else if (panel === 'documentation') { // Add documentation panel handler
+                // If we're coming from settings, restore the components panel display
+                if (state.activePanel === 'settings') {
+                    document.querySelector('.components-panel')?.classList.remove('hidden');
+                    document.querySelector('.preview-area')?.classList.remove('full-width');
+                }
+                
+                if (panels.documentation) {
+                    panels.documentation.classList.remove('hidden');
+                    panels.documentation.classList.add('visible');
+                }
+                
+                if(previewText) previewText.textContent = 'Browse documentation and resources.';
+                
+                // Show docContentContainer and hide previewGrid
+                if (previewGrid) previewGrid.classList.add('hidden');
+                
+                const docContentContainer = document.getElementById('docContentContainer');
+                if (docContentContainer) {
+                    docContentContainer.classList.remove('hidden');
+                }
+                
+                // Initialize the documentation panel with options
+                initializeDocumentationPanel();
             } else {
                 // If we're coming from settings, restore the components panel display
                 if (state.activePanel === 'settings') {
@@ -1537,8 +1571,34 @@ function getScriptContent(): string {
                                 docButtons.forEach(btn => btn.classList.remove('active'));
                                 // Add active class to clicked button
                                 button.classList.add('active');
-                                // Handle the selection
-                                handleSelection('docType', docType);
+                                
+                                // Update state with selected doc type
+                                state.selectedDocType = docType;
+                                
+                                // Display content in the docContentContainer
+                                const docContentContainer = document.getElementById('docContentContainer');
+                                if (docContentContainer) {
+                                    // Show loading indicator
+                                    docContentContainer.innerHTML = '<div class="loading-indicator">Loading documentation...</div>';
+                                    docContentContainer.classList.add('loading');
+                                    
+                                    // Short delay for better UX
+                                    setTimeout(() => {
+                                        // Get content and update container
+                                        const content = showDocumentationContent(docType);
+                                        docContentContainer.innerHTML = content;
+                                        docContentContainer.classList.remove('loading');
+                                        
+                                        // Add event listeners to buttons in the documentation content
+                                        const docContentButtons = docContentContainer.querySelectorAll('.doc-button, .doc-button-small');
+                                        docContentButtons.forEach(btn => {
+                                            btn.addEventListener('click', () => {
+                                                console.log('Documentation button clicked:', btn.textContent);
+                                                // Additional button handling can be added here
+                                            });
+                                        });
+                                    }, 200);
+                                }
                             });
                             
                             // Apply active state if returning to this panel with a previously selected doc type
@@ -1549,14 +1609,27 @@ function getScriptContent(): string {
                     });
                 }
                 
-                // If no doc type has been selected yet, select the default "API Reference"
+                // If no doc type has been selected yet, select the default "Documentation"
                 if (!state.selectedDocType) {
-                    const defaultButton = docContainer.querySelector('[data-doc-type="API Reference"]');
+                    const defaultButton = docContainer.querySelector('[data-doc-type="Documentation"]');
                     if (defaultButton) {
-                        state.selectedDocType = "API Reference";
+                        state.selectedDocType = "Documentation";
                         defaultButton.classList.add('active');
                         // Trigger content display for the default selection
-                        handleSelection('docType', "API Reference");
+                        const docContentContainer = document.getElementById('docContentContainer');
+                        if (docContentContainer) {
+                            const content = showDocumentationContent("Documentation");
+                            docContentContainer.innerHTML = content;
+                            
+                            // Add event listeners to buttons in the initial documentation content
+                            const docContentButtons = docContentContainer.querySelectorAll('.doc-button, .doc-button-small');
+                            docContentButtons.forEach(btn => {
+                                btn.addEventListener('click', () => {
+                                    console.log('Documentation button clicked:', btn.textContent);
+                                    // Additional button handling can be added here
+                                });
+                            });
+                        }
                     }
                 }
             }

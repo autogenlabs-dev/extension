@@ -1,231 +1,465 @@
-/* 
-Documentation styling to enhance the cards display in the preview area 
-This file should be imported in the main styles.css
-*/
+/* Documentation Panel Styles */
 
-/* Documentation Container */
+/* Card base styles */
 .doc-container {
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-    padding: 15px;
-    max-width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
 }
 
-/* Documentation Card */
 .doc-card {
-    background-color: var(--vscode-editor-background);
-    border: 1px solid var(--vscode-panel-border);
-    border-radius: 6px;
-    overflow: hidden;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-    margin-bottom: 20px;
-    transition: transform 0.2s, box-shadow 0.2s;
+  background: var(--surface-2);
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--border-color);
+  transition: all 0.3s ease;
 }
 
 .doc-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-3px);
 }
 
-/* Card Header */
 .doc-card-header {
-    padding: 15px 20px;
-    border-bottom: 1px solid var(--vscode-panel-border);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+  padding: 1rem 1.5rem;
+  background: var(--surface-3);
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
-.doc-card-header h3 {
-    margin: 0;
-    font-size: 18px;
-    color: var(--vscode-editor-foreground);
-}
-
-.doc-date {
-    font-size: 12px;
-    color: var(--vscode-descriptionForeground);
-    background-color: var(--vscode-badge-background);
-    padding: 2px 8px;
-    border-radius: 12px;
-}
-
-/* Card Content */
 .doc-card-content {
-    padding: 20px;
+  padding: 1.5rem;
 }
 
-.doc-section {
-    margin-bottom: 20px;
-}
-
-.doc-section h4 {
-    margin-top: 0;
-    margin-bottom: 10px;
-    font-size: 16px;
-    color: var(--vscode-editor-foreground);
-}
-
-.doc-section p {
-    margin-bottom: 10px;
-    color: var(--vscode-descriptionForeground);
-    line-height: 1.5;
-}
-
-.doc-section code {
-    display: block;
-    background-color: var(--vscode-textCodeBlock-background);
-    color: var(--vscode-textCodeBlock-foreground);
-    padding: 10px;
-    border-radius: 4px;
-    font-family: monospace;
-    margin: 10px 0;
-    overflow-x: auto;
-}
-
-.doc-section ul, .doc-section ol {
-    margin-top: 10px;
-    margin-bottom: 10px;
-    padding-left: 20px;
-}
-
-.doc-section li {
-    margin-bottom: 5px;
-    color: var(--vscode-descriptionForeground);
-}
-
-/* Card Footer */
 .doc-card-footer {
-    padding: 15px 20px;
-    border-top: 1px solid var(--vscode-panel-border);
-    display: flex;
-    justify-content: flex-end;
+  padding: 1rem 1.5rem;
+  border-top: 1px solid var(--border-color);
+  display: flex;
+  justify-content: flex-end;
 }
 
-/* Document buttons */
+/* Section styles */
+.doc-section {
+  margin-bottom: 1.5rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid var(--border-color-light);
+}
+
+.doc-section:last-child {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+/* Button styles */
 .doc-button {
-    background-color: var(--vscode-button-background);
-    color: var(--vscode-button-foreground);
-    border: none;
-    border-radius: 4px;
-    padding: 8px 16px;
-    font-size: 14px;
-    cursor: pointer;
-    transition: background-color 0.2s;
+  background-color: var(--accent-color);
+  color: white;
+  padding: 0.6rem 1.2rem;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.2s ease;
 }
 
 .doc-button:hover {
-    background-color: var(--vscode-button-hoverBackground);
+  background-color: var(--accent-color-hover);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-sm);
 }
 
 .doc-button-small {
-    background-color: var(--vscode-button-secondaryBackground);
-    color: var(--vscode-button-secondaryForeground);
-    border: none;
-    border-radius: 3px;
-    padding: 4px 8px;
-    font-size: 12px;
-    cursor: pointer;
-    transition: background-color 0.2s;
+  background-color: var(--surface-3);
+  color: var(--text-primary);
+  padding: 0.35rem 0.75rem;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
 }
 
 .doc-button-small:hover {
-    background-color: var(--vscode-button-secondaryHoverBackground);
+  background-color: var(--accent-color-light);
+  border-color: var(--accent-color);
+  color: var(--accent-color);
 }
 
-/* Documentation option buttons */
-.flat-button {
-  background-color: var(--surface-2);
+/* Date styles */
+.doc-date {
   color: var(--text-secondary);
+  font-size: 0.85rem;
+  display: inline-block;
+  margin-bottom: 0.5rem;
+}
+
+/* Code styles */
+.doc-card code {
+  background-color: var(--surface-3);
+  padding: 1rem;
+  border-radius: 6px;
+  font-family: 'Consolas', 'Monaco', monospace;
+  font-size: 0.9rem;
+  overflow-x: auto;
+  color: var(--text-code);
+  display: block;
+  margin: 1rem 0;
   border: 1px solid var(--border-color);
-  border-radius: 8px;
-  padding: 10px 12px;
-  font-size: 14px;
+}
+
+/* Options panel */
+.doc-options-wrapper {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.flat-button {
+  padding: 0.4rem 0.8rem;
+  background-color: var(--surface-2);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  color: var(--text-secondary);
   cursor: pointer;
-  transition: all 0.25s ease;
-  text-align: center;
-  width: 100%;
-  position: relative;
-  overflow: hidden;
+  transition: all 0.2s ease;
 }
 
 .flat-button:hover {
   background-color: var(--surface-3);
-  border-color: rgba(255, 255, 255, 0.2);
-  transform: translateY(-2px);
+  color: var(--text-primary);
 }
 
 .flat-button.active {
-  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  background-color: var(--accent-color-light);
+  color: var(--accent-color);
+  border-color: var(--accent-color);
+  font-weight: 500;
+}
+
+.doc-content-container {
+  margin-top: 1rem;
+}
+
+/* Deployment Section Specific Styles */
+.doc-deployment-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+  margin: 1rem 0;
+}
+
+.deployment-option {
+  background: var(--surface-3);
+  border-radius: 8px;
+  padding: 1rem;
+  border: 1px solid var(--border-color);
+  transition: all 0.2s ease;
+}
+
+.deployment-option:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-sm);
+  border-color: var(--accent-color-light);
+}
+
+.deployment-option h4 {
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.deployment-option h4 i {
+  color: var(--accent-color);
+}
+
+.deployment-steps {
+  margin-top: 1.5rem;
+}
+
+.deployment-steps ol {
+  border-left: 2px solid var(--border-color);
+  padding-left: 1.5rem;
+  margin-left: 0.5rem;
+}
+
+.deployment-steps li {
+  margin-bottom: 1rem;
+  position: relative;
+}
+
+.deployment-steps li::before {
+  content: '';
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  background: var(--accent-color);
+  border-radius: 50%;
+  left: -2rem;
+  top: 0.5rem;
+  transform: translateX(50%);
+}
+
+/* News/Blogs Section Specific Styles */
+.doc-blog-post {
+  padding: 1.25rem;
+  margin-bottom: 1.5rem;
+  background: var(--surface-3);
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  transition: all 0.3s ease;
+}
+
+.doc-blog-post:last-child {
+  margin-bottom: 0;
+}
+
+.doc-blog-post:hover {
+  border-color: var(--accent-color-light);
+  box-shadow: var(--shadow-sm);
+}
+
+.doc-blog-post h4 {
+  margin-top: 0;
+  margin-bottom: 0.25rem;
+  color: var(--text-primary);
+}
+
+.doc-blog-featured {
+  border-left: 4px solid var(--accent-color);
+}
+
+.blog-meta {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.blog-author {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.blog-author-avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--accent-color-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent-color);
+  font-weight: bold;
+  font-size: 0.8rem;
+}
+
+.blog-tags {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-top: 0.75rem;
+}
+
+.blog-tag {
+  background: var(--surface-2);
+  color: var(--text-secondary);
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  border: 1px solid var(--border-color);
+}
+
+/* Community Section Specific Styles */
+.doc-community-section {
+  margin-bottom: 2rem;
+}
+
+.doc-community-resources {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.doc-community-item {
+  background: var(--surface-3);
+  border-radius: 8px;
+  padding: 1.25rem;
+  border: 1px solid var(--border-color);
+  transition: all 0.3s ease;
+}
+
+.doc-community-item:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-sm);
+  border-color: var(--accent-color-light);
+}
+
+.doc-community-item h5 {
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.doc-community-item h5 i {
+  color: var(--accent-color);
+}
+
+.doc-community-events {
+  margin-top: 1.5rem;
+}
+
+.doc-community-events ul {
+  list-style-type: none;
+  padding-left: 0;
+}
+
+.doc-community-events li {
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.doc-community-events li:last-child {
+  border-bottom: none;
+}
+
+.event-date {
+  background: var(--surface-3);
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  border: 1px solid var(--border-color);
+}
+
+/* Product Announcement Section Specific Styles */
+.doc-announcement-hero {
+  padding: 2rem;
+  background: var(--accent-gradient);
+  border-radius: 8px;
   color: white;
-  border-color: var(--primary);
-  box-shadow: 0 0 10px rgba(95, 111, 255, 0.4);
+  margin-bottom: 2rem;
+  position: relative;
+  overflow: hidden;
 }
 
-/* Example cards in documentation */
-.doc-example-card {
-    border: 1px solid var(--vscode-panel-border);
-    border-radius: 4px;
-    padding: 12px;
-    margin-bottom: 10px;
-    background-color: var(--vscode-editor-background);
+.doc-announcement-hero::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(45deg, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0) 100%);
+  z-index: 1;
 }
 
-.doc-example-card h4 {
-    margin-top: 0;
-    margin-bottom: 5px;
-    font-size: 15px;
+.doc-announcement-hero h4 {
+  margin-top: 0;
+  font-size: 1.8rem;
+  position: relative;
+  z-index: 2;
 }
 
-.doc-example-card p {
-    margin-bottom: 10px;
-    font-size: 13px;
+.doc-announcement-tagline {
+  font-size: 1.2rem;
+  margin-bottom: 1rem;
+  opacity: 0.9;
+  position: relative;
+  z-index: 2;
 }
 
-/* Doc categories in default view */
-.doc-categories {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 15px;
-    margin-top: 20px;
+.doc-announcement-banner {
+  position: relative;
+  z-index: 2;
 }
 
-.doc-category-item {
-    background-color: var(--vscode-editor-background);
-    border: 1px solid var(--vscode-panel-border);
-    border-radius: 6px;
-    padding: 15px;
-    transition: transform 0.2s;
-    cursor: pointer;
+.doc-badge {
+  display: inline-block;
+  background: rgba(255,255,255,0.2);
+  padding: 0.35rem 0.75rem;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 0.9rem;
 }
 
-.doc-category-item:hover {
-    transform: translateY(-2px);
-    border-color: var(--vscode-focusBorder);
+.doc-announcement-features {
+  margin-bottom: 2rem;
 }
 
-.doc-category-item h4 {
-    margin-top: 0;
-    margin-bottom: 5px;
-    font-size: 15px;
+.doc-feature-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 1.25rem;
+  margin-top: 1rem;
 }
 
-.doc-category-item p {
-    margin: 0;
-    font-size: 13px;
-    color: var(--vscode-descriptionForeground);
+.doc-feature {
+  background: var(--surface-3);
+  border-radius: 8px;
+  padding: 1.25rem;
+  border: 1px solid var(--border-color);
+  transition: all 0.3s ease;
 }
 
-/* Update items in the updates view */
-.doc-update-item {
-    margin-bottom: 20px;
-    padding-bottom: 15px;
-    border-bottom: 1px solid var(--vscode-panel-border);
+.doc-feature:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-sm);
+  border-color: var(--accent-color-light);
 }
 
-.doc-update-item:last-child {
-    border-bottom: none;
-    margin-bottom: 0;
-    padding-bottom: 0;
+.doc-feature h5 {
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.doc-feature h5 i {
+  color: var(--accent-color);
+}
+
+.doc-announcement-cta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: center;
+  background: var(--surface-3);
+  border-radius: 8px;
+  padding: 1.25rem;
+  border: 1px solid var(--border-color);
+}
+
+.doc-announcement-cta p {
+  margin: 0;
+  flex: 1;
+}
+
+/* Loading state */
+.loading-indicator {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 200px;
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+.doc-content-container.loading {
+  opacity: 0.7;
 }
