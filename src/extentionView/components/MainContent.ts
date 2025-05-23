@@ -39,8 +39,6 @@ export function getMainContentHtml(): string {
         <div class="preview-area">
             <div class="preview-container">
                 <div class="preview-header">
-                    <h3 class="preview-title">Preview Area</h3>
-                    <p id="previewText" class="preview-subtitle">Select options to configure your components.</p>
                     <nav class="filter-nav">
                         <!-- Filter buttons will be added dynamically -->
                     </nav>

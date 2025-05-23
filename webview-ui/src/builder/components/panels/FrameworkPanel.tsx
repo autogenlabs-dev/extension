@@ -10,10 +10,10 @@ const FrameworkPanel = () => (
     <button>Tailwind CSS</button>
     <button>Bootstrap</button>
     <button>Custom CSS</button>
-    <div className="preview-area">
+    {/* <div className="preview-area">
       <h3>Preview Area</h3>
       <p>Select options to configure your components.</p>
-    </div>
+    </div> */}
     {/* <button className="generate-btn">Generate Code</button> */}
   </div>
 );

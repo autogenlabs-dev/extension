@@ -6,12 +6,12 @@ export function getDocumentationPanelHtml(): string {
     return `
     <div id="documentationPanel" class="framework-section hidden">
         <h3>Documentation</h3>
-        <div class="doc-options-wrapper">
-            <button class="flat-button" data-doc-type="Documentation">Documentation</button>
-            <button class="flat-button" data-doc-type="Deployment">Deployment Doc</button>
-            <button class="flat-button" data-doc-type="News/Blogs">Blogs</button>
-            <button class="flat-button" data-doc-type="Community">Community</button>
-            <button class="flat-button" data-doc-type="Product Announcement">Release Notes</button>
+        <div class="doc-sidebar">
+            <button class="doc-menu-item" data-doc-type="Documentation">Documentation</button>
+            <button class="doc-menu-item" data-doc-type="Deployment">Deployment Doc</button>
+            <button class="doc-menu-item" data-doc-type="News/Blogs">Blogs</button>
+            <button class="doc-menu-item" data-doc-type="Community">Community</button>
+            <button class="doc-menu-item" data-doc-type="Product Announcement">Release Notes</button>
         </div>
         <!-- Removing the doc content container from sidebar. It will be in the main preview area instead -->
     </div>

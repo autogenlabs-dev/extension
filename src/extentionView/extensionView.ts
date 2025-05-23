@@ -498,7 +498,7 @@ function getScriptContent(): string {
         const websiteTypes = ['E-commerce', 'Portfolio', 'Management Dashboard', 'Blog', 'Animated Showcase', 'Landing Page'];
         const layoutOptions = ["React + Tailwind CSS", "React + Bootstrap", "Next.js + Tailwind CSS", "Next.js + Bootstrap"];
         const templateCategories = ['Headers', 'Footers', 'Hero Sections', 'Cards', 'Forms'];
-        const mcpDesignOptions = ['Modern Minimal', 'Glassmorphism', 'Retro Theme', 'Check MCP Status']; // Added design style options        // Separate state for each sidebar icon functionality
+        const mcpDesignOptions = ['Check MCP Status']; // Added design style options        // Separate state for each sidebar icon functionality
         const state = {
             // Current active panel
             activePanel: 'framework',
@@ -1561,7 +1561,7 @@ function getScriptContent(): string {
             const docContainer = document.getElementById('documentationPanel');
             if (docContainer) {
                 // Add event listeners to documentation option buttons
-                const docButtons = docContainer.querySelectorAll('.flat-button');
+                const docButtons = docContainer.querySelectorAll('.doc-menu-item');
                 if (docButtons.length > 0) {
                     docButtons.forEach(button => {
                         const docType = button.getAttribute('data-doc-type');

@@ -11,7 +11,7 @@ function getScriptContent() {
             const docContainer = document.getElementById('documentationPanel');
             if (docContainer) {
                 // Add event listeners to documentation option buttons
-                const docButtons = docContainer.querySelectorAll('.flat-button');
+                const docButtons = docContainer.querySelectorAll('.doc-menu-item');
                 if (docButtons.length > 0) {
                     docButtons.forEach(button => {
                         const docType = button.getAttribute('data-doc-type');
@@ -50,6 +50,11 @@ function getScriptContent() {
                                     }, 300);
                                 }
                             });
+                            
+                            // Apply active state if returning to this panel with a previously selected doc type
+                            if (docType === state.selectedDocType) {
+                                button.classList.add('active');
+                            }
                         }
                     });
                 }
