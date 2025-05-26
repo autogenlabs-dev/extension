@@ -781,7 +781,12 @@ function getScriptContent(): string {
 
             // Add "All" button
             const allButton = document.createElement('button');
-            allButton.className = 'filter-btn active';
+            allButton.className = 'filter-btn';
+            // Check if "all" is the currently selected category
+            if (!state.framework.selectedCategory || state.framework.selectedCategory === 'all') {
+                allButton.classList.add('active');
+                state.framework.selectedCategory = 'all'; // Ensure state is set
+            }
             allButton.textContent = 'All';
             allButton.onclick = () => handleFilterClick(allButton, 'all');
             filterNav.appendChild(allButton);
@@ -791,6 +796,10 @@ function getScriptContent(): string {
                 if (!category) return;
                 const button = document.createElement('button');
                 button.className = 'filter-btn';
+                // Check if this category is currently selected
+                if (state.framework.selectedCategory === category) {
+                    button.classList.add('active');
+                }
                 button.textContent = category.charAt(0).toUpperCase() + category.slice(1);
                 button.onclick = () => handleFilterClick(button, category);
                 filterNav.appendChild(button);
@@ -798,14 +807,18 @@ function getScriptContent(): string {
         }
 
         function handleFilterClick(button, category) {
-            document.querySelectorAll('.filter-btn').forEach(btn =>
+            // Remove active class from all filter buttons
+            document.querySelectorAll('.filter-nav .filter-btn').forEach(btn =>
                 btn.classList.remove('active')
             );
+            // Add active class to clicked button
             button.classList.add('active');
 
-            // Use the appropriate state based on active panel
+            // Update state with selected category
             if (state.activePanel === 'framework') {
                 state.framework.selectedCategory = category;
+                console.log('Filter selected:', category, 'State updated:', state.framework.selectedCategory);
+                // Show components for the selected category
                 showFrameworkCards(state.framework.selectedCSS, category);
             }
         }
@@ -837,6 +850,9 @@ function getScriptContent(): string {
         function createCard(component, framework) {
             const div = document.createElement('div');
             div.className = 'w-full border rounded-lg overflow-hidden bg-gray-800 border-gray-700';
+            
+            // Add a unique ID for easier selection management
+            div.setAttribute('data-component-id', component.title.replace(/\s+/g, '-').toLowerCase());
 
             // Header section
             const header = document.createElement('div');
@@ -870,11 +886,28 @@ function getScriptContent(): string {
             div.appendChild(contentContainer);
 
             div.onclick = () => {
-                // Remove selection from other cards
-                document.querySelectorAll('.selected').forEach(el => el.classList.remove('selected'));
+                // Remove selection from other cards first
+                document.querySelectorAll('.w-full.border.rounded-lg.selected').forEach(el => {
+                    el.classList.remove('selected');
+                });
+                
+                // Add selection to clicked card
                 div.classList.add('selected');
-
-                // Call handleComponentSelection with both title and code
+                
+                // Store selected component data in state
+                state.selectedComponentTitle = component.title;
+                state.selectedComponentCode = component.code;
+                state.filePath = component.path;
+                state.selectedDependencies = component.dependencies || [];
+                state.selectedLanguage = component.language || 'JavaScript';
+                state.selectedFramework = component.framework || 'React';
+                state.selectedCssFramework = component.cssFramework || 'unknown';
+                state.selectedCategory = component.category || 'unknown';
+                state.selectedType = component.type || 'unknown';
+                state.selectedDifficulty = component.difficulty || 'unknown';
+                state.selectedHasAnimation = component.hasAnimation || false;
+                
+                // Call handleComponentSelection with component data
                 handleComponentSelection(component.title, component.code, component.path);
             };
 
@@ -914,12 +947,6 @@ function getScriptContent(): string {
                             components.forEach(component => {
                                 if (component && component.title && component.image) {
                                     const card = createCard(component, framework);
-                                    card.onclick = () => {
-                                        handleComponentSelection(component.title, component.code, component.path);
-                                        // Remove selection from other cards
-                                        document.querySelectorAll('.selected').forEach(el => el.classList.remove('selected'));
-                                        card.classList.add('selected');
-                                    };
                                     previewGrid.appendChild(card);
                                 }
                             });
