@@ -29,62 +29,241 @@ export function showWebsiteTemplateContent(templateType: string): string {
     switch(templateType) {
         case 'E-commerce':
             html += `
-                <div class="doc-card enhanced-api-doc">
-                    <div class="doc-card-header">
-                        <h3>E-commerce Templates</h3>
-                        <span class="api-version-tag">Popular</span>
+              <div class="doc-card-header">
+                        <h3>E-commerce React Projects Showcase</h3>
+                        <span class="api-version-tag">Live Previews</span>
                     </div>
-                    <div class="doc-card-content">
-                        <div class="doc-section getting-started-section">
-                            <h4>Modern E-commerce Solutions</h4>
-                            <p>Professional e-commerce templates with shopping cart, product catalogs, and payment integration.</p>
-                            <div class="quick-links">
-                                <a href="#" class="quick-link-badge">Product Pages</a>
-                                <a href="#" class="quick-link-badge">Shopping Cart</a>
-                                <a href="#" class="quick-link-badge">Checkout</a>
-                            </div>
-                        </div>
-                        <div class="doc-section core-components-section">
-                            <h4>Featured Templates</h4>
-                            <div class="component-grid">
-                                <div class="component-card">
-                                    <div class="component-icon">🛍️</div>
-                                    <div class="component-info">
-                                        <h5>Fashion Store</h5>
-                                        <p>Modern fashion e-commerce with product galleries</p>
-                                    </div>
-                                </div>
-                                <div class="component-card">
-                                    <div class="component-icon">📱</div>
-                                    <div class="component-info">
-                                        <h5>Electronics Shop</h5>
-                                        <p>Tech product showcase with detailed specs</p>
-                                    </div>
-                                </div>
-                                <div class="component-card">
-                                    <div class="component-icon">🏠</div>
-                                    <div class="component-info">
-                                        <h5>Home & Garden</h5>
-                                        <p>Lifestyle products with category browsing</p>
-                                    </div>
+                <div class="">
+                  
+                    <div class="">
+                       
+                        
+                        <!-- Project 1: eCommerce Website -->
+                        <div style="margin-bottom: 30px; background: #1f2937; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); transition: all 0.3s ease; transform: translateY(0);" 
+                             onmouseover="this.style.boxShadow='0 25px 50px rgba(0, 0, 0, 0.25)'; this.style.transform='translateY(-4px)';" 
+                             onmouseout="this.style.boxShadow='0 4px 6px rgba(0, 0, 0, 0.1)'; this.style.transform='translateY(0)';">
+                            
+                            <!-- Live Website Preview -->
+                            <div style="position: relative;">
+                                <div style="position: relative; overflow: hidden; background: #111827;">
+                                    <iframe 
+                                        src="https://ecommerce-frontend-website.vercel.app/" 
+                                        title="eCommerce Website Live Preview"
+                                        style="width: 100%; height: 600px; border: none;"
+                                        sandbox="allow-scripts allow-same-origin allow-popups"
+                                        loading="lazy">
+                                    </iframe>
                                 </div>
                             </div>
+
+                            <!-- Content Info -->
+                            <div style="padding: 24px;">
+                                <div style="display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 16px;">
+                                    <div style="flex: 1;">
+                                        <h3 style="font-size: 24px; font-weight: 600; color: #f3f4f6; margin-bottom: 8px; margin-top: 0;">
+                                            eCommerce Website
+                                        </h3>
+                                        <span style="display: inline-block; background: #10b981; color: white; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; margin-bottom: 12px;">
+                                            ⭐ HIGHLY RECOMMENDED
+                                        </span>
+                                        <p style="color: #9ca3af; margin-bottom: 12px; margin-top: 0;">Complete e-commerce functionality with React.js + Tailwind CSS</p>
+                                    </div>
+                                </div>
+
+                                <!-- Links Section -->
+                                <div style="display: flex; gap: 16px; padding-top: 16px; border-top: 1px solid #374151;">
+                                    <a href="https://ecommerce-frontend-website.vercel.app/" target="_blank" rel="noopener noreferrer" 
+                                       style="flex: 1; background: #10b981; color: white; text-align: center; padding: 12px 16px; border-radius: 6px; font-weight: 600; text-decoration: none; transition: background-color 0.2s;"
+                                       onmouseover="this.style.background='#059669';" 
+                                       onmouseout="this.style.background='#10b981';">
+                                        🚀 Live Demo
+                                    </a>
+                                </div>
+                            </div>
                         </div>
-                        <div class="doc-section example-section">
-                            <h4>Key Features</h4>
-                            <div class="code-sample">
-                                <ul style="list-style: none; padding: 0;">
-                                    <li>✅ Responsive product grids</li>
-                                    <li>✅ Shopping cart functionality</li>
-                                    <li>✅ User authentication</li>
-                                    <li>✅ Payment gateway integration</li>
-                                    <li>✅ Inventory management</li>
-                                </ul>
+
+                        <!-- Project 2: Modern E-commerce Website -->
+                        <div style="margin-bottom: 30px; background: #1f2937; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); transition: all 0.3s ease; transform: translateY(0);" 
+                             onmouseover="this.style.boxShadow='0 25px 50px rgba(0, 0, 0, 0.25)'; this.style.transform='translateY(-4px)';" 
+                             onmouseout="this.style.boxShadow='0 4px 6px rgba(0, 0, 0, 0.1)'; this.style.transform='translateY(0)';">
+                            
+                            <!-- Live Website Preview -->
+                            <div style="position: relative;">
+                                <div style="position: relative; overflow: hidden; background: #111827;">
+                                    <iframe 
+                                        src="https://culture-ecommerce.netlify.app/" 
+                                        title="Modern E-commerce Website Live Preview"
+                                        style="width: 100%; height: 600px; border: none;"
+                                        sandbox="allow-scripts allow-same-origin allow-popups"
+                                        loading="lazy">
+                                    </iframe>
+                                </div>
+                            </div>
+
+                            <!-- Content Info -->
+                            <div style="padding: 24px;">
+                                <div style="display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 16px;">
+                                    <div style="flex: 1;">
+                                        <h3 style="font-size: 24px; font-weight: 600; color: #f3f4f6; margin-bottom: 8px; margin-top: 0;">
+                                            Modern E-commerce Website
+                                        </h3>
+                                        <span style="display: inline-block; background: #3b82f6; color: white; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; margin-bottom: 12px;">
+                                            🎯 MODERN & RECENT
+                                        </span>
+                                        <p style="color: #9ca3af; margin-bottom: 12px; margin-top: 0;">Fashion-focused e-commerce site with modern UI</p>
+                                    </div>
+                                </div>
+
+                                <!-- Links Section -->
+                                <div style="display: flex; gap: 16px; padding-top: 16px; border-top: 1px solid #374151;">
+                                    <a href="https://culture-ecommerce.netlify.app/" target="_blank" rel="noopener noreferrer" 
+                                       style="flex: 1; background: #10b981; color: white; text-align: center; padding: 12px 16px; border-radius: 6px; font-weight: 600; text-decoration: none; transition: background-color 0.2s;"
+                                       onmouseover="this.style.background='#059669';" 
+                                       onmouseout="this.style.background='#10b981';">
+                                        🚀 Live Demo
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Project 3: Fashion Ecommerce -->
+                        <div style="margin-bottom: 30px; background: #1f2937; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); transition: all 0.3s ease; transform: translateY(0);" 
+                             onmouseover="this.style.boxShadow='0 25px 50px rgba(0, 0, 0, 0.25)'; this.style.transform='translateY(-4px)';" 
+                             onmouseout="this.style.boxShadow='0 4px 6px rgba(0, 0, 0, 0.1)'; this.style.transform='translateY(0)';">
+                            
+                            <!-- Live Website Preview -->
+                            <div style="position: relative;">
+                                <div style="position: relative; overflow: hidden; background: #111827;">
+                                    <iframe 
+                                        src="https://fashion-ecommerce-omega.vercel.app/" 
+                                        title="Fashion Ecommerce Live Preview"
+                                        style="width: 100%; height: 600px; border: none;"
+                                        sandbox="allow-scripts allow-same-origin allow-popups"
+                                        loading="lazy">
+                                    </iframe>
+                                </div>
+                            </div>
+
+                            <!-- Content Info -->
+                            <div style="padding: 24px;">
+                                <div style="display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 16px;">
+                                    <div style="flex: 1;">
+                                        <h3 style="font-size: 24px; font-weight: 600; color: #f3f4f6; margin-bottom: 8px; margin-top: 0;">
+                                            Fashion Ecommerce
+                                        </h3>
+                                        <span style="display: inline-block; background: #ef4444; color: white; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; margin-bottom: 12px;">
+                                            🔥 TYPESCRIPT + 2024
+                                        </span>
+                                        <p style="color: #9ca3af; margin-bottom: 12px; margin-top: 0;">Single-page application with TypeScript</p>
+                                    </div>
+                                </div>
+
+                                <!-- Links Section -->
+                                <div style="display: flex; gap: 16px; padding-top: 16px; border-top: 1px solid #374151;">
+                                    <a href="https://fashion-ecommerce-omega.vercel.app/" target="_blank" rel="noopener noreferrer" 
+                                       style="flex: 1; background: #10b981; color: white; text-align: center; padding: 12px 16px; border-radius: 6px; font-weight: 600; text-decoration: none; transition: background-color 0.2s;"
+                                       onmouseover="this.style.background='#059669';" 
+                                       onmouseout="this.style.background='#10b981';">
+                                        🚀 Live Demo
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Project 4: E-commerce Shop React App -->
+                        <div style="margin-bottom: 30px; background: #1f2937; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); transition: all 0.3s ease; transform: translateY(0);" 
+                             onmouseover="this.style.boxShadow='0 25px 50px rgba(0, 0, 0, 0.25)'; this.style.transform='translateY(-4px)';" 
+                             onmouseout="this.style.boxShadow='0 4px 6px rgba(0, 0, 0, 0.1)'; this.style.transform='translateY(0)';">
+                            
+                            <!-- Live Website Preview -->
+                            <div style="position: relative;">
+                                <div style="position: relative; overflow: hidden; background: #111827;">
+                                    <iframe 
+                                        src="https://ecommerce-shop-react-app.vercel.app/" 
+                                        title="E-commerce Shop React App Live Preview"
+                                        style="width: 100%; height: 600px; border: none;"
+                                        sandbox="allow-scripts allow-same-origin allow-popups"
+                                        loading="lazy">
+                                    </iframe>
+                                </div>
+                            </div>
+
+                            <!-- Content Info -->
+                            <div style="padding: 24px;">
+                                <div style="display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 16px;">
+                                    <div style="flex: 1;">
+                                        <h3 style="font-size: 24px; font-weight: 600; color: #f3f4f6; margin-bottom: 8px; margin-top: 0;">
+                                            E-commerce Shop React App
+                                        </h3>
+                                        <span style="display: inline-block; background: #8b5cf6; color: white; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; margin-bottom: 12px;">
+                                            📱 FULLY RESPONSIVE
+                                        </span>
+                                        <p style="color: #9ca3af; margin-bottom: 12px; margin-top: 0;">Fully responsive shop with Fake Store API</p>
+                                    </div>
+                                </div>
+
+                                <!-- Links Section -->
+                                <div style="display: flex; gap: 16px; padding-top: 16px; border-top: 1px solid #374151;">
+                                    <a href="https://ecommerce-shop-react-app.vercel.app/" target="_blank" rel="noopener noreferrer" 
+                                       style="flex: 1; background: #10b981; color: white; text-align: center; padding: 12px 16px; border-radius: 6px; font-weight: 600; text-decoration: none; transition: background-color 0.2s;"
+                                       onmouseover="this.style.background='#059669';" 
+                                       onmouseout="this.style.background='#10b981';">
+                                        🚀 Live Demo
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Project 5: Canim Ecommerce - LIVE DATA -->
+                        <div style="margin-bottom: 30px; background: #1f2937; border: 2px solid #10b981; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); transition: all 0.3s ease; transform: translateY(0);" 
+                             onmouseover="this.style.boxShadow='0 25px 50px rgba(0, 0, 0, 0.25)'; this.style.transform='translateY(-4px)';" 
+                             onmouseout="this.style.boxShadow='0 4px 6px rgba(0, 0, 0, 0.1)'; this.style.transform='translateY(0)';">
+                            
+                            <!-- Live Website Preview -->
+                            <div style="position: relative;">
+                                <div style="position: relative; overflow: hidden; background: #111827;">
+                                    <iframe 
+                                        src="https://canim-csr.vercel.app/" 
+                                        title="Canim Ecommerce Live Preview"
+                                        style="width: 100%; height: 600px; border: none;"
+                                        sandbox="allow-scripts allow-same-origin allow-popups"
+                                        loading="lazy">
+                                    </iframe>
+                                    
+                                    <div style="position: absolute; top: 16px; right: 16px; background: #10b981; color: white; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; animation: pulse 2s infinite;">
+                                        🔴 LIVE
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Content Info -->
+                            <div style="padding: 24px;">
+                                <div style="display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 16px;">
+                                    <div style="flex: 1;">
+                                        <h3 style="font-size: 24px; font-weight: 600; color: #f3f4f6; margin-bottom: 8px; margin-top: 0;">
+                                            Canim Ecommerce - LIVE DATA
+                                        </h3>
+                                        <span style="display: inline-block; background: #f59e0b; color: white; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; margin-bottom: 12px;">
+                                            🌟 FULL-STACK ADVANCED
+                                        </span>
+                                        <p style="color: #9ca3af; margin-bottom: 12px; margin-top: 0;">Full-stack advanced e-commerce platform with live data</p>
+                                    </div>
+                                </div>
+
+                                <!-- Links Section -->
+                                <div style="display: flex; gap: 16px; padding-top: 16px; border-top: 1px solid #374151;">
+                                    <a href="https://canim-csr.vercel.app/" target="_blank" rel="noopener noreferrer" 
+                                       style="flex: 1; background: #10b981; color: white; text-align: center; padding: 12px 16px; border-radius: 6px; font-weight: 600; text-decoration: none; transition: background-color 0.2s;"
+                                       onmouseover="this.style.background='#059669';" 
+                                       onmouseout="this.style.background='#10b981';">
+                                        🚀 Live Demo
+                                    </a>
+                                </div>
                             </div>
                         </div>
                     </div>
                     <div class="doc-card-footer">
-                        <button class="doc-button primary-button">Browse E-commerce Templates</button>
+                        <button class="doc-button primary-button">Explore More E-commerce Projects</button>
                     </div>
                 </div>`;
             break;

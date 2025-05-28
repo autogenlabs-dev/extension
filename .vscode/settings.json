@@ -4,15 +4,16 @@
     "mcp": {
         "inputs": [],
         "servers": {
-            "mcp-server-time": {
-                "command": "python",
+            "filesystem": {
+                "command": "npx",
                 "args": [
-                    "-m",
-                    "mcp_server_time",
-                    "--local-timezone=America/Los_Angeles"
-                ],
-                "env": {}
+                    "-y",
+                    "@modelcontextprotocol/server-filesystem",
+                    "/home/cis/Desktop/extension"
+                ]
             }
         }
-    }
+    },
+    "github.copilot.chat.codesearch.enabled": true,
+    "chat.mcp.discovery.enabled": true
 }
