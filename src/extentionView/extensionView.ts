@@ -5,6 +5,7 @@ import { getSidebarHtml } from "./components/Sidebar";
 import { getMainContentHtml } from "./components/MainContent";
 import { showDesignContent, getDesignPrompt } from "./components/DesignPanel";
 import { showDocumentationContent } from "./components/DocumentationPanel"; // Import for documentation content
+import { showWebsiteTemplateContent } from "./components/WebsiteTemplatesPanel"; // Import for website templates content
 // Import AutoGenProvider to access its static methods and potentially types
 import { AutoGenProvider } from "../core/webview/AutogenProvider"; // Added import
 import { reactWithTailwind } from "./components/setups/reactWithTailwindSetup"; // Import for React + Tailwind setup
@@ -291,6 +292,9 @@ function getScriptContent(): string {
 
         // Import the documentation content rendering function
         ${showDocumentationContent.toString()}
+        
+        // Import the website templates content rendering function
+        ${showWebsiteTemplateContent.toString()}
 
         // Helper function to find a directory and add a node to it
         function addNodeToStructure(structure, targetPathParts, nodeToAdd) {
@@ -579,6 +583,53 @@ function getScriptContent(): string {
                 }
             }
         }
+        
+        // Function to initialize Website Templates panel options
+        function initializeWebsiteTemplatesPanel() {
+            const templatesContainer = document.getElementById('websiteTemplatesPanel');
+            if (templatesContainer) {
+                // Add event listeners to website template option buttons
+                const templateButtons = templatesContainer.querySelectorAll('.doc-menu-item');
+                if (templateButtons.length > 0) {
+                    templateButtons.forEach(button => {
+                        const templateType = button.getAttribute('data-template-type');
+                        if (templateType) {
+                            button.addEventListener('click', () => {
+                                // Remove active class from all buttons
+                                templateButtons.forEach(btn => btn.classList.remove('active'));
+                                // Add active class to clicked button
+                                button.classList.add('active');
+                                
+                                // Handle the selection
+                                handleSelection('websiteTemplateType', templateType);
+                            });
+                            
+                            // Apply active state if returning to this panel
+                            if (templateType === state.selectedWebsiteTemplate) {
+                                button.classList.add('active');
+                            }
+                        }
+                    });
+                }
+                
+                // Set default selection
+                if (!state.selectedWebsiteTemplate) {
+                    const defaultButton = templatesContainer.querySelector('[data-template-type="E-commerce"]');
+                    if (defaultButton) {
+                        state.selectedWebsiteTemplate = "E-commerce";
+                        defaultButton.classList.add('active');
+                        // Trigger initial content display
+                        setTimeout(() => {
+                            const websiteTemplatesContentContainer = document.getElementById('websiteTemplatesContentContainer');
+                            if (websiteTemplatesContentContainer) {
+                                const content = showWebsiteTemplateContent("E-commerce");
+                                websiteTemplatesContentContainer.innerHTML = content;
+                            }
+                        }, 100);
+                    }
+                }
+            }
+        }
 
         function initializeButtons() {
             // Debug button
@@ -654,7 +705,34 @@ function getScriptContent(): string {
                     if (previewGrid) {
                         previewGrid.innerHTML = '<div class="preview-placeholder">Selected Website Type: <strong>' + value + '</strong></div>';
                     }
-                 }
+                 } else if (type === 'websiteTemplateType') { 
+                    state.selectedWebsiteTemplate = value;
+                    console.log('Website Template type selected:', value);
+                    
+                    // Display content in the websiteTemplatesContentContainer
+                    const websiteTemplatesContentContainer = document.getElementById('websiteTemplatesContentContainer');
+                    if (websiteTemplatesContentContainer) {
+                        // Show loading indicator
+                        websiteTemplatesContentContainer.innerHTML = '<div class="loading-indicator">Loading templates...</div>';
+                        websiteTemplatesContentContainer.classList.add('loading');
+                        
+                        // Short delay for better UX
+                        setTimeout(() => {
+                            // Get content and update container
+                            const content = showWebsiteTemplateContent(value);
+                            websiteTemplatesContentContainer.innerHTML = content;
+                            websiteTemplatesContentContainer.classList.remove('loading');
+                            
+                            // Add event listeners to buttons in the template content
+                            const templateContentButtons = websiteTemplatesContentContainer.querySelectorAll('.doc-button, .doc-button-small');
+                            templateContentButtons.forEach(btn => {
+                                btn.addEventListener('click', () => {
+                                    console.log('Template button clicked:', btn.textContent);
+                                });
+                            });
+                        }, 200);
+                    }
+                }
             } else if (type === 'mcpDesignOption') { 
                 state.selectedMcpDesignOption = value;
                 updateSelection('mcpDesignOptions', value);
@@ -1090,6 +1168,7 @@ function getScriptContent(): string {
                 cssFramework: document.getElementById('cssFrameworkContainer'),
                 layout: document.getElementById('layoutPanel'),
                 websiteType: document.getElementById('websiteTypeContainer'),
+                websiteTemplates: document.getElementById('websiteTemplatesPanel'), // Add website templates panel
                 components: document.getElementById('elementsPanel'),
                 figmadesign: document.getElementById('mcpDesignPanel'), // Map 'figmadesign' to the new panel ID
                 documentation: document.getElementById('documentationPanel'), // Add documentation panel
@@ -1164,13 +1243,21 @@ function getScriptContent(): string {
                     document.querySelector('.preview-area')?.classList.remove('full-width');
                 }
                 
-                if (panels.websiteType) {
-                     panels.websiteType.classList.remove('hidden');
-                     panels.websiteType.classList.add('visible');
+                if (panels.websiteTemplates) {
+                     panels.websiteTemplates.classList.remove('hidden');
+                     panels.websiteTemplates.classList.add('visible');
                  }
-                  if(previewText) previewText.textContent = 'Select a website type.';
-                 if (previewGrid) previewGrid.innerHTML = '<p>Select a website type.</p>';
-                 initializeWebsiteTypeButtons();            
+                 
+                 // Show websiteTemplatesContentContainer and hide previewGrid for content panel
+                if (previewGrid) previewGrid.classList.add('hidden');
+                
+                const websiteTemplatesContentContainer = document.getElementById('websiteTemplatesContentContainer');
+                if (websiteTemplatesContentContainer) {
+                    websiteTemplatesContentContainer.classList.remove('hidden');
+                }
+                
+                // Initialize the website templates panel with options
+                initializeWebsiteTemplatesPanel();            
             } else if (panel === 'figmadesign') { // 4th icon -> MCP/Design Options
                 // If we're coming from settings, restore the components panel display
                 if (state.activePanel === 'settings') {
