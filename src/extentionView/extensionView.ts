@@ -1135,7 +1135,7 @@ function getScriptContent(): string {
                 previewText.textContent = ''; // Clear subtitle by default
             }
             
-            // Always show previewGrid and hide docContentContainer by default when switching panels
+            // Always show previewGrid and hide docContentContainer and websiteTemplatesContentContainer by default when switching panels
             if (previewGrid) {
                 previewGrid.classList.remove('hidden');
                 previewGrid.innerHTML = ''; 
@@ -1143,6 +1143,12 @@ function getScriptContent(): string {
             
             if (docContentContainer) {
                 docContentContainer.classList.add('hidden');
+            }
+            
+            // Hide website templates content container when switching panels
+            const websiteTemplatesContentContainer = document.getElementById('websiteTemplatesContentContainer');
+            if (websiteTemplatesContentContainer) {
+                websiteTemplatesContentContainer.classList.add('hidden');
             }
             
             if (filterNav) {
