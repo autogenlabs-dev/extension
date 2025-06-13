@@ -1,0 +1,369 @@
+/* Documentation Loading Animation Styles */
+.doc-content-container {
+  position: relative;
+  min-height: 300px;
+  width: 100%;
+  transition: all 0.3s ease;
+}
+
+.loading-indicator {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 200px;
+  width: 100%;
+  padding: 2rem;
+  color: var(--primary);
+  font-size: 1.2rem;
+  position: relative;
+  text-align: center;
+  font-weight: 500;
+  animation: fadeIn 0.5s ease-out;
+}
+
+/* Text "Loading documentation..." */
+.loading-indicator::before {
+  content: "Loading documentation...";
+  margin-bottom: 1.5rem;
+  animation: pulse 1.5s infinite ease-in-out;
+}
+
+/* Spinner animation */
+.loading-indicator::after {
+  content: "";
+  width: 50px;
+  height: 50px;
+  border: 5px solid var(--border-color);
+  border-radius: 50%;
+  border-top-color: var(--primary);
+  animation: spin 1s infinite ease-in-out;
+  display: block;
+}
+
+/* Container loading state */
+.doc-content-container.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--surface-1);
+  border-radius: 10px;
+  padding: 2rem;
+  margin-top: 1rem;
+  box-shadow: var(--shadow-sm);
+}
+
+/* Documentation card animations */
+.doc-container {
+  animation: slideUp 0.5s ease-out;
+}
+
+.doc-card {
+  animation: fadeIn 0.6s ease-out;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.doc-card:hover {
+  transform: translateY(-8px);
+  box-shadow: var(--shadow-md);
+}
+
+/* Animation keyframes */
+@keyframes fadeIn {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+@keyframes slideUp {
+  0% { opacity: 0; transform: translateY(20px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulse {
+  0% { opacity: 0.6; }
+  50% { opacity: 1; }
+  100% { opacity: 0.6; }
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Additional Documentation Panel Styles */
+.flat-button {
+  position: relative;
+  overflow: hidden;
+}
+
+.flat-button::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+  transition: all 0.5s ease;
+}
+
+.flat-button:hover::after {
+  left: 100%;
+}
+
+.flat-button.active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  width: 4px;
+  background: linear-gradient(to bottom, var(--primary), var(--primary-light));
+  border-radius: 0 2px 2px 0;
+}
+
+/* Documentation content styles - make text more readable */
+.doc-section p {
+  line-height: 1.6;
+  margin-bottom: 1rem;
+}
+
+.doc-card-header h3 {
+  position: relative;
+  padding-left: 1rem;
+}
+
+.doc-card-header h3::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 4px;
+  height: 18px;
+  background: linear-gradient(to bottom, var(--primary), var(--primary-light));
+  border-radius: 2px;
+}
+
+/* Enhanced API Documentation Card Styles */
+.enhanced-api-doc {
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  transition: all 0.4s ease;
+  background-color: var(--surface-1);
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+}
+
+.enhanced-api-doc:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 14px 30px rgba(95, 111, 255, 0.2);
+}
+
+.enhanced-api-doc .doc-card-header {
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  padding: 20px 25px;
+  position: relative;
+  overflow: hidden;
+}
+
+.enhanced-api-doc .doc-card-header h3 {
+  color: white;
+  font-size: 1.5rem;
+  margin: 0;
+  font-weight: 600;
+  padding-left: 0;
+}
+
+.enhanced-api-doc .doc-card-header h3::before {
+  display: none;
+}
+
+.enhanced-api-doc .doc-card-header::after {
+  content: '';
+  position: absolute;
+  top: -30px;
+  right: -30px;
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.api-version-tag {
+  position: absolute;
+  top: 20px;
+  right: 25px;
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  font-size: 0.8rem;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-weight: 500;
+}
+
+/* Getting Started Section */
+.getting-started-section {
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 20px;
+  margin-bottom: 24px;
+}
+
+.quick-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 15px;
+}
+
+.quick-link-badge {
+  display: inline-block;
+  padding: 6px 12px;
+  background-color: rgba(95, 111, 255, 0.1);
+  color: var(--primary);
+  border-radius: 6px;
+  font-size: 0.85rem;
+  transition: all 0.3s ease;
+  text-decoration: none;
+}
+
+.quick-link-badge:hover {
+  background-color: var(--primary);
+  color: white;
+  transform: translateY(-2px);
+}
+
+/* Component Grid and Cards */
+.component-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+  margin: 20px 0;
+}
+
+.component-card {
+  background-color: var(--surface-2);
+  border-radius: 10px;
+  padding: 16px;
+  display: flex;
+  align-items: flex-start;
+  transition: all 0.3s ease;
+  border: 1px solid var(--border-color);
+}
+
+.component-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
+  background-color: var(--surface-3);
+  border-color: var(--primary);
+}
+
+.component-icon {
+  font-size: 1.5rem;
+  margin-right: 15px;
+  background: radial-gradient(circle, rgba(95, 111, 255, 0.1), transparent);
+  width: 46px;
+  height: 46px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+}
+
+.component-info h5 {
+  margin: 0 0 6px 0;
+  color: var(--text-primary);
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.component-info p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+/* Code Sample */
+.example-section {
+  margin-top: 30px;
+}
+
+.code-sample {
+  background-color: var(--surface-3);
+  border-radius: 8px;
+  padding: 20px;
+  position: relative;
+  overflow: hidden;
+  margin-top: 15px;
+  font-family: monospace;
+}
+
+.code-sample::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  width: 4px;
+  background: var(--primary);
+}
+
+.code-sample pre {
+  margin: 0;
+  padding: 0;
+}
+
+.code-sample code {
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+/* Footer Button */
+.enhanced-api-doc .doc-card-footer {
+  border-top: 1px solid var(--border-color);
+  background-color: rgba(95, 111, 255, 0.05);
+  padding: 20px;
+}
+
+.primary-button {
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  width: auto;
+  font-weight: 500;
+}
+
+.primary-button:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 16px rgba(95, 111, 255, 0.3);
+}
+
+/* Responsive Design */
+@media screen and (max-width: 768px) {
+  .component-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .component-card {
+    padding: 14px;
+  }
+
+  .enhanced-api-doc .doc-card-header {
+    padding: 16px 20px;
+  }
+  
+  .enhanced-api-doc .doc-card-header h3 {
+    font-size: 1.3rem;
+  }
+  
+  .api-version-tag {
+    top: 15px;
+    right: 20px;
+  }
+}
