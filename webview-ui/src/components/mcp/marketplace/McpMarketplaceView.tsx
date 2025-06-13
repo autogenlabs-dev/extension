@@ -268,11 +268,64 @@ const McpMarketplaceView = () => {
 							alignItems: "center",
 							height: "100%",
 							padding: "20px",
-							color: "var(--vscode-descriptionForeground)",
-						}}>
-						{searchQuery || selectedCategory
-							? "No matching MCP servers found"
-							: "No MCP servers found in the marketplace"}
+						}}
+					>
+						<div
+							style={{
+								background: "var(--vscode-textCodeBlock-background)",
+								borderRadius: "8px",
+								padding: "32px 32px 24px 32px",
+								boxShadow: "0 2px 8px 0 rgba(0,0,0,0.08)",
+								display: "flex",
+								flexDirection: "column",
+								alignItems: "center",
+								width: "100%",
+								maxWidth: 400,
+							}}
+						>
+							<div
+								style={{
+									width: 48,
+									height: 48,
+									borderRadius: "50%",
+									background: "var(--vscode-titleBar-inactiveForeground)",
+									display: "flex",
+									alignItems: "center",
+									justifyContent: "center",
+									marginBottom: 16,
+									opacity: 0.5,
+								}}
+							>
+								<span className="codicon codicon-server" style={{ fontSize: 28, color: "var(--vscode-descriptionForeground)" }} />
+							</div>
+							<div style={{ fontWeight: 600, fontSize: 16, marginBottom: 8, color: "var(--vscode-descriptionForeground)" }}>
+								No Remote Servers Found
+							</div>
+							<div style={{ fontSize: 13, color: "var(--vscode-descriptionForeground)", marginBottom: 16, textAlign: "center" }}>
+								You have no remote servers available. Add a new server or check your connection.
+							</div>
+							<div
+								style={{
+									display: "flex",
+									alignItems: "center",
+									gap: 8,
+									marginBottom: 8,
+									opacity: 0.7,
+								}}
+							>
+								<span
+									style={{
+										width: 10,
+										height: 10,
+										borderRadius: "50%",
+										background: "var(--vscode-testing-iconFailed)",
+										display: "inline-block",
+										marginRight: 6,
+									}}
+								/>
+								<span style={{ fontSize: 12 }}>Inactive</span>
+							</div>
+						</div>
 					</div>
 				) : (
 					filteredItems.map((item) => <McpMarketplaceCard key={item.mcpId} item={item} installedServers={mcpServers} />)

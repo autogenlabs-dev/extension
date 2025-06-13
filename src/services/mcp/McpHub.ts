@@ -95,7 +95,7 @@ export class McpHub {
 				mcpSettingsFilePath,
 				`{
   "mcpServers": {
-    
+
   }
 }`,
 			)
@@ -141,8 +141,12 @@ export class McpHub {
 			const content = await fs.readFile(settingsPath, "utf-8")
 			const config = JSON.parse(content)
 			await this.updateServerConnections(config.mcpServers || {})
+			// Ensure webview is notified *after* all initial connections are attempted
+			await this.notifyWebviewOfServerChanges();
 		} catch (error) {
 			console.error("Failed to initialize MCP servers:", error)
+			// Notify even on error, to show potentially disconnected states
+			await this.notifyWebviewOfServerChanges();
 		}
 	}
 

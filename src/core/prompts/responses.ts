@@ -110,6 +110,32 @@ Otherwise, if you have not completed the task and do not need additional informa
 		}
 	},
 
+	formatNativeFsDirectoryEntries: (
+		cwd: string, // Need cwd to resolve absolute paths for ignore checking
+		absoluteDirPath: string, // The absolute path of the directory listed
+		entries: { name: string; type: 'file' | 'directory' | 'unknown' }[],
+		autogenIgnoreController?: AutoGenIgnoreController,
+	): string => {
+		const sorted = entries
+			.map(entry => {
+				const entryPath = path.join(absoluteDirPath, entry.name).toPosix(); // Get absolute path for ignore check
+				const relativePath = path.relative(cwd, entryPath).toPosix(); // Path relative to CWD for display
+				const isIgnored = autogenIgnoreController ? !autogenIgnoreController.validateAccess(entryPath) : false;
+				const prefix = isIgnored ? LOCK_TEXT_SYMBOL + " " : "";
+				return prefix + (entry.type === 'directory' ? relativePath + "/" : relativePath);
+			})
+			.sort((a, b) => {
+				// Basic sort, could be enhanced like formatFilesList if needed
+				return a.localeCompare(b, undefined, { numeric: true, sensitivity: "base" });
+			});
+
+		if (sorted.length === 0) {
+			return "No files or directories found.";
+		} else {
+			return sorted.join("\n");
+		}
+	},
+
 	createPrettyPatch: (filename = "file", oldStr?: string, newStr?: string) => {
 		// strings cannot be undefined or diff throws exception
 		const patch = diff.createPatch(filename.toPosix(), oldStr || "", newStr || "")

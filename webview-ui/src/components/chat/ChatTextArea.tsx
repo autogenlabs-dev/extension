@@ -419,7 +419,11 @@ const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 		}, [selectedType, searchQuery])
 
 		const handleMessage = useCallback((event: MessageEvent) => {
-			const message: ExtensionMessage = event.data
+			const message: any = event.data
+			if (message.command === 'initializePrompt' && message.prompt) {
+				setInputValue(message.prompt)
+			}
+
 			switch (message.type) {
 				case "commitSearchResults": {
 					const commits =

@@ -65,8 +65,18 @@ export interface WebviewMessage {
 		| "fetchUserCreditsData"
 		| "optionsResponse"
 		| "requestTotalTasksSize"
+		| "initializePrompt" // Added for ExtensionView -> AutoGenProvider communication
+		// Native Filesystem Operations
+		| "nativeFsReadFile"
+		| "nativeFsWriteFile"
+		| "nativeFsListDirectory"
+		| "nativeFsCreateDirectory"
+		| "nativeFsGetFileInfo"
+		| "nativeFsRename"
+		| "nativeFsDelete"
 	// | "relaunchChromeDebugMode"
 	text?: string
+	prompt?: string // Added for initializePrompt message
 	disabled?: boolean
 	askResponse?: AutoGenAskResponse
 	apiConfiguration?: ApiConfiguration
@@ -95,6 +105,15 @@ export interface WebviewMessage {
 	planActSeparateModelsSetting?: boolean
 	telemetrySetting?: TelemetrySetting
 	customInstructionsSetting?: string
+
+	// --- Native Filesystem Payload ---
+	path?: string // Used by most nativeFs operations
+	content?: string // Used by nativeFsWriteFile
+	newPath?: string // Used by nativeFsRename
+	recursive?: boolean // Used by nativeFsDelete
+	useTrash?: boolean // Used by nativeFsDelete
+	overwrite?: boolean // Used by nativeFsRename
+	// --- End Native Filesystem Payload ---
 }
 
 export type AutoGenAskResponse = "yesButtonClicked" | "noButtonClicked" | "messageResponse"

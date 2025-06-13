@@ -15,6 +15,7 @@ import { selectImages } from "../../integrations/misc/process-images"
 import { getTheme } from "../../integrations/theme/getTheme"
 import WorkspaceTracker from "../../integrations/workspace/WorkspaceTracker"
 import { McpHub } from "../../services/mcp/McpHub"
+import { nativeFsService } from "../../services/nativeFs/NativeFsService" // Import the new service
 import { UserInfo } from "../../shared/UserInfo"
 import { ApiConfiguration, ApiProvider, ModelInfo } from "../../shared/api"
 import { findLast } from "../../shared/array"
@@ -831,6 +832,7 @@ export class AutoGenProvider implements vscode.WebviewViewProvider {
 						this.refreshTotalTasksSize()
 						break
 					}
+					// Removed incorrect mcpServers case here
 					case "restartMcpServer": {
 						try {
 							await this.mcpHub?.restartConnection(message.text!)
@@ -936,6 +938,167 @@ export class AutoGenProvider implements vscode.WebviewViewProvider {
 						this.postMessageToWebview({ type: "relinquishControl" })
 						break
 					}
+					case "initializePrompt": // Handle prompt from ExtensionView
+						if (message.prompt) {
+							const structuredPrompt = `The user wants to generate a component based on the following request:
+
+${message.prompt}
+
+Please generate the component. After generation, verify the component code, ensure all necessary dependencies are listed or installed, and confirm everything is set up correctly.`;
+							await this.initAutoGenWithTask(structuredPrompt);
+
+							// Focus the sidebar container and chat view
+							try {
+								await vscode.commands.executeCommand("claude-dev.SidebarProvider.focus");
+							} catch (error) {
+								console.error("Failed to focus AutoGen chat sidebar:", error);
+							}
+						}
+						break;
+
+					// --- Native Filesystem Handlers ---
+					case "nativeFsReadFile":
+						if (message.path) {
+							try {
+								const content = await nativeFsService.readFile(message.path);
+								await this.postMessageToWebview({
+									type: "nativeFsReadFileResult",
+									path: message.path,
+									content: content,
+								});
+							} catch (error: any) {
+								await this.postMessageToWebview({
+									type: "nativeFsError",
+									operation: "readFile",
+									path: message.path,
+									error: error.message || String(error),
+								});
+							}
+						}
+						break;
+					case "nativeFsWriteFile":
+						if (message.path && message.content !== undefined) {
+							try {
+								await nativeFsService.writeFile(message.path, message.content);
+								await this.postMessageToWebview({
+									type: "nativeFsWriteFileResult",
+									path: message.path,
+								});
+							} catch (error: any) {
+								await this.postMessageToWebview({
+									type: "nativeFsError",
+									operation: "writeFile",
+									path: message.path,
+									error: error.message || String(error),
+								});
+							}
+						}
+						break;
+					case "nativeFsListDirectory":
+						if (message.path !== undefined) { // Allow empty string or '.' for root
+							try {
+								const entries = await nativeFsService.listDirectory(message.path);
+								await this.postMessageToWebview({
+									type: "nativeFsListDirectoryResult",
+									path: message.path,
+									entries: entries,
+								});
+							} catch (error: any) {
+								await this.postMessageToWebview({
+									type: "nativeFsError",
+									operation: "listDirectory",
+									path: message.path,
+									error: error.message || String(error),
+								});
+							}
+						}
+						break;
+					case "nativeFsCreateDirectory":
+						if (message.path) {
+							try {
+								await nativeFsService.createDirectory(message.path);
+								await this.postMessageToWebview({
+									type: "nativeFsCreateDirectoryResult",
+									path: message.path,
+								});
+							} catch (error: any) {
+								await this.postMessageToWebview({
+									type: "nativeFsError",
+									operation: "createDirectory",
+									path: message.path,
+									error: error.message || String(error),
+								});
+							}
+						}
+						break;
+					case "nativeFsGetFileInfo":
+						if (message.path) {
+							try {
+								const stats = await nativeFsService.getFileInfo(message.path);
+								// Convert vscode.FileStat to SerializableFileStat
+								const serializableStats: import("../../shared/ExtensionMessage").SerializableFileStat = {
+									type: stats.type === vscode.FileType.Directory ? 'directory' :
+										  stats.type === vscode.FileType.File ? 'file' :
+										  stats.type === vscode.FileType.SymbolicLink ? 'symbolicLink' : 'unknown',
+									ctime: stats.ctime,
+									mtime: stats.mtime,
+									size: stats.size,
+								};
+								await this.postMessageToWebview({
+									type: "nativeFsGetFileInfoResult",
+									path: message.path,
+									stats: serializableStats,
+								});
+							} catch (error: any) {
+								await this.postMessageToWebview({
+									type: "nativeFsError",
+									operation: "getFileInfo",
+									path: message.path,
+									error: error.message || String(error),
+								});
+							}
+						}
+						break;
+					case "nativeFsRename":
+						if (message.path && message.newPath) {
+							try {
+								await nativeFsService.rename(message.path, message.newPath, message.overwrite);
+								await this.postMessageToWebview({
+									type: "nativeFsRenameResult",
+									oldPath: message.path,
+									newPath: message.newPath,
+								});
+							} catch (error: any) {
+								await this.postMessageToWebview({
+									type: "nativeFsError",
+									operation: "rename",
+									path: message.path,
+									newPath: message.newPath,
+									error: error.message || String(error),
+								});
+							}
+						}
+						break;
+					case "nativeFsDelete":
+						if (message.path) {
+							try {
+								await nativeFsService.delete(message.path, message.recursive, message.useTrash);
+								await this.postMessageToWebview({
+									type: "nativeFsDeleteResult",
+									path: message.path,
+								});
+							} catch (error: any) {
+								await this.postMessageToWebview({
+									type: "nativeFsError",
+									operation: "delete",
+									path: message.path,
+									error: error.message || String(error),
+								});
+							}
+						}
+						break;
+					// --- End Native Filesystem Handlers ---
+
 					// Add more switch case statements here as more webview message commands
 					// are created within the webview context (i.e. inside media/main.js)
 				}
@@ -1401,8 +1564,16 @@ export class AutoGenProvider implements vscode.WebviewViewProvider {
 				throw new Error("Invalid response from MCP marketplace API")
 			}
 
+			// Ensure response.data is an array or has an items array before mapping
+			let responseData: any[] = []
+			if (Array.isArray(response.data)) {
+				responseData = response.data
+			} else if (response.data && Array.isArray(response.data.items)) {
+				responseData = response.data.items
+			}
+
 			const catalog: McpMarketplaceCatalog = {
-				items: (response.data || []).map((item: any) => ({
+				items: responseData.map((item: any) => ({
 					...item,
 					githubStars: item.githubStars ?? 0,
 					downloadCount: item.downloadCount ?? 0,
@@ -1890,6 +2061,9 @@ Here is the project's README to help you get started:\n\n${mcpDetails.readmeCont
 	}
 
 	async getStateToPostToWebview(): Promise<ExtensionState> {
+		// Fetch the current list of MCP servers from McpHub
+		const mcpServers = this.mcpHub?.getServers() || []; // Assuming getServers() exists
+
 		const {
 			apiConfiguration,
 			lastShownAnnouncementId,
@@ -1907,6 +2081,7 @@ Here is the project's README to help you get started:\n\n${mcpDetails.readmeCont
 		return {
 			version: this.context.extension?.packageJSON?.version ?? "",
 			apiConfiguration,
+			mcpServers, // Add the fetched servers here
 			customInstructions,
 			uriScheme: vscode.env.uriScheme,
 			currentTaskItem: this.AutoGen?.taskId ? (taskHistory || []).find((item) => item.id === this.AutoGen?.taskId) : undefined,
