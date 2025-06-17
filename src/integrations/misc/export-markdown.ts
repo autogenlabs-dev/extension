@@ -15,7 +15,7 @@ export async function downloadTask(dateTs: number, conversationHistory: Anthropi
 	const ampm = hours >= 12 ? "pm" : "am"
 	hours = hours % 12
 	hours = hours ? hours : 12 // the hour '0' should be '12'
-	const fileName = `autogen_task_${month}-${day}-${year}_${hours}-${minutes}-${seconds}-${ampm}.md`
+	const fileName = `roo_task_${month}-${day}-${year}_${hours}-${minutes}-${seconds}-${ampm}.md`
 
 	// Generate markdown
 	const markdownContent = conversationHistory
@@ -35,26 +35,18 @@ export async function downloadTask(dateTs: number, conversationHistory: Anthropi
 	})
 
 	if (saveUri) {
-		try {
-			// Write content to the selected location
-			await vscode.workspace.fs.writeFile(saveUri, new TextEncoder().encode(markdownContent))
-			vscode.window.showTextDocument(saveUri, { preview: true })
-		} catch (error) {
-			vscode.window.showErrorMessage(
-				`Failed to save markdown file: ${error instanceof Error ? error.message : String(error)}`,
-			)
-		}
+		// Write content to the selected location
+		await vscode.workspace.fs.writeFile(saveUri, Buffer.from(markdownContent))
+		vscode.window.showTextDocument(saveUri, { preview: true })
 	}
 }
 
-export function formatContentBlockToMarkdown(block: Anthropic.ContentBlockParam): string {
+export function formatContentBlockToMarkdown(block: Anthropic.Messages.ContentBlockParam): string {
 	switch (block.type) {
 		case "text":
 			return block.text
 		case "image":
 			return `[Image]`
-		case "document":
-			return `[Document]`
 		case "tool_use":
 			let input: string
 			if (typeof block.input === "object" && block.input !== null) {
@@ -66,16 +58,32 @@ export function formatContentBlockToMarkdown(block: Anthropic.ContentBlockParam)
 			}
 			return `[Tool Use: ${block.name}]\n${input}`
 		case "tool_result":
+			// For now we're not doing tool name lookup since we don't use tools anymore
+			// const toolName = findToolName(block.tool_use_id, messages)
+			const toolName = "Tool"
 			if (typeof block.content === "string") {
-				return `[Tool${block.is_error ? " (Error)" : ""}]\n${block.content}`
+				return `[${toolName}${block.is_error ? " (Error)" : ""}]\n${block.content}`
 			} else if (Array.isArray(block.content)) {
-				return `[Tool${block.is_error ? " (Error)" : ""}]\n${block.content
+				return `[${toolName}${block.is_error ? " (Error)" : ""}]\n${block.content
 					.map((contentBlock) => formatContentBlockToMarkdown(contentBlock))
 					.join("\n")}`
 			} else {
-				return `[Tool${block.is_error ? " (Error)" : ""}]`
+				return `[${toolName}${block.is_error ? " (Error)" : ""}]`
 			}
 		default:
 			return "[Unexpected content type]"
 	}
+}
+
+export function findToolName(toolCallId: string, messages: Anthropic.MessageParam[]): string {
+	for (const message of messages) {
+		if (Array.isArray(message.content)) {
+			for (const block of message.content) {
+				if (block.type === "tool_use" && block.id === toolCallId) {
+					return block.name
+				}
+			}
+		}
+	}
+	return "Unknown Tool"
 }

@@ -1,22 +1,24 @@
-import { AutoGenMessage } from "./ExtensionMessage"
+import { TokenUsage } from "../schemas"
 
-interface ApiMetrics {
-	totalTokensIn: number
-	totalTokensOut: number
-	totalCacheWrites?: number
-	totalCacheReads?: number
-	totalCost: number
+import { ClineMessage } from "./ExtensionMessage"
+
+export type ParsedApiReqStartedTextType = {
+	tokensIn: number
+	tokensOut: number
+	cacheWrites: number
+	cacheReads: number
+	cost?: number // Only present if combineApiRequests has been called
 }
 
 /**
- * Calculates API metrics from an array of AutoGenMessages.
+ * Calculates API metrics from an array of ClineMessages.
  *
- * This function processes 'api_req_started' messages that have been combined with their
- * corresponding 'api_req_finished' messages by the combineApiRequests function. It also takes into account 'deleted_api_reqs' messages, which are aggregated from deleted messages.
+ * This function processes 'condense_context' messages and 'api_req_started' messages that have been
+ * combined with their corresponding 'api_req_finished' messages by the combineApiRequests function.
  * It extracts and sums up the tokensIn, tokensOut, cacheWrites, cacheReads, and cost from these messages.
  *
- * @param messages - An array of AutoGenMessage objects to process.
- * @returns An ApiMetrics object containing totalTokensIn, totalTokensOut, totalCacheWrites, totalCacheReads, and totalCost.
+ * @param messages - An array of ClineMessage objects to process.
+ * @returns An ApiMetrics object containing totalTokensIn, totalTokensOut, totalCacheWrites, totalCacheReads, totalCost, and contextTokens.
  *
  * @example
  * const messages = [
@@ -25,20 +27,22 @@ interface ApiMetrics {
  * const { totalTokensIn, totalTokensOut, totalCost } = getApiMetrics(messages);
  * // Result: { totalTokensIn: 10, totalTokensOut: 20, totalCost: 0.005 }
  */
-export function getApiMetrics(messages: AutoGenMessage[]): ApiMetrics {
-	const result: ApiMetrics = {
+export function getApiMetrics(messages: ClineMessage[]) {
+	const result: TokenUsage = {
 		totalTokensIn: 0,
 		totalTokensOut: 0,
 		totalCacheWrites: undefined,
 		totalCacheReads: undefined,
 		totalCost: 0,
+		contextTokens: 0,
 	}
 
+	// Calculate running totals
 	messages.forEach((message) => {
-		if (message.type === "say" && (message.say === "api_req_started" || message.say === "deleted_api_reqs") && message.text) {
+		if (message.type === "say" && message.say === "api_req_started" && message.text) {
 			try {
-				const parsedData = JSON.parse(message.text)
-				const { tokensIn, tokensOut, cacheWrites, cacheReads, cost } = parsedData
+				const parsedText: ParsedApiReqStartedTextType = JSON.parse(message.text)
+				const { tokensIn, tokensOut, cacheWrites, cacheReads, cost } = parsedText
 
 				if (typeof tokensIn === "number") {
 					result.totalTokensIn += tokensIn
@@ -58,8 +62,31 @@ export function getApiMetrics(messages: AutoGenMessage[]): ApiMetrics {
 			} catch (error) {
 				console.error("Error parsing JSON:", error)
 			}
+		} else if (message.type === "say" && message.say === "condense_context") {
+			result.totalCost += message.contextCondense?.cost ?? 0
 		}
 	})
+
+	// Calculate context tokens, from the last API request started or condense context message
+	result.contextTokens = 0
+	for (let i = messages.length - 1; i >= 0; i--) {
+		const message = messages[i]
+		if (message.type === "say" && message.say === "api_req_started" && message.text) {
+			try {
+				const parsedText: ParsedApiReqStartedTextType = JSON.parse(message.text)
+				const { tokensIn, tokensOut, cacheWrites, cacheReads } = parsedText
+				result.contextTokens = (tokensIn || 0) + (tokensOut || 0) + (cacheWrites || 0) + (cacheReads || 0)
+			} catch (error) {
+				console.error("Error parsing JSON:", error)
+				continue
+			}
+		} else if (message.type === "say" && message.say === "condense_context") {
+			result.contextTokens = message.contextCondense?.newContextTokens ?? 0
+		}
+		if (result.contextTokens) {
+			break
+		}
+	}
 
 	return result
 }

@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "filesystem": {
+      "command": "node",
+      "args": [
+        "C:/Users/Asus/AppData/Roaming/npm/node_modules/@modelcontextprotocol/server-filesystem/dist/index.js",
+        "C:/Users/Asus/Music/autogen-code-builder"
+      ],
+      "env": {}
+    }
+  }
+}

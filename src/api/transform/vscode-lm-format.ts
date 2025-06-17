@@ -23,7 +23,7 @@ function asObjectSafe(value: any): object {
 
 		return {}
 	} catch (error) {
-		console.warn("AutoGen <Language Model API>: Failed to parse object:", error)
+		console.warn("Autogenlabs Code <Language Model API>: Failed to parse object:", error)
 		return {}
 	}
 }
@@ -153,51 +153,5 @@ export function convertToAnthropicRole(vsCodeLmMessageRole: vscode.LanguageModel
 			return "user"
 		default:
 			return null
-	}
-}
-
-export async function convertToAnthropicMessage(
-	vsCodeLmMessage: vscode.LanguageModelChatMessage,
-): Promise<Anthropic.Messages.Message> {
-	const anthropicRole: string | null = convertToAnthropicRole(vsCodeLmMessage.role)
-	if (anthropicRole !== "assistant") {
-		throw new Error("AutoGen <Language Model API>: Only assistant messages are supported.")
-	}
-
-	return {
-		id: crypto.randomUUID(),
-		type: "message",
-		model: "vscode-lm",
-		role: anthropicRole,
-		content: vsCodeLmMessage.content
-			.map((part): Anthropic.ContentBlock | null => {
-				if (part instanceof vscode.LanguageModelTextPart) {
-					return {
-						type: "text",
-						text: part.value,
-						citations: null,
-					}
-				}
-
-				if (part instanceof vscode.LanguageModelToolCallPart) {
-					return {
-						type: "tool_use",
-						id: part.callId || crypto.randomUUID(),
-						name: part.name,
-						input: asObjectSafe(part.input),
-					}
-				}
-
-				return null
-			})
-			.filter((part): part is Anthropic.ContentBlock => part !== null),
-		stop_reason: null,
-		stop_sequence: null,
-		usage: {
-			input_tokens: 0,
-			output_tokens: 0,
-			cache_creation_input_tokens: null,
-			cache_read_input_tokens: null,
-		},
 	}
 }

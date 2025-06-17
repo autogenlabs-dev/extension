@@ -25,7 +25,13 @@ export function calculateApiCostAnthropic(
 ): number {
 	const cacheCreationInputTokensNum = cacheCreationInputTokens || 0
 	const cacheReadInputTokensNum = cacheReadInputTokens || 0
-	return calculateApiCostInternal(modelInfo, inputTokens, outputTokens, cacheCreationInputTokensNum, cacheReadInputTokensNum)
+	return calculateApiCostInternal(
+		modelInfo,
+		inputTokens,
+		outputTokens,
+		cacheCreationInputTokensNum,
+		cacheReadInputTokensNum,
+	)
 }
 
 // For OpenAI compliant usage, the input tokens count INCLUDES the cached tokens
@@ -47,3 +53,5 @@ export function calculateApiCostOpenAI(
 		cacheReadInputTokensNum,
 	)
 }
+
+export const parseApiPrice = (price: any) => (price ? parseFloat(price) * 1_000_000 : undefined)

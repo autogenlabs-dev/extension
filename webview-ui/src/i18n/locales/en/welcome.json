@@ -1,0 +1,94 @@
+{
+	"greeting": "Hi, I'm Autogenlabs!",
+	"introduction": "<strong>Autogenlabs Code is the premiere autonomous coding agent.</strong> Get ready to architect, code, debug, and boost your productivity like you've never seen before. To continue, Autogenlabs Code requires an API key.",
+	"notice": "To get started, this extension needs an API provider.",
+	"start": "Let's go!",
+	"chooseProvider": "Choose an API provider to get started:",
+	"routers": {
+		"requesty": {
+			"description": "Your optimized LLM router",
+			"incentive": "$1 free credit"
+		},
+		"openrouter": {
+			"description": "A unified interface for LLMs"
+		}
+	},
+	"startRouter": "Express Setup Through a Router",
+	"startCustom": "Bring Your Own API Key",
+	"telemetry": {
+		"title": "Help Improve Autogenlabs Code",
+		"anonymousTelemetry": "Send anonymous error and usage data to help us fix bugs and improve the extension. No code, prompts, or personal information is ever sent.",
+		"changeSettings": "You can always change this at the bottom of the <settingsLink>settings</settingsLink>",
+		"settings": "settings",
+		"allow": "Allow",
+		"deny": "Deny"
+	},
+	"or": "or",
+	"importSettings": "Import Settings",
+	"auth": {
+		"title": "AutoGen Authentication",
+		"subtitle": "Sign in to access A4F integration with 120+ AI models",
+		"signIn": {
+			"title": "Welcome Back",
+			"subtitle": "Sign in to your AutoGen account"
+		},
+		"signUp": {
+			"title": "Create Account",
+			"subtitle": "Join AutoGen and get instant access to premium AI models"
+		},
+		"fields": {
+			"email": "Email",
+			"password": "Password",
+			"firstName": "First Name",
+			"lastName": "Last Name",
+			"confirmPassword": "Confirm Password"
+		},
+		"placeholders": {
+			"email": "your@email.com",
+			"password": "Enter your password",
+			"firstName": "John",
+			"lastName": "Doe",
+			"confirmPassword": "Confirm your password"
+		},
+		"buttons": {
+			"signIn": "Sign In",
+			"signUp": "Create Account",
+			"signingIn": "Signing in...",
+			"signingUp": "Creating account..."
+		},
+		"toggleMode": {
+			"haveAccount": "Already have an account?",
+			"noAccount": "Don't have an account?",
+			"signIn": "Sign in here",
+			"signUp": "Create one here"
+		},
+		"validation": {
+			"emailRequired": "Email is required",
+			"emailInvalid": "Please enter a valid email address",
+			"passwordRequired": "Password is required",
+			"passwordMinLength": "Password must be at least 8 characters",
+			"firstNameRequired": "First name is required",
+			"lastNameRequired": "Last name is required",
+			"passwordMismatch": "Passwords do not match",
+			"passwordMatch": "Passwords match"
+		},
+		"password": {
+			"strength": "Password strength",
+			"weak": "Weak",
+			"fair": "Fair",
+			"good": "Good",
+			"strong": "Strong"
+		},
+		"a4f": {
+			"title": "A4F Integration Included",
+			"description": "Get instant access to 120+ premium AI models including GPT-4, Claude, and Gemini with automatic configuration."
+		},
+		"errors": {
+			"unknownError": "An unexpected error occurred. Please try again."
+		},
+		"success": {
+			"title": "Authentication Successful!",
+			"message": "Your A4F API key has been automatically configured. You can now access 120+ AI models."
+		}
+	}
+}

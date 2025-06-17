@@ -1,8 +1,10 @@
 import { VSCodeButton, VSCodeLink } from "@vscode/webview-ui-toolkit/react"
 import { memo, useState } from "react"
 import styled from "styled-components"
-import { vscode } from "../../utils/vscode"
-import { TelemetrySetting } from "../../../../src/shared/TelemetrySetting"
+import { vscode } from "@src/utils/vscode"
+import { TelemetrySetting } from "Autogenlabs/shared/TelemetrySetting"
+import { useAppTranslation } from "@src/i18n/TranslationContext"
+import { Trans } from "react-i18next"
 
 const BannerContainer = styled.div`
 	background-color: var(--vscode-banner-background);
@@ -18,83 +20,56 @@ const ButtonContainer = styled.div`
 	display: flex;
 	gap: 8px;
 	width: 100%;
-
 	& > vscode-button {
 		flex: 1;
 	}
 `
 
-const InfoText = styled.div`
-	font-size: 12px;
-	color: var(--vscode-descriptionForeground);
-	margin-top: 4px;
-`
-
-const FeatureHighlight = styled.div`
-	display: flex;
-	align-items: center;
-	gap: 6px;
-	margin-top: 4px;
-	font-size: 12px;
-	
-	i {
-		color: var(--vscode-textLink-foreground);
-	}
-`
-
 const TelemetryBanner = () => {
+	const { t } = useAppTranslation()
 	const [hasChosen, setHasChosen] = useState(false)
 
 	const handleAllow = () => {
 		setHasChosen(true)
-		vscode.postMessage({ type: "telemetrySetting", telemetrySetting: "enabled" satisfies TelemetrySetting })
+		vscode.postMessage({ type: "telemetrySetting", text: "enabled" satisfies TelemetrySetting })
 	}
 
 	const handleDeny = () => {
 		setHasChosen(true)
-		vscode.postMessage({ type: "telemetrySetting", telemetrySetting: "disabled" satisfies TelemetrySetting })
+		vscode.postMessage({ type: "telemetrySetting", text: "disabled" satisfies TelemetrySetting })
 	}
 
 	const handleOpenSettings = () => {
-		vscode.postMessage({ type: "openSettings" })
+		window.postMessage({
+			type: "action",
+			action: "settingsButtonClicked",
+			values: { section: "advanced" }, // Link directly to advanced settings with telemetry controls
+		})
 	}
 
-	return hasChosen ? null : (
+	return (
 		<BannerContainer>
 			<div>
-				<strong>Enable Auto-Approve for Faster Development</strong>
-				<InfoText>
-					Auto-approve allows AutoGen to execute safe commands automatically, making your development workflow smoother and faster.
-				</InfoText>
-				<FeatureHighlight>
-					<i className="codicon codicon-check"></i>
-					Automatically approve safe file operations
-				</FeatureHighlight>
-				<FeatureHighlight>
-					<i className="codicon codicon-check"></i>
-					Speed up your development workflow
-				</FeatureHighlight>
-				<FeatureHighlight>
-					<i className="codicon codicon-check"></i>
-					Maintain control with configurable settings
-				</FeatureHighlight>
-				<div style={{ marginTop: 8 }}>
-					You can enable auto-approve in{" "}
-					<VSCodeLink href="#" onClick={handleOpenSettings}>
-						settings
-					</VSCodeLink>
-					. You can always adjust these preferences later.
+				<strong>{t("welcome:telemetry.title")}</strong>
+				<div className="mt-1">
+					{t("welcome:telemetry.anonymousTelemetry")}
+					<div className="mt-1">
+						<Trans
+							i18nKey="welcome:telemetry.changeSettings"
+							components={{
+								settingsLink: <VSCodeLink href="#" onClick={handleOpenSettings} />,
+							}}
+						/>
+						.
+					</div>
 				</div>
 			</div>
 			<ButtonContainer>
-				<VSCodeButton appearance="primary" onClick={() => {
-					handleOpenSettings();
-					setHasChosen(true);
-				}}>
-					Open Settings
+				<VSCodeButton appearance="primary" onClick={handleAllow} disabled={hasChosen}>
+					{t("welcome:telemetry.allow")}
 				</VSCodeButton>
-				<VSCodeButton appearance="secondary" onClick={() => setHasChosen(true)}>
-					Maybe Later
+				<VSCodeButton appearance="secondary" onClick={handleDeny} disabled={hasChosen}>
+					{t("welcome:telemetry.deny")}
 				</VSCodeButton>
 			</ButtonContainer>
 		</BannerContainer>

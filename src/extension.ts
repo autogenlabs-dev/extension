@@ -1,576 +1,189 @@
-// The module 'vscode' contains the VS Code extensibility API
-// Import the module and reference it with the alias vscode in your code below
-import delay from "delay"
 import * as vscode from "vscode"
-import { Logger } from "./services/logging/Logger"
-import { createAutoGenAPI } from "./exports"
-import "./utils/path" // necessary to have access to String.prototype.toPosix
+import * as dotenvx from "@dotenvx/dotenvx"
+import * as path from "path"
+
+// Load environment variables from .env file
+try {
+	// Specify path to .env file in the project root directory
+	const envPath = path.join(__dirname, "..", ".env")
+	dotenvx.config({ path: envPath })
+} catch (e) {
+	// Silently handle environment loading errors
+	console.warn("Failed to load environment variables:", e)
+}
+
+import "./utils/path" // Necessary to have access to String.prototype.toPosix.
+
+import { Package } from "./schemas"
+import { ContextProxy } from "./core/config/ContextProxy"
+import { ClineProvider } from "./core/webview/ClineProvider"
 import { DIFF_VIEW_URI_SCHEME } from "./integrations/editor/DiffViewProvider"
-import assert from "node:assert"
+import { TerminalRegistry } from "./integrations/terminal/TerminalRegistry"
+import { McpServerManager } from "./services/mcp/McpServerManager"
 import { telemetryService } from "./services/telemetry/TelemetryService"
-import { AutoGenProvider } from "./core/webview/AutogenProvider"
+import { API } from "./exports/api"
+import { migrateSettings } from "./utils/migrateSettings"
+import { formatLanguage } from "./shared/language"
+// Import subscription-related services
+import { SecureStorage } from "./utils/SecureStorage"
+import { BackendService } from "./services/auth/BackendService"
+import { SubscriptionService } from "./services/subscription/SubscriptionService"
+import { SubscriptionStatusBar } from "./services/subscription/SubscriptionStatusBar"
 
-/*
-Built using https://github.com/microsoft/vscode-webview-ui-toolkit
+import {
+	handleUri,
+	registerCommands,
+	registerCodeActions,
+	registerTerminalActions,
+	CodeActionProvider,
+} from "./activate"
+import { initializeI18n } from "./i18n"
 
-Inspired by
-https://github.com/microsoft/vscode-webview-ui-toolkit-samples/tree/main/default/weather-webview
-https://github.com/microsoft/vscode-webview-ui-toolkit-samples/tree/main/frameworks/hello-world-react-cra
-
-*/
+/**
+ * Built using https://github.com/microsoft/vscode-webview-ui-toolkit
+ *
+ * Inspired by:
+ *  - https://github.com/microsoft/vscode-webview-ui-toolkit-samples/tree/main/default/weather-webview
+ *  - https://github.com/microsoft/vscode-webview-ui-toolkit-samples/tree/main/frameworks/hello-world-react-cra
+ */
 
 let outputChannel: vscode.OutputChannel
+let extensionContext: vscode.ExtensionContext
 
-// Import auxiliary window service types
-interface IAuxiliaryWindowOpenOptions {
-	bounds?: {
-		x: number;
-		y: number;
-		width: number;
-		height: number;
-	};
-	mode?: 'normal' | 'float';
-	nativeTitlebar?: boolean;
-}
-
-class AutoGenExtension {
-	private panel: vscode.WebviewPanel | undefined;
-
-	constructor(
-		private readonly context: vscode.ExtensionContext,
-		private readonly outputChannel: vscode.OutputChannel
-	) {}
-
-	public async openAssistant(): Promise<void> {
-		if (this.panel) {
-			this.panel.reveal();
-			return;
-		}
-
-		// Create webview panel
-		this.panel = vscode.window.createWebviewPanel(
-			'autogen-panel-view',
-			'AutoGen Code Builder',
-			vscode.ViewColumn.Two,
-			{
-				enableScripts: true,
-				retainContextWhenHidden: true,
-				localResourceRoots: [this.context.extensionUri]
-			}
-		);
-
-		// Set panel icon
-		this.panel.iconPath = {
-			light: vscode.Uri.joinPath(this.context.extensionUri, "assets", "icons", "robot_panel_light.png"),
-			dark: vscode.Uri.joinPath(this.context.extensionUri, "assets", "icons", "robot_panel_dark.png"),
-		};
-
-		// Set webview HTML content with floating panel
-		this.panel.webview.html = `<!DOCTYPE html>
-		<html lang="en">
-		<head>
-			<meta charset="UTF-8">
-			<title>AutoGen Assistant</title>
-			<style>
-				html, body {
-					margin: 0;
-					padding: 0;
-					height: 100%;
-					overflow: hidden;
-					background-color: var(--vscode-editor-background);
-				}
-				#floating {
-					width: 400px;
-					height: 300px;
-					background-color: var(--vscode-editor-background);
-					color: var(--vscode-editor-foreground);
-					border: 1px solid var(--vscode-panel-border);
-					position: absolute;
-					top: 50px;
-					left: 50px;
-					cursor: move;
-					padding: 10px;
-					box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
-					user-select: none;
-					border-radius: 6px;
-				}
-				#floating-header {
-					padding: 8px;
-					background-color: var(--vscode-titleBar-activeBackground);
-					border-bottom: 1px solid var(--vscode-panel-border);
-					display: flex;
-					justify-content: space-between;
-					align-items: center;
-					border-radius: 6px 6px 0 0;
-				}
-				#floating-content {
-					padding: 16px;
-					height: calc(100% - 80px);
-					overflow-y: auto;
-				}
-				.title {
-					margin: 0;
-					font-size: 14px;
-					font-weight: 500;
-				}
-				.close-button {
-					background: none;
-					border: none;
-					color: var(--vscode-editor-foreground);
-					cursor: pointer;
-					font-size: 16px;
-					padding: 4px 8px;
-				}
-				.close-button:hover {
-					background-color: var(--vscode-titleBar-inactiveBackground);
-					border-radius: 4px;
-				}
-			</style>
-		</head>
-		<body>
-			<div id="floating">
-				<div id="floating-header">
-					<span class="title">AutoGen Assistant</span>
-					<button class="close-button" id="close-button">×</button>
-				</div>
-				<div id="floating-content">
-					<p>Welcome to AutoGen Assistant!</p>
-					<p>This is a floating panel that you can drag around.</p>
-				</div>
-			</div>
-			<script>
-				(function() {
-					const floating = document.getElementById('floating');
-					const header = document.getElementById('floating-header');
-					const closeButton = document.getElementById('close-button');
-					let offsetX = 0, offsetY = 0, isDragging = false;
-
-					header.addEventListener('mousedown', (e) => {
-						if (e.target === closeButton) return;
-						isDragging = true;
-						offsetX = floating.offsetLeft - e.clientX;
-						offsetY = floating.offsetTop - e.clientY;
-						floating.style.opacity = '0.8';
-					});
-
-					document.addEventListener('mouseup', () => {
-						isDragging = false;
-						floating.style.opacity = '1';
-					});
-
-					document.addEventListener('mousemove', (e) => {
-						if (isDragging) {
-							e.preventDefault();
-							const newLeft = e.clientX + offsetX;
-							const newTop = e.clientY + offsetY;
-							
-							// Keep panel within viewport bounds
-							const maxX = window.innerWidth - floating.offsetWidth;
-							const maxY = window.innerHeight - floating.offsetHeight;
-							
-							floating.style.left = Math.max(0, Math.min(newLeft, maxX)) + 'px';
-							floating.style.top = Math.max(0, Math.min(newTop, maxY)) + 'px';
-						}
-					});
-
-					closeButton.addEventListener('click', () => {
-						// Post message to extension to close panel
-						vscode.postMessage({ type: 'close' });
-					});
-
-					// Handle window resize
-					window.addEventListener('resize', () => {
-						const rect = floating.getBoundingClientRect();
-						const maxX = window.innerWidth - floating.offsetWidth;
-						const maxY = window.innerHeight - floating.offsetHeight;
-						
-						if (rect.right > window.innerWidth) {
-							floating.style.left = Math.max(0, maxX) + 'px';
-						}
-						if (rect.bottom > window.innerHeight) {
-							floating.style.top = Math.max(0, maxY) + 'px';
-						}
-					});
-
-					// Acquire vscode API
-					const vscode = acquireVsCodeApi();
-				})();
-			</script>
-		</body>
-		</html>`;
-
-		// Handle messages from the webview
-		this.panel.webview.onDidReceiveMessage(
-			message => {
-				switch (message.type) {
-					case 'close':
-						this.panel?.dispose();
-						break;
-				}
-			},
-			undefined,
-			this.context.subscriptions
-		);
-
-		// Create and resolve provider
-		const provider = new AutoGenProvider(this.context, this.outputChannel);
-		await provider.resolveWebviewView(this.panel);
-
-		// Handle panel disposal
-		this.panel.onDidDispose(() => {
-			this.panel = undefined;
-		});
-	}
-
-	public async initialize(): Promise<void> {
-		// Auto-open on activation with a delay to ensure VS Code is ready
-		// Don't register commands here, as they will be registered in the activate function
-	}
-}
-
-// This method is called when your extension is activated
-// Your extension is activated the very first time the command is executed
-export function activate(context: vscode.ExtensionContext) {
-	outputChannel = vscode.window.createOutputChannel("AutoGen")
+// This method is called when your extension is activated.
+// Your extension is activated the very first time the command is executed.
+export async function activate(context: vscode.ExtensionContext) {
+	extensionContext = context
+	outputChannel = vscode.window.createOutputChannel(Package.outputChannel)
 	context.subscriptions.push(outputChannel)
+	outputChannel.appendLine(`${Package.name} extension activated`)
 
-	Logger.initialize(outputChannel)
-	Logger.log("AutoGen extension activated")
+	// Migrate old settings to new
+	await migrateSettings(context, outputChannel)
 
-	// Initialize extension
-	const extension = new AutoGenExtension(context, outputChannel);
-	extension.initialize();
+	// Initialize telemetry service after environment variables are loaded.
+	telemetryService.initialize()
 
-	// Create a default provider for API access
-	const defaultProvider = new AutoGenProvider(context, outputChannel)
-	
-	// Register command to move to secondary sidebar
-	context.subscriptions.push(
-		vscode.commands.registerCommand("AutoGen.moveToSecondary", async () => {
-			// Move view to secondary sidebar
-			await vscode.commands.executeCommand('vscode.moveViews', {
-				viewIds: ['autogen-main-view-secondary'],
-				destination: 'workbench.view.extension.autogen-explorer'
-			});
-			// Set context to show in secondary
-			await vscode.commands.executeCommand('setContext', 'isInSecondaryBar', true);
-		})
-	);
+	// Initialize i18n for internationalization support
+	initializeI18n(context.globalState.get("language") ?? formatLanguage(vscode.env.language))
 
-	// Register the sidebar view provider
-	const sidebarProvider = new AutoGenProvider(context, outputChannel)
-	context.subscriptions.push(
-		vscode.window.registerWebviewViewProvider(
-			"autogen-main-view-primary",
-			sidebarProvider,
-			{
-				webviewOptions: {
-					retainContextWhenHidden: true
-				}
-			}
-		)
-	);
+	// Initialize terminal shell execution handlers.
+	TerminalRegistry.initialize()
 
-	// Register panel view provider
-	const panelProvider = new AutoGenProvider(context, outputChannel)
-	context.subscriptions.push(
-		vscode.window.registerWebviewViewProvider(
-			"autogen-panel-view",
-			panelProvider,
-			{
-				webviewOptions: {
-					retainContextWhenHidden: true
-				}
-			}
-		)
-	);
+	// Get default commands from configuration.
+	const defaultCommands = vscode.workspace.getConfiguration(Package.name).get<string[]>("allowedCommands") || []
 
-	// Also register for secondary view
-	const secondaryProvider = new AutoGenProvider(context, outputChannel)
-	context.subscriptions.push(
-		vscode.window.registerWebviewViewProvider(
-			"autogen-main-view-secondary",
-			secondaryProvider,
-			{
-				webviewOptions: {
-					retainContextWhenHidden: true
-				}
-			}
-		)
-	);
-
-	// Keep track of open panels and their providers
-	const panelMap = new Map<string, { panel: vscode.WebviewPanel, provider: AutoGenProvider }>();
-
-	// Define the openAutoGenPanel function - our single point of opening panels
-	const openAutoGenPanel = async () => {
-		// Always open in right column (Three) for consistency
-		const viewColumn = vscode.ViewColumn.Three;
-		const title = "AutoGen Code Builder";
-		
-		// Use a constant panel key to ensure we only ever have one panel
-		const panelKey = `autogen-panel`;
-		
-		// Check if we already have a panel
-		if (panelMap.has(panelKey)) {
-			const existingPanel = panelMap.get(panelKey);
-			if (existingPanel && existingPanel.panel) {
-				existingPanel.panel.reveal();
-				return existingPanel.panel;
-			}
-		}
-		
-		Logger.log(`Opening AutoGen panel`)
-		const provider = new AutoGenProvider(context, outputChannel)
-		
-		// Create webview panel in column Three (right side)
-		const panel = vscode.window.createWebviewPanel(
-			AutoGenProvider.tabPanelId, 
-			title, 
-			viewColumn,
-			{
-				enableScripts: true,
-				retainContextWhenHidden: true,
-				localResourceRoots: [context.extensionUri],
-			}
-		)
-		
-		panel.iconPath = {
-			light: vscode.Uri.joinPath(context.extensionUri, "assets", "icons", "robot_panel_light.png"),
-			dark: vscode.Uri.joinPath(context.extensionUri, "assets", "icons", "robot_panel_dark.png"),
-		}
-		
-		// Save reference to panel
-		panelMap.set(panelKey, { panel, provider });
-		
-		// Handle panel disposal
-		panel.onDidDispose(() => {
-			// Remove from our tracking map
-			panelMap.delete(panelKey);
-			// Also dispose the provider
-			provider.dispose();
-		});
-		
-		// Resolve the webview
-		provider.resolveWebviewView(panel)
-		
-		return panel
+	// Initialize global state if not already set.
+	if (!context.globalState.get("allowedCommands")) {
+		context.globalState.update("allowedCommands", defaultCommands)
 	}
 
-	// Function to open AutoGen in a floating window
-	const openAutoGenInFloatingWindow = async () => {
-		// First create the panel in the current window
-		const panel = await openAutoGenPanel();
-		
-		// Then move it to a new window
-		if (panel) {
-			await vscode.commands.executeCommand('workbench.action.moveEditorToNewWindow');
-			Logger.log("Moved AutoGen panel to a floating window");
-		}
-	};
+	const contextProxy = await ContextProxy.getInstance(context)
+	const provider = new ClineProvider(context, outputChannel, "sidebar", contextProxy)
+	telemetryService.setProvider(provider)
 
-	// Register all panel-related commands - CONSOLIDATED COMMAND REGISTRATION
 	context.subscriptions.push(
-		// Register main panel opening commands (use only one command registration per command name)
-		vscode.commands.registerCommand("autogen.openAssistant", async () => {
-			await openAutoGenPanel();
-		}),
-		vscode.commands.registerCommand("AutoGen.openSecondPanel", async () => {
-			await openAutoGenPanel();
-		}),
-		vscode.commands.registerCommand("AutoGen.openWithLogo", async () => {
-			await openAutoGenPanel();
-		}),
-		
-		// Command to open in a floating window
-		vscode.commands.registerCommand("autogen.openInFloatingWindow", async () => {
-			await openAutoGenInFloatingWindow();
-		}),
-		
-		// Register utility commands for panel functionality
-		vscode.commands.registerCommand("autogen.newTask", () => {
-			const activeProvider = getActiveProvider();
-			if (activeProvider) {
-				activeProvider.postMessageToWebview({ 
-					type: 'action',
-					action: 'chatButtonClicked'
-				});
-			}
-		}),
-		vscode.commands.registerCommand("autogen.settings", () => {
-			const activeProvider = getActiveProvider();
-			if (activeProvider) {
-				activeProvider.postMessageToWebview({ 
-					type: 'action',
-					action: 'settingsButtonClicked'
-				});
-			}
-		})
-	);
-
-	// Set the extension's assistantOpen method to use our centralized panel manager
-	extension.openAssistant = async () => {
-		await openAutoGenPanel();
-	};
-
-	// DISABLE auto-opening on startup
-	// setTimeout(() => {
-	//     openAutoGenPanel();
-	// }, 1500);
-
-	// Helper function to get the active provider
-	const getActiveProvider = (): AutoGenProvider | undefined => {
-		// Get the active provider from the panel map
-		for (const [_, entry] of panelMap) {
-			if (entry.panel.visible) {
-				return entry.provider;
-			}
-		}
-		return defaultProvider; // Fallback to default provider
-	};
-
-	// Helper function to post messages to the active provider
-	const postToActiveProvider = async (message: any) => {
-		const activeProvider = getActiveProvider();
-		if (activeProvider) {
-			await activeProvider.postMessageToWebview(message);
-		}
-	};
-
-	// Register commands
-	context.subscriptions.push(
-		vscode.commands.registerCommand("AutoGen.plusButtonClicked", async () => {
-			Logger.log("Plus button Clicked")
-			const activeProvider = getActiveProvider();
-			if (activeProvider) {
-				await activeProvider.clearTask();
-				await activeProvider.postStateToWebview();
-				await activeProvider.postMessageToWebview({
-					type: "action",
-					action: "chatButtonClicked",
-				});
-			}
+		vscode.window.registerWebviewViewProvider(ClineProvider.sideBarId, provider, {
+			webviewOptions: { retainContextWhenHidden: true },
 		}),
 	)
 
-	context.subscriptions.push(
-		vscode.commands.registerCommand("AutoGen.mcpButtonClicked", () => {
-			postToActiveProvider({
-				type: "action",
-				action: "mcpButtonClicked",
-			});
-		}),
-	)
+	registerCommands({ context, outputChannel, provider })
 
-	context.subscriptions.push(
-		vscode.commands.registerCommand("AutoGen.settingsButtonClicked", () => {
-			postToActiveProvider({
-				type: "action",
-				action: "settingsButtonClicked",
-			});
-		}),
-	)
-
-	context.subscriptions.push(
-		vscode.commands.registerCommand("AutoGen.historyButtonClicked", () => {
-			postToActiveProvider({
-				type: "action",
-				action: "historyButtonClicked",
-			});
-		}),
-	)
-
-	context.subscriptions.push(
-		vscode.commands.registerCommand("AutoGen.accountButtonClicked", () => {
-			postToActiveProvider({
-				type: "action",
-				action: "accountButtonClicked",
-			});
-		}),
-	)
-
-	// Diff view provider
+	/**
+	 * We use the text document content provider API to show the left side for diff
+	 * view by creating a virtual document for the original content. This makes it
+	 * readonly so users know to edit the right side if they want to keep their changes.
+	 *
+	 * This API allows you to create readonly documents in VSCode from arbitrary
+	 * sources, and works by claiming an uri-scheme for which your provider then
+	 * returns text contents. The scheme must be provided when registering a
+	 * provider and cannot change afterwards.
+	 *
+	 * Note how the provider doesn't create uris for virtual documents - its role
+	 * is to provide contents given such an uri. In return, content providers are
+	 * wired into the open document logic so that providers are always considered.
+	 *
+	 * https://code.visualstudio.com/api/extension-guides/virtual-documents
+	 */
 	const diffContentProvider = new (class implements vscode.TextDocumentContentProvider {
 		provideTextDocumentContent(uri: vscode.Uri): string {
 			return Buffer.from(uri.query, "base64").toString("utf-8")
 		}
 	})()
-	context.subscriptions.push(vscode.workspace.registerTextDocumentContentProvider(DIFF_VIEW_URI_SCHEME, diffContentProvider))
 
-	// URI Handler
-	const handleUri = async (uri: vscode.Uri) => {
-		console.log("URI Handler called with:", {
-			path: uri.path,
-			query: uri.query,
-			scheme: uri.scheme,
-		})
+	context.subscriptions.push(
+		vscode.workspace.registerTextDocumentContentProvider(DIFF_VIEW_URI_SCHEME, diffContentProvider),
+	)
 
-		const path = uri.path
-		const query = new URLSearchParams(uri.query.replace(/\+/g, "%2B"))
-		const visibleProvider = getActiveProvider()
-		if (!visibleProvider) {
-			return
-		}
-		switch (path) {
-			case "/openrouter": {
-				const code = query.get("code")
-				if (code) {
-					await visibleProvider.handleOpenRouterCallback(code)
-				}
-				break
-			}
-			case "/auth": {
-				const token = query.get("token")
-				const state = query.get("state")
-				const apiKey = query.get("apiKey")
-
-				console.log("Auth callback received:", {
-					token: token,
-					state: state,
-					apiKey: apiKey,
-				})
-
-				// Validate state parameter
-				if (!(await visibleProvider.validateAuthState(state))) {
-					vscode.window.showErrorMessage("Invalid auth state")
-					return
-				}
-
-				if (token && apiKey) {
-					await visibleProvider.handleAuthCallback(token, apiKey)
-				}
-				break
-			}
-			default:
-				break
-		}
-	}
 	context.subscriptions.push(vscode.window.registerUriHandler({ handleUri }))
+
+	// Register code actions provider.
+	context.subscriptions.push(
+		vscode.languages.registerCodeActionsProvider({ pattern: "**/*" }, new CodeActionProvider(), {
+			providedCodeActionKinds: CodeActionProvider.providedCodeActionKinds,
+		}),
+	)
+
+	registerCodeActions(context)
+	registerTerminalActions(context)
+
+	// Initialize subscription services
+	// Initialize SecureStorage with the extension context
+	const secureStorage = SecureStorage.initialize(context);
+	const backendService = new BackendService(secureStorage);
+	const subscriptionService = new SubscriptionService(backendService);
 	
-	return createAutoGenAPI(outputChannel, defaultProvider)
+	// Initialize subscription status bar
+	const subscriptionStatusBar = new SubscriptionStatusBar(context, subscriptionService);
+	context.subscriptions.push(subscriptionStatusBar);	// Register subscription commands
+	context.subscriptions.push(
+		vscode.commands.registerCommand('auto-gen-code-builder.showSubscriptionPlans', () => {
+			subscriptionService.showSubscriptionPlans();
+		}),
+		vscode.commands.registerCommand('auto-gen-code-builder.showCurrentSubscription', () => {
+			subscriptionService.showCurrentSubscription();
+		}),
+		vscode.commands.registerCommand('auto-gen-code-builder.manageBilling', () => {
+			subscriptionService.manageBilling();
+		}),
+		vscode.commands.registerCommand('auto-gen-code-builder.showUsageDashboard', () => {
+			const { UsageTrackingDashboard } = require('./services/subscription/UsageTrackingDashboard');
+			UsageTrackingDashboard.createOrShow(subscriptionService);
+		})
+	);
+	
+	// Update subscription status initially
+	subscriptionStatusBar.updateStatus();
+
+	// Allows other extensions to activate once Autogenlabs is ready.
+	vscode.commands.executeCommand(`${Package.name}.activationCompleted`)
+
+	// Implements the `RooCodeAPI` interface.
+	const socketPath = process.env.ROO_CODE_IPC_SOCKET_PATH
+	const enableLogging = typeof socketPath === "string"
+
+	// Watch the core files and automatically reload the extension host
+	const enableCoreAutoReload = process.env?.NODE_ENV === "development"
+	if (enableCoreAutoReload) {
+		console.log(`♻️♻️♻️ Core auto-reloading is ENABLED!`)
+		const watcher = vscode.workspace.createFileSystemWatcher(
+			new vscode.RelativePattern(context.extensionPath, "src/**/*.ts"),
+		)
+		watcher.onDidChange((uri) => {
+			console.log(`♻️ File changed: ${uri.fsPath}. Reloading host…`)
+			vscode.commands.executeCommand("workbench.action.reloadWindow")
+		})
+		context.subscriptions.push(watcher)
+	}
+
+	return new API(outputChannel, provider, socketPath, enableLogging)
 }
 
-// This method is called when your extension is deactivated
-export function deactivate() {
+// This method is called when your extension is deactivated.
+export async function deactivate() {
+	outputChannel.appendLine(`${Package.name} extension deactivated`)
+	await McpServerManager.cleanup(extensionContext)
 	telemetryService.shutdown()
-	Logger.log("AutoGen extension deactivated")
-}
-
-// TODO: Find a solution for automatically removing DEV related content from production builds.
-//  This type of code is fine in production to keep. We just will want to remove it from production builds
-//  to bring down built asset sizes.
-//
-// This is a workaround to reload the extension when the source code changes
-// since vscode doesn't support hot reload for extensions
-const { IS_DEV, DEV_WORKSPACE_FOLDER } = process.env
-
-if (IS_DEV && IS_DEV !== "false") {
-	assert(DEV_WORKSPACE_FOLDER, "DEV_WORKSPACE_FOLDER must be set in development")
-	const watcher = vscode.workspace.createFileSystemWatcher(new vscode.RelativePattern(DEV_WORKSPACE_FOLDER, "src/**/*"))
-
-	watcher.onDidChange(({ scheme, path }) => {
-		console.info(`${scheme} ${path} changed. Reloading VSCode...`)
-
-		vscode.commands.executeCommand("workbench.action.reloadWindow")
-	})
+	TerminalRegistry.cleanup()
 }

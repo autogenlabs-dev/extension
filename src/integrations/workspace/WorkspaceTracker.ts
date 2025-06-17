@@ -1,105 +1,144 @@
 import * as vscode from "vscode"
 import * as path from "path"
-import { listFiles } from "../../services/glob/list-files"
-import { AutoGenProvider } from "../../core/webview/AutogenProvider"
 
-const cwd = vscode.workspace.workspaceFolders?.map((folder) => folder.uri.fsPath).at(0)
+import { listFiles } from "../../services/glob/list-files"
+import { ClineProvider } from "../../core/webview/ClineProvider"
+import { toRelativePath, getWorkspacePath } from "../../utils/path"
+
+const MAX_INITIAL_FILES = 1_000
 
 // Note: this is not a drop-in replacement for listFiles at the start of tasks, since that will be done for Desktops when there is no workspace selected
 class WorkspaceTracker {
-	private providerRef: WeakRef<AutoGenProvider>
+	private providerRef: WeakRef<ClineProvider>
 	private disposables: vscode.Disposable[] = []
 	private filePaths: Set<string> = new Set()
+	private updateTimer: NodeJS.Timeout | null = null
+	private prevWorkSpacePath: string | undefined
+	private resetTimer: NodeJS.Timeout | null = null
 
-	constructor(provider: AutoGenProvider) {
+	get cwd() {
+		return getWorkspacePath()
+	}
+	constructor(provider: ClineProvider) {
 		this.providerRef = new WeakRef(provider)
 		this.registerListeners()
 	}
 
-	async populateFilePaths() {
-		// should not auto get filepaths for desktop since it would immediately show permission popup before AutoGen ever creates a file
-		if (!cwd) {
+	async initializeFilePaths() {
+		// should not auto get filepaths for desktop since it would immediately show permission popup before cline ever creates a file
+		if (!this.cwd) {
 			return
 		}
-		const [files, _] = await listFiles(cwd, true, 1_000)
-		files.forEach((file) => this.filePaths.add(this.normalizeFilePath(file)))
+		const tempCwd = this.cwd
+		const [files, _] = await listFiles(tempCwd, true, MAX_INITIAL_FILES)
+		if (this.prevWorkSpacePath !== tempCwd) {
+			return
+		}
+		files.slice(0, MAX_INITIAL_FILES).forEach((file) => this.filePaths.add(this.normalizeFilePath(file)))
 		this.workspaceDidUpdate()
 	}
 
 	private registerListeners() {
-		// Listen for file creation
-		// .bind(this) ensures the callback refers to class instance when using this, not necessary when using arrow function
-		this.disposables.push(vscode.workspace.onDidCreateFiles(this.onFilesCreated.bind(this)))
-
-		// Listen for file deletion
-		this.disposables.push(vscode.workspace.onDidDeleteFiles(this.onFilesDeleted.bind(this)))
-
-		// Listen for file renaming
-		this.disposables.push(vscode.workspace.onDidRenameFiles(this.onFilesRenamed.bind(this)))
-
-		/*
-		 An event that is emitted when a workspace folder is added or removed.
-		 **Note:** this event will not fire if the first workspace folder is added, removed or changed,
-		 because in that case the currently executing extensions (including the one that listens to this
-		 event) will be terminated and restarted so that the (deprecated) `rootPath` property is updated
-		 to point to the first workspace folder.
-		 */
-		// In other words, we don't have to worry about the root workspace folder ([0]) changing since the extension will be restarted and our cwd will be updated to reflect the new workspace folder. (We don't care about non root workspace folders, since AutoGen will only be working within the root folder cwd)
-		// this.disposables.push(vscode.workspace.onDidChangeWorkspaceFolders(this.onWorkspaceFoldersChanged.bind(this)))
-	}
-
-	private async onFilesCreated(event: vscode.FileCreateEvent) {
-		await Promise.all(
-			event.files.map(async (file) => {
-				await this.addFilePath(file.fsPath)
+		const watcher = vscode.workspace.createFileSystemWatcher("**")
+		this.prevWorkSpacePath = this.cwd
+		this.disposables.push(
+			watcher.onDidCreate(async (uri) => {
+				await this.addFilePath(uri.fsPath)
+				this.workspaceDidUpdate()
 			}),
 		)
-		this.workspaceDidUpdate()
-	}
 
-	private async onFilesDeleted(event: vscode.FileDeleteEvent) {
-		let updated = false
-		await Promise.all(
-			event.files.map(async (file) => {
-				if (await this.removeFilePath(file.fsPath)) {
-					updated = true
+		// Renaming files triggers a delete and create event
+		this.disposables.push(
+			watcher.onDidDelete(async (uri) => {
+				if (await this.removeFilePath(uri.fsPath)) {
+					this.workspaceDidUpdate()
 				}
 			}),
 		)
-		if (updated) {
-			this.workspaceDidUpdate()
-		}
-	}
 
-	private async onFilesRenamed(event: vscode.FileRenameEvent) {
-		await Promise.all(
-			event.files.map(async (file) => {
-				await this.removeFilePath(file.oldUri.fsPath)
-				await this.addFilePath(file.newUri.fsPath)
+		this.disposables.push(watcher)
+
+		// Listen for tab changes and call workspaceDidUpdate directly
+		this.disposables.push(
+			vscode.window.tabGroups.onDidChangeTabs(() => {
+				// Reset if workspace path has changed
+				if (this.prevWorkSpacePath !== this.cwd) {
+					this.workspaceDidReset()
+				} else {
+					// Otherwise just update
+					this.workspaceDidUpdate()
+				}
 			}),
 		)
-		this.workspaceDidUpdate()
+	}
+
+	private getOpenedTabsInfo() {
+		return vscode.window.tabGroups.all.reduce(
+			(acc, group) => {
+				const groupTabs = group.tabs
+					.filter((tab) => tab.input instanceof vscode.TabInputText)
+					.map((tab) => ({
+						label: tab.label,
+						isActive: tab.isActive,
+						path: toRelativePath((tab.input as vscode.TabInputText).uri.fsPath, this.cwd || ""),
+					}))
+
+				groupTabs.forEach((tab) => (tab.isActive ? acc.unshift(tab) : acc.push(tab)))
+				return acc
+			},
+			[] as Array<{ label: string; isActive: boolean; path: string }>,
+		)
+	}
+
+	private async workspaceDidReset() {
+		if (this.resetTimer) {
+			clearTimeout(this.resetTimer)
+		}
+		this.resetTimer = setTimeout(async () => {
+			if (this.prevWorkSpacePath !== this.cwd) {
+				await this.providerRef.deref()?.postMessageToWebview({
+					type: "workspaceUpdated",
+					filePaths: [],
+					openedTabs: this.getOpenedTabsInfo(),
+				})
+				this.filePaths.clear()
+				this.prevWorkSpacePath = this.cwd
+				this.initializeFilePaths()
+			}
+		}, 300) // Debounce for 300ms
 	}
 
 	private workspaceDidUpdate() {
-		if (!cwd) {
-			return
+		if (this.updateTimer) {
+			clearTimeout(this.updateTimer)
 		}
-		this.providerRef.deref()?.postMessageToWebview({
-			type: "workspaceUpdated",
-			filePaths: Array.from(this.filePaths).map((file) => {
-				const relativePath = path.relative(cwd, file).toPosix()
-				return file.endsWith("/") ? relativePath + "/" : relativePath
-			}),
-		})
+		this.updateTimer = setTimeout(() => {
+			if (!this.cwd) {
+				return
+			}
+
+			const relativeFilePaths = Array.from(this.filePaths).map((file) => toRelativePath(file, this.cwd))
+			this.providerRef.deref()?.postMessageToWebview({
+				type: "workspaceUpdated",
+				filePaths: relativeFilePaths,
+				openedTabs: this.getOpenedTabsInfo(),
+			})
+			this.updateTimer = null
+		}, 300) // Debounce for 300ms
 	}
 
 	private normalizeFilePath(filePath: string): string {
-		const resolvedPath = cwd ? path.resolve(cwd, filePath) : path.resolve(filePath)
+		const resolvedPath = this.cwd ? path.resolve(this.cwd, filePath) : path.resolve(filePath)
 		return filePath.endsWith("/") ? resolvedPath + "/" : resolvedPath
 	}
 
 	private async addFilePath(filePath: string): Promise<string> {
+		// Allow for some buffer to account for files being created/deleted during a task
+		if (this.filePaths.size >= MAX_INITIAL_FILES * 2) {
+			return filePath
+		}
+
 		const normalizedPath = this.normalizeFilePath(filePath)
 		try {
 			const stat = await vscode.workspace.fs.stat(vscode.Uri.file(normalizedPath))
@@ -120,6 +159,14 @@ class WorkspaceTracker {
 	}
 
 	public dispose() {
+		if (this.updateTimer) {
+			clearTimeout(this.updateTimer)
+			this.updateTimer = null
+		}
+		if (this.resetTimer) {
+			clearTimeout(this.resetTimer)
+			this.resetTimer = null
+		}
 		this.disposables.forEach((d) => d.dispose())
 	}
 }

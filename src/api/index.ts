@@ -1,48 +1,71 @@
 import { Anthropic } from "@anthropic-ai/sdk"
-import { ApiConfiguration, ModelInfo } from "../shared/api"
+import { BetaThinkingConfigParam } from "@anthropic-ai/sdk/resources/beta/messages/index.mjs"
+
+import { ProviderSettings, ModelInfo, ApiHandlerOptions } from "../shared/api"
+import { ANTHROPIC_DEFAULT_MAX_TOKENS } from "./providers/constants"
+import { GlamaHandler } from "./providers/glama"
 import { AnthropicHandler } from "./providers/anthropic"
 import { AwsBedrockHandler } from "./providers/bedrock"
 import { OpenRouterHandler } from "./providers/openrouter"
 import { VertexHandler } from "./providers/vertex"
+import { AnthropicVertexHandler } from "./providers/anthropic-vertex"
 import { OpenAiHandler } from "./providers/openai"
 import { OllamaHandler } from "./providers/ollama"
 import { LmStudioHandler } from "./providers/lmstudio"
 import { GeminiHandler } from "./providers/gemini"
 import { OpenAiNativeHandler } from "./providers/openai-native"
-import { ApiStream, ApiStreamUsageChunk } from "./transform/stream"
 import { DeepSeekHandler } from "./providers/deepseek"
-import { RequestyHandler } from "./providers/requesty"
-import { TogetherHandler } from "./providers/together"
-import { QwenHandler } from "./providers/qwen"
 import { MistralHandler } from "./providers/mistral"
 import { VsCodeLmHandler } from "./providers/vscode-lm"
-import { LiteLlmHandler } from "./providers/litellm"
-import { AskSageHandler } from "./providers/asksage"
+import { ApiStream } from "./transform/stream"
+import { UnboundHandler } from "./providers/unbound"
+import { RequestyHandler } from "./providers/requesty"
+import { HumanRelayHandler } from "./providers/human-relay"
+import { FakeAIHandler } from "./providers/fake-ai"
 import { XAIHandler } from "./providers/xai"
-import { SambanovaHandler } from "./providers/sambanova"
-
-export interface ApiHandler {
-	createMessage(systemPrompt: string, messages: Anthropic.Messages.MessageParam[]): ApiStream
-	getModel(): { id: string; info: ModelInfo }
-	getApiStreamUsage?(): Promise<ApiStreamUsageChunk | undefined>
-}
+import { GroqHandler } from "./providers/groq"
+import { ChutesHandler } from "./providers/chutes"
+import { LiteLLMHandler } from "./providers/litellm"
+import { AutogenLabsHandler } from "./providers/autogenlabs"
 
 export interface SingleCompletionHandler {
 	completePrompt(prompt: string): Promise<string>
 }
 
-export function buildApiHandler(configuration: ApiConfiguration): ApiHandler {
+export interface ApiHandler {
+	createMessage(systemPrompt: string, messages: Anthropic.Messages.MessageParam[]): ApiStream
+
+	getModel(): { id: string; info: ModelInfo }
+
+	/**
+	 * Counts tokens for content blocks
+	 * All providers extend BaseProvider which provides a default tiktoken implementation,
+	 * but they can override this to use their native token counting endpoints
+	 *
+	 * @param content The content to count tokens for
+	 * @returns A promise resolving to the token count
+	 */
+	countTokens(content: Array<Anthropic.Messages.ContentBlockParam>): Promise<number>
+}
+
+export function buildApiHandler(configuration: ProviderSettings): ApiHandler {
 	const { apiProvider, ...options } = configuration
+
 	switch (apiProvider) {
 		case "anthropic":
 			return new AnthropicHandler(options)
+		case "glama":
+			return new GlamaHandler(options)
 		case "openrouter":
 			return new OpenRouterHandler(options)
 		case "bedrock":
 			return new AwsBedrockHandler(options)
 		case "vertex":
-			return new VertexHandler(options)
-		case "openai":
+			if (options.apiModelId?.startsWith("claude")) {
+				return new AnthropicVertexHandler(options)
+			} else {
+				return new VertexHandler(options)
+			}		case "openai":
 			return new OpenAiHandler(options)
 		case "ollama":
 			return new OllamaHandler(options)
@@ -54,25 +77,71 @@ export function buildApiHandler(configuration: ApiConfiguration): ApiHandler {
 			return new OpenAiNativeHandler(options)
 		case "deepseek":
 			return new DeepSeekHandler(options)
-		case "requesty":
-			return new RequestyHandler(options)
-		case "together":
-			return new TogetherHandler(options)
-		case "qwen":
-			return new QwenHandler(options)
-		case "mistral":
-			return new MistralHandler(options)
 		case "vscode-lm":
 			return new VsCodeLmHandler(options)
-		case "litellm":
-			return new LiteLlmHandler(options)
-		case "asksage":
-			return new AskSageHandler(options)
+		case "mistral":
+			return new MistralHandler(options)
+		case "unbound":
+			return new UnboundHandler(options)
+		case "requesty":
+			return new RequestyHandler(options)
+		case "human-relay":
+			return new HumanRelayHandler()
+		case "fake-ai":
+			return new FakeAIHandler(options)
 		case "xai":
 			return new XAIHandler(options)
-		case "sambanova":
-			return new SambanovaHandler(options)
+		case "groq":
+			return new GroqHandler(options)
+		case "chutes":
+			return new ChutesHandler(options)
+		case "litellm":
+			return new LiteLLMHandler(options)
+		case "autogenlabs":
+			return new AutogenLabsHandler(options)
 		default:
 			return new AnthropicHandler(options)
 	}
+}
+
+export function getModelParams({
+	options,
+	model,
+	defaultMaxTokens,
+	defaultTemperature = 0,
+	defaultReasoningEffort,
+}: {
+	options: ApiHandlerOptions
+	model: ModelInfo
+	defaultMaxTokens?: number
+	defaultTemperature?: number
+	defaultReasoningEffort?: "low" | "medium" | "high"
+}) {
+	const {
+		modelMaxTokens: customMaxTokens,
+		modelMaxThinkingTokens: customMaxThinkingTokens,
+		modelTemperature: customTemperature,
+		reasoningEffort: customReasoningEffort,
+	} = options
+
+	let maxTokens = model.maxTokens ?? defaultMaxTokens
+	let thinking: BetaThinkingConfigParam | undefined = undefined
+	let temperature = customTemperature ?? defaultTemperature
+	const reasoningEffort = customReasoningEffort ?? defaultReasoningEffort
+
+	if (model.thinking) {
+		// Only honor `customMaxTokens` for thinking models.
+		maxTokens = customMaxTokens ?? maxTokens
+
+		// Clamp the thinking budget to be at most 80% of max tokens and at
+		// least 1024 tokens.
+		const maxBudgetTokens = Math.floor((maxTokens || ANTHROPIC_DEFAULT_MAX_TOKENS) * 0.8)
+		const budgetTokens = Math.max(Math.min(customMaxThinkingTokens ?? maxBudgetTokens, maxBudgetTokens), 1024)
+		thinking = { type: "enabled", budget_tokens: budgetTokens }
+
+		// Anthropic "Thinking" models require a temperature of 1.0.
+		temperature = 1.0
+	}
+
+	return { maxTokens, thinking, temperature, reasoningEffort }
 }

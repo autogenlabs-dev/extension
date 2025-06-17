@@ -1,17 +1,18 @@
 import { Anthropic } from "@anthropic-ai/sdk"
 import * as vscode from "vscode"
-import { ApiHandler, SingleCompletionHandler } from "../"
-import { calculateApiCostAnthropic } from "../../utils/cost"
+
+import { SingleCompletionHandler } from "../"
 import { ApiStream } from "../transform/stream"
 import { convertToVsCodeLmMessages } from "../transform/vscode-lm-format"
 import { SELECTOR_SEPARATOR, stringifyVsCodeLmModelSelector } from "../../shared/vsCodeSelectorUtils"
 import { ApiHandlerOptions, ModelInfo, openAiModelInfoSaneDefaults } from "../../shared/api"
+import { BaseProvider } from "./base-provider"
 
 /**
  * Handles interaction with VS Code's Language Model API for chat-based operations.
- * This handler implements the ApiHandler interface to provide VS Code LM specific functionality.
+ * This handler extends BaseProvider to provide VS Code LM specific functionality.
  *
- * @implements {ApiHandler}
+ * @extends {BaseProvider}
  *
  * @remarks
  * The handler manages a VS Code language model chat client and provides methods to:
@@ -34,13 +35,14 @@ import { ApiHandlerOptions, ModelInfo, openAiModelInfoSaneDefaults } from "../..
  * }
  * ```
  */
-export class VsCodeLmHandler implements ApiHandler, SingleCompletionHandler {
-	private options: ApiHandlerOptions
+export class VsCodeLmHandler extends BaseProvider implements SingleCompletionHandler {
+	protected options: ApiHandlerOptions
 	private client: vscode.LanguageModelChat | null
 	private disposable: vscode.Disposable | null
 	private currentRequestCancellation: vscode.CancellationTokenSource | null
 
 	constructor(options: ApiHandlerOptions) {
+		super()
 		this.options = options
 		this.client = null
 		this.disposable = null
@@ -58,16 +60,40 @@ export class VsCodeLmHandler implements ApiHandler, SingleCompletionHandler {
 					}
 				}
 			})
+			this.initializeClient()
 		} catch (error) {
 			// Ensure cleanup if constructor fails
 			this.dispose()
 
 			throw new Error(
-				`AutoGen <Language Model API>: Failed to initialize handler: ${error instanceof Error ? error.message : "Unknown error"}`,
+				`Autogenlabs Code <Language Model API>: Failed to initialize handler: ${error instanceof Error ? error.message : "Unknown error"}`,
 			)
 		}
 	}
-
+	/**
+	 * Initializes the VS Code Language Model client.
+	 * This method is called during the constructor to set up the client.
+	 * This useful when the client is not created yet and call getModel() before the client is created.
+	 * @returns Promise<void>
+	 * @throws Error when client initialization fails
+	 */
+	async initializeClient(): Promise<void> {
+		try {
+			// Check if the client is already initialized
+			if (this.client) {
+				console.debug("Autogenlabs Code <Language Model API>: Client already initialized")
+				return
+			}
+			// Create a new client instance
+			this.client = await this.createClient(this.options.vsCodeLmModelSelector || {})
+			console.debug("Autogenlabs Code <Language Model API>: Client initialized successfully")
+		} catch (error) {
+			// Handle errors during client initialization
+			const errorMessage = error instanceof Error ? error.message : "Unknown error"
+			console.error("Autogenlabs Code <Language Model API>: Client initialization failed:", errorMessage)
+			throw new Error(`Autogenlabs Code <Language Model API>: Failed to initialize client: ${errorMessage}`)
+		}
+	}
 	/**
 	 * Creates a language model chat client based on the provided selector.
 	 *
@@ -96,7 +122,7 @@ export class VsCodeLmHandler implements ApiHandler, SingleCompletionHandler {
 				family: "lm",
 				version: "1.0",
 				maxInputTokens: 8192,
-				sendRequest: async (messages, options, token) => {
+				sendRequest: async (_messages, _options, _token) => {
 					// Provide a minimal implementation
 					return {
 						stream: (async function* () {
@@ -113,7 +139,7 @@ export class VsCodeLmHandler implements ApiHandler, SingleCompletionHandler {
 			}
 		} catch (error) {
 			const errorMessage = error instanceof Error ? error.message : "Unknown error"
-			throw new Error(`AutoGen <Language Model API>: Failed to select model: ${errorMessage}`)
+			throw new Error(`Autogenlabs Code <Language Model API>: Failed to select model: ${errorMessage}`)
 		}
 	}
 
@@ -144,21 +170,47 @@ export class VsCodeLmHandler implements ApiHandler, SingleCompletionHandler {
 		}
 	}
 
-	private async countTokens(text: string | vscode.LanguageModelChatMessage): Promise<number> {
+	/**
+	 * Implements the ApiHandler countTokens interface method
+	 * Provides token counting for Anthropic content blocks
+	 *
+	 * @param content The content blocks to count tokens for
+	 * @returns A promise resolving to the token count
+	 */
+	override async countTokens(content: Array<Anthropic.Messages.ContentBlockParam>): Promise<number> {
+		// Convert Anthropic content blocks to a string for VSCode LM token counting
+		let textContent = ""
+
+		for (const block of content) {
+			if (block.type === "text") {
+				textContent += block.text || ""
+			} else if (block.type === "image") {
+				// VSCode LM doesn't support images directly, so we'll just use a placeholder
+				textContent += "[IMAGE]"
+			}
+		}
+
+		return this.internalCountTokens(textContent)
+	}
+
+	/**
+	 * Private implementation of token counting used internally by VsCodeLmHandler
+	 */
+	private async internalCountTokens(text: string | vscode.LanguageModelChatMessage): Promise<number> {
 		// Check for required dependencies
 		if (!this.client) {
-			console.warn("AutoGen <Language Model API>: No client available for token counting")
+			console.warn("Autogenlabs Code <Language Model API>: No client available for token counting")
 			return 0
 		}
 
 		if (!this.currentRequestCancellation) {
-			console.warn("AutoGen <Language Model API>: No cancellation token available for token counting")
+			console.warn("Autogenlabs Code <Language Model API>: No cancellation token available for token counting")
 			return 0
 		}
 
 		// Validate input
 		if (!text) {
-			console.debug("AutoGen <Language Model API>: Empty text provided for token counting")
+			console.debug("Autogenlabs Code <Language Model API>: Empty text provided for token counting")
 			return 0
 		}
 
@@ -171,23 +223,23 @@ export class VsCodeLmHandler implements ApiHandler, SingleCompletionHandler {
 			} else if (text instanceof vscode.LanguageModelChatMessage) {
 				// For chat messages, ensure we have content
 				if (!text.content || (Array.isArray(text.content) && text.content.length === 0)) {
-					console.debug("AutoGen <Language Model API>: Empty chat message content")
+					console.debug("Autogenlabs Code <Language Model API>: Empty chat message content")
 					return 0
 				}
 				tokenCount = await this.client.countTokens(text, this.currentRequestCancellation.token)
 			} else {
-				console.warn("AutoGen <Language Model API>: Invalid input type for token counting")
+				console.warn("Autogenlabs Code <Language Model API>: Invalid input type for token counting")
 				return 0
 			}
 
 			// Validate the result
 			if (typeof tokenCount !== "number") {
-				console.warn("AutoGen <Language Model API>: Non-numeric token count received:", tokenCount)
+				console.warn("Autogenlabs Code <Language Model API>: Non-numeric token count received:", tokenCount)
 				return 0
 			}
 
 			if (tokenCount < 0) {
-				console.warn("AutoGen <Language Model API>: Negative token count received:", tokenCount)
+				console.warn("Autogenlabs Code <Language Model API>: Negative token count received:", tokenCount)
 				return 0
 			}
 
@@ -195,12 +247,12 @@ export class VsCodeLmHandler implements ApiHandler, SingleCompletionHandler {
 		} catch (error) {
 			// Handle specific error types
 			if (error instanceof vscode.CancellationError) {
-				console.debug("AutoGen <Language Model API>: Token counting cancelled by user")
+				console.debug("Autogenlabs Code <Language Model API>: Token counting cancelled by user")
 				return 0
 			}
 
 			const errorMessage = error instanceof Error ? error.message : "Unknown error"
-			console.warn("AutoGen <Language Model API>: Token counting failed:", errorMessage)
+			console.warn("Autogenlabs Code <Language Model API>: Token counting failed:", errorMessage)
 
 			// Log additional error details if available
 			if (error instanceof Error && error.stack) {
@@ -215,9 +267,9 @@ export class VsCodeLmHandler implements ApiHandler, SingleCompletionHandler {
 		systemPrompt: string,
 		vsCodeLmMessages: vscode.LanguageModelChatMessage[],
 	): Promise<number> {
-		const systemTokens: number = await this.countTokens(systemPrompt)
+		const systemTokens: number = await this.internalCountTokens(systemPrompt)
 
-		const messageTokens: number[] = await Promise.all(vsCodeLmMessages.map((msg) => this.countTokens(msg)))
+		const messageTokens: number[] = await Promise.all(vsCodeLmMessages.map((msg) => this.internalCountTokens(msg)))
 
 		return systemTokens + messageTokens.reduce((sum: number, tokens: number): number => sum + tokens, 0)
 	}
@@ -232,7 +284,7 @@ export class VsCodeLmHandler implements ApiHandler, SingleCompletionHandler {
 
 	private async getClient(): Promise<vscode.LanguageModelChat> {
 		if (!this.client) {
-			console.debug("AutoGen <Language Model API>: Getting client with options:", {
+			console.debug("Autogenlabs Code <Language Model API>: Getting client with options:", {
 				vsCodeLmModelSelector: this.options.vsCodeLmModelSelector,
 				hasOptions: !!this.options,
 				selectorKeys: this.options.vsCodeLmModelSelector ? Object.keys(this.options.vsCodeLmModelSelector) : [],
@@ -241,57 +293,16 @@ export class VsCodeLmHandler implements ApiHandler, SingleCompletionHandler {
 			try {
 				// Use default empty selector if none provided to get all available models
 				const selector = this.options?.vsCodeLmModelSelector || {}
-				console.debug("AutoGen <Language Model API>: Creating client with selector:", selector)
+				console.debug("Autogenlabs Code <Language Model API>: Creating client with selector:", selector)
 				this.client = await this.createClient(selector)
 			} catch (error) {
 				const message = error instanceof Error ? error.message : "Unknown error"
-				console.error("AutoGen <Language Model API>: Client creation failed:", message)
-				throw new Error(`AutoGen <Language Model API>: Failed to create client: ${message}`)
+				console.error("Autogenlabs Code <Language Model API>: Client creation failed:", message)
+				throw new Error(`Autogenlabs Code <Language Model API>: Failed to create client: ${message}`)
 			}
 		}
 
 		return this.client
-	}
-
-	private cleanTerminalOutput(text: string): string {
-		if (!text) {
-			return ""
-		}
-
-		return (
-			text
-				// Normalize line breaks
-				.replace(/\r\n/g, "\n")
-				.replace(/\r/g, "\n")
-
-				// Remove ANSI escape sequences
-				.replace(/\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])/g, "") // Full set of ANSI sequences
-				.replace(/\x9B[0-?]*[ -/]*[@-~]/g, "") // CSI sequences
-
-				// Remove terminal title setting sequences and other OSC sequences
-				.replace(/\x1B\][0-9;]*(?:\x07|\x1B\\)/g, "")
-
-				// Remove control characters
-				.replace(/[\x00-\x09\x0B-\x0C\x0E-\x1F\x7F]/g, "")
-
-				// Remove VS Code escape sequences
-				.replace(/\x1B[PD].*?\x1B\\/g, "") // DCS sequences
-				.replace(/\x1B_.*?\x1B\\/g, "") // APC sequences
-				.replace(/\x1B\^.*?\x1B\\/g, "") // PM sequences
-				.replace(/\x1B\[[\d;]*[HfABCDEFGJKST]/g, "") // Cursor movement and clear screen
-
-				// Remove Windows paths and service information
-				.replace(/^(?:PS )?[A-Z]:\\[^\n]*$/gm, "")
-				.replace(/^;?Cwd=.*$/gm, "")
-
-				// Clean escaped sequences
-				.replace(/\\x[0-9a-fA-F]{2}/g, "")
-				.replace(/\\u[0-9a-fA-F]{4}/g, "")
-
-				// Final cleanup
-				.replace(/\n{3,}/g, "\n\n") // Remove multiple empty lines
-				.trim()
-		)
 	}
 
 	private cleanMessageContent(content: any): any {
@@ -300,7 +311,7 @@ export class VsCodeLmHandler implements ApiHandler, SingleCompletionHandler {
 		}
 
 		if (typeof content === "string") {
-			return this.cleanTerminalOutput(content)
+			return content
 		}
 
 		if (Array.isArray(content)) {
@@ -318,13 +329,12 @@ export class VsCodeLmHandler implements ApiHandler, SingleCompletionHandler {
 		return content
 	}
 
-	async *createMessage(systemPrompt: string, messages: Anthropic.Messages.MessageParam[]): ApiStream {
+	override async *createMessage(systemPrompt: string, messages: Anthropic.Messages.MessageParam[]): ApiStream {
 		// Ensure clean state before starting a new request
 		this.ensureCleanState()
 		const client: vscode.LanguageModelChat = await this.getClient()
 
-		// Clean system prompt and messages
-		const cleanedSystemPrompt = this.cleanTerminalOutput(systemPrompt)
+		// Process messages
 		const cleanedMessages = messages.map((msg) => ({
 			...msg,
 			content: this.cleanMessageContent(msg.content),
@@ -332,7 +342,7 @@ export class VsCodeLmHandler implements ApiHandler, SingleCompletionHandler {
 
 		// Convert Anthropic messages to VS Code LM messages
 		const vsCodeLmMessages: vscode.LanguageModelChatMessage[] = [
-			vscode.LanguageModelChatMessage.Assistant(cleanedSystemPrompt),
+			vscode.LanguageModelChatMessage.Assistant(systemPrompt),
 			...convertToVsCodeLmMessages(cleanedMessages),
 		]
 
@@ -348,7 +358,7 @@ export class VsCodeLmHandler implements ApiHandler, SingleCompletionHandler {
 		try {
 			// Create the response stream with minimal required options
 			const requestOptions: vscode.LanguageModelChatRequestOptions = {
-				justification: `AutoGen would like to use '${client.name}' from '${client.vendor}', Click 'Allow' to proceed.`,
+				justification: `Autogenlabs Code would like to use '${client.name}' from '${client.vendor}', Click 'Allow' to proceed.`,
 			}
 
 			// Note: Tool support is currently provided by the VSCode Language Model API directly
@@ -365,7 +375,7 @@ export class VsCodeLmHandler implements ApiHandler, SingleCompletionHandler {
 				if (chunk instanceof vscode.LanguageModelTextPart) {
 					// Validate text part value
 					if (typeof chunk.value !== "string") {
-						console.warn("AutoGen <Language Model API>: Invalid text part value received:", chunk.value)
+						console.warn("Autogenlabs Code <Language Model API>: Invalid text part value received:", chunk.value)
 						continue
 					}
 
@@ -378,18 +388,18 @@ export class VsCodeLmHandler implements ApiHandler, SingleCompletionHandler {
 					try {
 						// Validate tool call parameters
 						if (!chunk.name || typeof chunk.name !== "string") {
-							console.warn("AutoGen <Language Model API>: Invalid tool name received:", chunk.name)
+							console.warn("Autogenlabs Code <Language Model API>: Invalid tool name received:", chunk.name)
 							continue
 						}
 
 						if (!chunk.callId || typeof chunk.callId !== "string") {
-							console.warn("AutoGen <Language Model API>: Invalid tool callId received:", chunk.callId)
+							console.warn("Autogenlabs Code <Language Model API>: Invalid tool callId received:", chunk.callId)
 							continue
 						}
 
 						// Ensure input is a valid object
 						if (!chunk.input || typeof chunk.input !== "object") {
-							console.warn("AutoGen <Language Model API>: Invalid tool input received:", chunk.input)
+							console.warn("Autogenlabs Code <Language Model API>: Invalid tool input received:", chunk.input)
 							continue
 						}
 
@@ -405,7 +415,7 @@ export class VsCodeLmHandler implements ApiHandler, SingleCompletionHandler {
 						accumulatedText += toolCallText
 
 						// Log tool call for debugging
-						console.debug("AutoGen <Language Model API>: Processing tool call:", {
+						console.debug("Autogenlabs Code <Language Model API>: Processing tool call:", {
 							name: chunk.name,
 							callId: chunk.callId,
 							inputSize: JSON.stringify(chunk.input).length,
@@ -416,34 +426,33 @@ export class VsCodeLmHandler implements ApiHandler, SingleCompletionHandler {
 							text: toolCallText,
 						}
 					} catch (error) {
-						console.error("AutoGen <Language Model API>: Failed to process tool call:", error)
+						console.error("Autogenlabs Code <Language Model API>: Failed to process tool call:", error)
 						// Continue processing other chunks even if one fails
 						continue
 					}
 				} else {
-					console.warn("AutoGen <Language Model API>: Unknown chunk type received:", chunk)
+					console.warn("Autogenlabs Code <Language Model API>: Unknown chunk type received:", chunk)
 				}
 			}
 
 			// Count tokens in the accumulated text after stream completion
-			const totalOutputTokens: number = await this.countTokens(accumulatedText)
+			const totalOutputTokens: number = await this.internalCountTokens(accumulatedText)
 
 			// Report final usage after stream completion
 			yield {
 				type: "usage",
 				inputTokens: totalInputTokens,
 				outputTokens: totalOutputTokens,
-				totalCost: calculateApiCostAnthropic(this.getModel().info, totalInputTokens, totalOutputTokens),
 			}
 		} catch (error: unknown) {
 			this.ensureCleanState()
 
 			if (error instanceof vscode.CancellationError) {
-				throw new Error("AutoGen <Language Model API>: Request cancelled by user")
+				throw new Error("Autogenlabs Code <Language Model API>: Request cancelled by user")
 			}
 
 			if (error instanceof Error) {
-				console.error("AutoGen <Language Model API>: Stream error details:", {
+				console.error("Autogenlabs Code <Language Model API>: Stream error details:", {
 					message: error.message,
 					stack: error.stack,
 					name: error.name,
@@ -454,19 +463,19 @@ export class VsCodeLmHandler implements ApiHandler, SingleCompletionHandler {
 			} else if (typeof error === "object" && error !== null) {
 				// Handle error-like objects
 				const errorDetails = JSON.stringify(error, null, 2)
-				console.error("AutoGen <Language Model API>: Stream error object:", errorDetails)
-				throw new Error(`AutoGen <Language Model API>: Response stream error: ${errorDetails}`)
+				console.error("Autogenlabs Code <Language Model API>: Stream error object:", errorDetails)
+				throw new Error(`Autogenlabs Code <Language Model API>: Response stream error: ${errorDetails}`)
 			} else {
 				// Fallback for unknown error types
 				const errorMessage = String(error)
-				console.error("AutoGen <Language Model API>: Unknown stream error:", errorMessage)
-				throw new Error(`AutoGen <Language Model API>: Response stream error: ${errorMessage}`)
+				console.error("Autogenlabs Code <Language Model API>: Unknown stream error:", errorMessage)
+				throw new Error(`Autogenlabs Code <Language Model API>: Response stream error: ${errorMessage}`)
 			}
 		}
 	}
 
 	// Return model information based on the current client state
-	getModel(): { id: string; info: ModelInfo } {
+	override getModel(): { id: string; info: ModelInfo } {
 		if (this.client) {
 			// Validate client properties
 			const requiredProps = {
@@ -480,7 +489,7 @@ export class VsCodeLmHandler implements ApiHandler, SingleCompletionHandler {
 			// Log any missing properties for debugging
 			for (const [prop, value] of Object.entries(requiredProps)) {
 				if (!value && value !== 0) {
-					console.warn(`AutoGen <Language Model API>: Client missing ${prop} property`)
+					console.warn(`Autogenlabs Code <Language Model API>: Client missing ${prop} property`)
 				}
 			}
 
@@ -511,7 +520,7 @@ export class VsCodeLmHandler implements ApiHandler, SingleCompletionHandler {
 			? stringifyVsCodeLmModelSelector(this.options.vsCodeLmModelSelector)
 			: "vscode-lm"
 
-		console.debug("AutoGen <Language Model API>: No client available, using fallback model info")
+		console.debug("Autogenlabs Code <Language Model API>: No client available, using fallback model info")
 
 		return {
 			id: fallbackId,
@@ -543,5 +552,17 @@ export class VsCodeLmHandler implements ApiHandler, SingleCompletionHandler {
 			}
 			throw error
 		}
+	}
+}
+
+export async function getVsCodeLmModels() {
+	try {
+		const models = await vscode.lm.selectChatModels({})
+		return models || []
+	} catch (error) {
+		console.error(
+			`Error fetching VS Code LM models: ${JSON.stringify(error, Object.getOwnPropertyNames(error), 2)}`,
+		)
+		return []
 	}
 }

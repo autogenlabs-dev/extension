@@ -1,213 +1,247 @@
-import { VSCodeCheckbox, VSCodeTextField } from "@vscode/webview-ui-toolkit/react"
-import { useCallback } from "react"
-import styled from "styled-components"
-import { useExtensionState } from "../../context/ExtensionStateContext"
-import { AutoApprovalSettings } from "../../../../src/shared/AutoApprovalSettings"
-import { vscode } from "../../utils/vscode"
-import { getAsVar, VSCodeStyles } from "../../utils/vscStyles"
+import { HTMLAttributes, useState } from "react"
+import { X } from "lucide-react"
 
-const SettingsSection = styled.div`
-	border: 1px solid ${() => getAsVar(VSCodeStyles.VSC_TITLEBAR_INACTIVE_FOREGROUND)};
-	border-radius: 6px;
-	padding: 16px;
-	margin-bottom: 16px;
-	width: auto;
-`
+import { useAppTranslation } from "@/i18n/TranslationContext"
+import { VSCodeCheckbox } from "@vscode/webview-ui-toolkit/react"
+import { vscode } from "@/utils/vscode"
+import { Button, Input, Slider } from "@/components/ui"
 
-const SectionTitle = styled.h4`
-	margin-top: 0;
-	margin-bottom: 12px;
-	color: ${() => getAsVar(VSCodeStyles.VSC_FOREGROUND)};
-`
+import { SetCachedStateField } from "./types"
+import { SectionHeader } from "./SectionHeader"
+import { Section } from "./Section"
+import { AutoApproveToggle } from "./AutoApproveToggle"
 
-const Description = styled.div`
-	color: ${() => getAsVar(VSCodeStyles.VSC_DESCRIPTION_FOREGROUND)};
-	font-size: 12px;
-	margin-top: 4px;
-`
+type AutoApproveSettingsProps = HTMLAttributes<HTMLDivElement> & {
+	alwaysAllowReadOnly?: boolean
+	alwaysAllowReadOnlyOutsideWorkspace?: boolean
+	alwaysAllowWrite?: boolean
+	alwaysAllowWriteOutsideWorkspace?: boolean
+	writeDelayMs: number
+	alwaysAllowBrowser?: boolean
+	alwaysApproveResubmit?: boolean
+	requestDelaySeconds: number
+	alwaysAllowMcp?: boolean
+	alwaysAllowModeSwitch?: boolean
+	alwaysAllowSubtasks?: boolean
+	alwaysAllowExecute?: boolean
+	allowedCommands?: string[]
+	setCachedStateField: SetCachedStateField<
+		| "alwaysAllowReadOnly"
+		| "alwaysAllowReadOnlyOutsideWorkspace"
+		| "alwaysAllowWrite"
+		| "alwaysAllowWriteOutsideWorkspace"
+		| "writeDelayMs"
+		| "alwaysAllowBrowser"
+		| "alwaysApproveResubmit"
+		| "requestDelaySeconds"
+		| "alwaysAllowMcp"
+		| "alwaysAllowModeSwitch"
+		| "alwaysAllowSubtasks"
+		| "alwaysAllowExecute"
+		| "allowedCommands"
+	>
+}
 
-const ActionItem = styled.div`
-	margin-bottom: 12px;
-	&:last-child {
-		margin-bottom: 0;
+export const AutoApproveSettings = ({
+	alwaysAllowReadOnly,
+	alwaysAllowReadOnlyOutsideWorkspace,
+	alwaysAllowWrite,
+	alwaysAllowWriteOutsideWorkspace,
+	writeDelayMs,
+	alwaysAllowBrowser,
+	alwaysApproveResubmit,
+	requestDelaySeconds,
+	alwaysAllowMcp,
+	alwaysAllowModeSwitch,
+	alwaysAllowSubtasks,
+	alwaysAllowExecute,
+	allowedCommands,
+	setCachedStateField,
+	...props
+}: AutoApproveSettingsProps) => {
+	const { t } = useAppTranslation()
+	const [commandInput, setCommandInput] = useState("")
+
+	const handleAddCommand = () => {
+		const currentCommands = allowedCommands ?? []
+
+		if (commandInput && !currentCommands.includes(commandInput)) {
+			const newCommands = [...currentCommands, commandInput]
+			setCachedStateField("allowedCommands", newCommands)
+			setCommandInput("")
+			vscode.postMessage({ type: "allowedCommands", commands: newCommands })
+		}
 	}
-`
-
-const ACTION_METADATA: {
-	id: keyof AutoApprovalSettings["actions"]
-	label: string
-	shortName: string
-	description: string
-}[] = [
-	{
-		id: "readFiles",
-		label: "Read files and directories",
-		shortName: "Read",
-		description: "Allows access to read any file on your computer.",
-	},
-	{
-		id: "editFiles",
-		label: "Edit files",
-		shortName: "Edit",
-		description: "Allows modification of any files on your computer.",
-	},
-	{
-		id: "executeCommands",
-		label: "Execute safe commands",
-		shortName: "Commands",
-		description:
-			"Allows execution of safe terminal commands. If the model determines a command is potentially destructive, it will still require approval.",
-	},
-	// {
-	// 	id: "useBrowser",
-	// 	label: "Use the browser",
-	// 	shortName: "Browser",
-	// 	description: "Allows ability to launch and interact with any website in a headless browser.",
-	// },
-	{
-		id: "useMcp",
-		label: "Use MCP servers",
-		shortName: "MCP",
-		description: "Allows use of configured MCP servers which may modify filesystem or interact with APIs.",
-	},
-]
-
-const AutoApproveSettings = () => {
-	const { autoApprovalSettings } = useExtensionState()
-
-	const enabledActions = ACTION_METADATA.filter((action) => autoApprovalSettings.actions[action.id])
-	const hasEnabledActions = enabledActions.length > 0
-
-	const updateEnabled = useCallback(
-		(enabled: boolean) => {
-			vscode.postMessage({
-				type: "autoApprovalSettings",
-				autoApprovalSettings: {
-					...autoApprovalSettings,
-					enabled,
-				},
-			})
-		},
-		[autoApprovalSettings],
-	)
-
-	const updateAction = useCallback(
-		(actionId: keyof AutoApprovalSettings["actions"], value: boolean) => {
-			// Calculate what the new actions state will be
-			const newActions = {
-				...autoApprovalSettings.actions,
-				[actionId]: value,
-			}
-
-			// Check if this will result in any enabled actions
-			const willHaveEnabledActions = Object.values(newActions).some(Boolean)
-
-			vscode.postMessage({
-				type: "autoApprovalSettings",
-				autoApprovalSettings: {
-					...autoApprovalSettings,
-					actions: newActions,
-					// If no actions will be enabled, ensure the main toggle is off
-					enabled: willHaveEnabledActions ? autoApprovalSettings.enabled : false,
-				},
-			})
-		},
-		[autoApprovalSettings],
-	)
-
-	const updateMaxRequests = useCallback(
-		(maxRequests: number) => {
-			vscode.postMessage({
-				type: "autoApprovalSettings",
-				autoApprovalSettings: {
-					...autoApprovalSettings,
-					maxRequests,
-				},
-			})
-		},
-		[autoApprovalSettings],
-	)
-
-	const updateNotifications = useCallback(
-		(enableNotifications: boolean) => {
-			vscode.postMessage({
-				type: "autoApprovalSettings",
-				autoApprovalSettings: {
-					...autoApprovalSettings,
-					enableNotifications,
-				},
-			})
-		},
-		[autoApprovalSettings],
-	)
 
 	return (
-		<div style={{ padding: "16px" }}>
-			<h3 style={{ marginTop: 0, marginBottom: "16px" }}>Auto-approve Settings</h3>
-			
-			<SettingsSection>
-				<SectionTitle>Enable Auto-approve</SectionTitle>
-				<VSCodeCheckbox
-					checked={hasEnabledActions && autoApprovalSettings.enabled}
-					disabled={!hasEnabledActions}
-					onClick={(e) => {
-						if (!hasEnabledActions) return
-						e.stopPropagation()
-						updateEnabled(!autoApprovalSettings.enabled)
-					}}>
-					Enable Auto-approve
-				</VSCodeCheckbox>
-			</SettingsSection>
+		<div {...props}>
+			<SectionHeader description={t("settings:autoApprove.description")}>
+				<div className="flex items-center gap-2">
+					<span className="codicon codicon-check w-4" />
+					<div>{t("settings:sections.autoApprove")}</div>
+				</div>
+			</SectionHeader>
 
-			<SettingsSection>
-				<SectionTitle>Actions to Auto-approve</SectionTitle>
-				{ACTION_METADATA.map((action) => (
-					<ActionItem key={action.id}>
-						<VSCodeCheckbox
-							checked={autoApprovalSettings.actions[action.id]}
-							onChange={(e) => {
-								const checked = (e.target as HTMLInputElement).checked
-								updateAction(action.id, checked)
-							}}>
-							{action.label}
-						</VSCodeCheckbox>
-						<Description style={{ marginLeft: "24px" }}>
-							{action.description}
-						</Description>
-					</ActionItem>
-				))}
-			</SettingsSection>
-
-			<SettingsSection>
-				<SectionTitle>Maximum Consecutive Auto-approved Requests</SectionTitle>
-				<VSCodeTextField
-					type="text"
-					value={autoApprovalSettings.maxRequests.toString()}
-					onChange={(e) => {
-						const value = parseInt((e.target as HTMLInputElement).value)
-						if (!isNaN(value) && value >= 0) {
-							updateMaxRequests(value)
-						}
-					}}
+			<Section>
+				<AutoApproveToggle
+					alwaysAllowReadOnly={alwaysAllowReadOnly}
+					alwaysAllowWrite={alwaysAllowWrite}
+					alwaysAllowBrowser={alwaysAllowBrowser}
+					alwaysApproveResubmit={alwaysApproveResubmit}
+					alwaysAllowMcp={alwaysAllowMcp}
+					alwaysAllowModeSwitch={alwaysAllowModeSwitch}
+					alwaysAllowSubtasks={alwaysAllowSubtasks}
+					alwaysAllowExecute={alwaysAllowExecute}
+					onToggle={(key, value) => setCachedStateField(key, value)}
 				/>
-				<Description>
-					After this many consecutive auto-approved requests, AutoGen will require manual approval for the next request.
-				</Description>
-			</SettingsSection>
 
-			<SettingsSection>
-				<SectionTitle>Notifications</SectionTitle>
-				<VSCodeCheckbox
-					checked={autoApprovalSettings.enableNotifications}
-					onChange={(e) => {
-						const checked = (e.target as HTMLInputElement).checked
-						updateNotifications(checked)
-					}}>
-					Show notifications for auto-approved actions
-				</VSCodeCheckbox>
-			</SettingsSection>
+				{/* ADDITIONAL SETTINGS */}
+
+				{alwaysAllowReadOnly && (
+					<div className="flex flex-col gap-3 pl-3 border-l-2 border-vscode-button-background">
+						<div className="flex items-center gap-4 font-bold">
+							<span className="codicon codicon-eye" />
+							<div>{t("settings:autoApprove.readOnly.label")}</div>
+						</div>
+						<div>
+							<VSCodeCheckbox
+								checked={alwaysAllowReadOnlyOutsideWorkspace}
+								onChange={(e: any) =>
+									setCachedStateField("alwaysAllowReadOnlyOutsideWorkspace", e.target.checked)
+								}
+								data-testid="always-allow-readonly-outside-workspace-checkbox">
+								<span className="font-medium">
+									{t("settings:autoApprove.readOnly.outsideWorkspace.label")}
+								</span>
+							</VSCodeCheckbox>
+							<div className="text-vscode-descriptionForeground text-sm mt-1">
+								{t("settings:autoApprove.readOnly.outsideWorkspace.description")}
+							</div>
+						</div>
+					</div>
+				)}
+
+				{alwaysAllowWrite && (
+					<div className="flex flex-col gap-3 pl-3 border-l-2 border-vscode-button-background">
+						<div className="flex items-center gap-4 font-bold">
+							<span className="codicon codicon-edit" />
+							<div>{t("settings:autoApprove.write.label")}</div>
+						</div>
+						<div>
+							<VSCodeCheckbox
+								checked={alwaysAllowWriteOutsideWorkspace}
+								onChange={(e: any) =>
+									setCachedStateField("alwaysAllowWriteOutsideWorkspace", e.target.checked)
+								}
+								data-testid="always-allow-write-outside-workspace-checkbox">
+								<span className="font-medium">
+									{t("settings:autoApprove.write.outsideWorkspace.label")}
+								</span>
+							</VSCodeCheckbox>
+							<div className="text-vscode-descriptionForeground text-sm mt-1 mb-3">
+								{t("settings:autoApprove.write.outsideWorkspace.description")}
+							</div>
+						</div>
+						<div>
+							<div className="flex items-center gap-2">
+								<Slider
+									min={0}
+									max={5000}
+									step={100}
+									value={[writeDelayMs]}
+									onValueChange={([value]) => setCachedStateField("writeDelayMs", value)}
+									data-testid="write-delay-slider"
+								/>
+								<span className="w-20">{writeDelayMs}ms</span>
+							</div>
+							<div className="text-vscode-descriptionForeground text-sm mt-1">
+								{t("settings:autoApprove.write.delayLabel")}
+							</div>
+						</div>
+					</div>
+				)}
+
+				{alwaysApproveResubmit && (
+					<div className="flex flex-col gap-3 pl-3 border-l-2 border-vscode-button-background">
+						<div className="flex items-center gap-4 font-bold">
+							<span className="codicon codicon-refresh" />
+							<div>{t("settings:autoApprove.retry.label")}</div>
+						</div>
+						<div>
+							<div className="flex items-center gap-2">
+								<Slider
+									min={5}
+									max={100}
+									step={1}
+									value={[requestDelaySeconds]}
+									onValueChange={([value]) => setCachedStateField("requestDelaySeconds", value)}
+									data-testid="request-delay-slider"
+								/>
+								<span className="w-20">{requestDelaySeconds}s</span>
+							</div>
+							<div className="text-vscode-descriptionForeground text-sm mt-1">
+								{t("settings:autoApprove.retry.delayLabel")}
+							</div>
+						</div>
+					</div>
+				)}
+
+				{alwaysAllowExecute && (
+					<div className="flex flex-col gap-3 pl-3 border-l-2 border-vscode-button-background">
+						<div className="flex items-center gap-4 font-bold">
+							<span className="codicon codicon-terminal" />
+							<div>{t("settings:autoApprove.execute.label")}</div>
+						</div>
+
+						<div>
+							<label className="block font-medium mb-1" data-testid="allowed-commands-heading">
+								{t("settings:autoApprove.execute.allowedCommands")}
+							</label>
+							<div className="text-vscode-descriptionForeground text-sm mt-1">
+								{t("settings:autoApprove.execute.allowedCommandsDescription")}
+							</div>
+						</div>
+
+						<div className="flex gap-2">
+							<Input
+								value={commandInput}
+								onChange={(e: any) => setCommandInput(e.target.value)}
+								onKeyDown={(e: any) => {
+									if (e.key === "Enter") {
+										e.preventDefault()
+										handleAddCommand()
+									}
+								}}
+								placeholder={t("settings:autoApprove.execute.commandPlaceholder")}
+								className="grow"
+								data-testid="command-input"
+							/>
+							<Button className="h-8" onClick={handleAddCommand} data-testid="add-command-button">
+								{t("settings:autoApprove.execute.addButton")}
+							</Button>
+						</div>
+
+						<div className="flex flex-wrap gap-2">
+							{(allowedCommands ?? []).map((cmd, index) => (
+								<Button
+									key={index}
+									variant="secondary"
+									data-testid={`remove-command-${index}`}
+									onClick={() => {
+										const newCommands = (allowedCommands ?? []).filter((_, i) => i !== index)
+										setCachedStateField("allowedCommands", newCommands)
+										vscode.postMessage({ type: "allowedCommands", commands: newCommands })
+									}}>
+									<div className="flex flex-row items-center gap-1">
+										<div>{cmd}</div>
+										<X className="text-foreground scale-75" />
+									</div>
+								</Button>
+							))}
+						</div>
+					</div>
+				)}
+			</Section>
 		</div>
 	)
 }
-
-export default AutoApproveSettings 

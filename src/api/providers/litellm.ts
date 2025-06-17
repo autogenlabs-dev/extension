@@ -1,67 +1,113 @@
-import { Anthropic } from "@anthropic-ai/sdk"
 import OpenAI from "openai"
-import { ApiHandlerOptions, liteLlmDefaultModelId, liteLlmModelInfoSaneDefaults } from "../../shared/api"
-import { ApiHandler } from ".."
-import { ApiStream } from "../transform/stream"
+import { Anthropic } from "@anthropic-ai/sdk" // Keep for type usage only
+
+import { ApiHandlerOptions, litellmDefaultModelId, litellmDefaultModelInfo } from "../../shared/api"
+import { ApiStream, ApiStreamUsageChunk } from "../transform/stream"
 import { convertToOpenAiMessages } from "../transform/openai-format"
+import { SingleCompletionHandler } from "../index"
+import { RouterProvider } from "./router-provider"
 
-export class LiteLlmHandler implements ApiHandler {
-	private options: ApiHandlerOptions
-	private client: OpenAI
-
+/**
+ * LiteLLM provider handler
+ *
+ * This handler uses the LiteLLM API to proxy requests to various LLM providers.
+ * It follows the OpenAI API format for compatibility.
+ */
+export class LiteLLMHandler extends RouterProvider implements SingleCompletionHandler {
 	constructor(options: ApiHandlerOptions) {
-		this.options = options
-		this.client = new OpenAI({
-			baseURL: this.options.liteLlmBaseUrl || "http://localhost:4000",
-			apiKey: this.options.liteLlmApiKey || "noop",
+		super({
+			options,
+			name: "litellm",
+			baseURL: `${options.litellmBaseUrl || "http://localhost:4000"}`,
+			apiKey: options.litellmApiKey || "dummy-key",
+			modelId: options.litellmModelId,
+			defaultModelId: litellmDefaultModelId,
+			defaultModelInfo: litellmDefaultModelInfo,
 		})
 	}
 
-	async *createMessage(systemPrompt: string, messages: Anthropic.Messages.MessageParam[]): ApiStream {
-		const formattedMessages = convertToOpenAiMessages(messages)
-		const systemMessage: OpenAI.Chat.ChatCompletionSystemMessageParam = {
-			role: "system",
-			content: systemPrompt,
-		}
-		const modelId = this.options.liteLlmModelId || liteLlmDefaultModelId
-		const isOminiModel = modelId.includes("o1-mini") || modelId.includes("o3-mini")
-		let temperature: number | undefined = 0
+	override async *createMessage(systemPrompt: string, messages: Anthropic.Messages.MessageParam[]): ApiStream {
+		const { id: modelId, info } = await this.fetchModel()
 
-		if (isOminiModel) {
-			temperature = undefined // does not support temperature
-		}
+		const openAiMessages: OpenAI.Chat.ChatCompletionMessageParam[] = [
+			{ role: "system", content: systemPrompt },
+			...convertToOpenAiMessages(messages),
+		]
 
-		const stream = await this.client.chat.completions.create({
-			model: this.options.liteLlmModelId || liteLlmDefaultModelId,
-			messages: [systemMessage, ...formattedMessages],
-			temperature,
+		// Required by some providers; others default to max tokens allowed
+		let maxTokens: number | undefined = info.maxTokens ?? undefined
+
+		const requestOptions: OpenAI.Chat.Completions.ChatCompletionCreateParamsStreaming = {
+			model: modelId,
+			max_tokens: maxTokens,
+			messages: openAiMessages,
 			stream: true,
-			stream_options: { include_usage: true },
-		})
+			stream_options: {
+				include_usage: true,
+			},
+		}
 
-		for await (const chunk of stream) {
-			const delta = chunk.choices[0]?.delta
-			if (delta?.content) {
-				yield {
-					type: "text",
-					text: delta.content,
+		if (this.supportsTemperature(modelId)) {
+			requestOptions.temperature = this.options.modelTemperature ?? 0
+		}
+
+		try {
+			const { data: completion } = await this.client.chat.completions.create(requestOptions).withResponse()
+
+			let lastUsage
+
+			for await (const chunk of completion) {
+				const delta = chunk.choices[0]?.delta
+				const usage = chunk.usage as OpenAI.CompletionUsage
+
+				if (delta?.content) {
+					yield { type: "text", text: delta.content }
+				}
+
+				if (usage) {
+					lastUsage = usage
 				}
 			}
 
-			if (chunk.usage) {
-				yield {
+			if (lastUsage) {
+				const usageData: ApiStreamUsageChunk = {
 					type: "usage",
-					inputTokens: chunk.usage.prompt_tokens || 0,
-					outputTokens: chunk.usage.completion_tokens || 0,
+					inputTokens: lastUsage.prompt_tokens || 0,
+					outputTokens: lastUsage.completion_tokens || 0,
 				}
+
+				yield usageData
 			}
+		} catch (error) {
+			if (error instanceof Error) {
+				throw new Error(`LiteLLM streaming error: ${error.message}`)
+			}
+			throw error
 		}
 	}
 
-	getModel() {
-		return {
-			id: this.options.liteLlmModelId || liteLlmDefaultModelId,
-			info: liteLlmModelInfoSaneDefaults,
+	async completePrompt(prompt: string): Promise<string> {
+		const { id: modelId, info } = await this.fetchModel()
+
+		try {
+			const requestOptions: OpenAI.Chat.Completions.ChatCompletionCreateParamsNonStreaming = {
+				model: modelId,
+				messages: [{ role: "user", content: prompt }],
+			}
+
+			if (this.supportsTemperature(modelId)) {
+				requestOptions.temperature = this.options.modelTemperature ?? 0
+			}
+
+			requestOptions.max_tokens = info.maxTokens
+
+			const response = await this.client.chat.completions.create(requestOptions)
+			return response.choices[0]?.message.content || ""
+		} catch (error) {
+			if (error instanceof Error) {
+				throw new Error(`LiteLLM completion error: ${error.message}`)
+			}
+			throw error
 		}
 	}
 }

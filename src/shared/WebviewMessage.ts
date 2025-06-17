@@ -1,17 +1,36 @@
-import { ApiConfiguration } from "./api"
-import { AutoApprovalSettings } from "./AutoApprovalSettings"
-import { BrowserSettings } from "./BrowserSettings"
-import { ChatSettings } from "./ChatSettings"
-import { UserInfo } from "./UserInfo"
-import { ChatContent } from "./ChatContent"
-import { TelemetrySetting } from "./TelemetrySetting"
+import { z } from "zod"
+
+import { ProviderSettings } from "./api"
+import { Mode, PromptComponent, ModeConfig } from "./modes"
+
+export type ClineAskResponse = "yesButtonClicked" | "noButtonClicked" | "messageResponse"
+
+export type PromptMode = Mode | "enhance"
+
+export type AudioType = "notification" | "celebration" | "progress_loop"
 
 export interface WebviewMessage {
 	type:
-		| "apiConfiguration"
+		| "deleteMultipleTasksWithIds"
+		| "currentApiConfigName"
+		| "saveApiConfiguration"
+		| "upsertApiConfiguration"
+		| "deleteApiConfiguration"
+		| "loadApiConfiguration"
+		| "loadApiConfigurationById"
+		| "renameApiConfiguration"
+		| "getListApiConfiguration"
+		| "customInstructions"
+		| "allowedCommands"
+		| "alwaysAllowReadOnly"
+		| "alwaysAllowReadOnlyOutsideWorkspace"
+		| "alwaysAllowWrite"
+		| "alwaysAllowWriteOutsideWorkspace"
+		| "alwaysAllowExecute"
 		| "webviewDidLaunch"
 		| "newTask"
 		| "askResponse"
+		| "terminalOperation"
 		| "clearTask"
 		| "didShowAnnouncement"
 		| "selectImages"
@@ -19,103 +38,151 @@ export interface WebviewMessage {
 		| "showTaskWithId"
 		| "deleteTaskWithId"
 		| "exportTaskWithId"
+		| "importSettings"
+		| "exportSettings"
 		| "resetState"
+		| "flushRouterModels"
+		| "requestRouterModels"
+		| "requestOpenAiModels"
 		| "requestOllamaModels"
 		| "requestLmStudioModels"
+		| "requestVsCodeLmModels"
 		| "openImage"
-		| "openInBrowser"
 		| "openFile"
 		| "openMention"
 		| "cancelTask"
-		| "refreshOpenRouterModels"
-		| "refreshOpenAiModels"
+		| "updateVSCodeSetting"
+		| "getVSCodeSetting"
+		| "vsCodeSetting"
+		| "alwaysAllowBrowser"
+		| "alwaysAllowMcp"
+		| "alwaysAllowModeSwitch"
+		| "allowedMaxRequests"
+		| "alwaysAllowSubtasks"
+		| "autoCondenseContextPercent"
+		| "playSound"
+		| "playTts"
+		| "stopTts"
+		| "soundEnabled"
+		| "ttsEnabled"
+		| "ttsSpeed"
+		| "soundVolume"
+		| "diffEnabled"
+		| "enableCheckpoints"
+		| "browserViewportSize"
+		| "screenshotQuality"
+		| "remoteBrowserHost"
 		| "openMcpSettings"
+		| "openProjectMcpSettings"
 		| "restartMcpServer"
-		| "deleteMcpServer"
-		| "autoApprovalSettings"
-		| "browserSettings"
-		| "togglePlanActMode"
+		| "toggleToolAlwaysAllow"
+		| "toggleMcpServer"
+		| "updateMcpTimeout"
+		| "fuzzyMatchThreshold"
+		| "writeDelayMs"
+		| "enhancePrompt"
+		| "enhancedPrompt"
+		| "draggedImages"
+		| "deleteMessage"
+		| "terminalOutputLineLimit"
+		| "terminalShellIntegrationTimeout"
+		| "terminalShellIntegrationDisabled"
+		| "terminalCommandDelay"
+		| "terminalPowershellCounter"
+		| "terminalZshClearEolMark"
+		| "terminalZshOhMy"
+		| "terminalZshP10k"
+		| "terminalZdotdir"
+		| "terminalCompressProgressBar"
+		| "mcpEnabled"
+		| "enableMcpServerCreation"
+		| "searchCommits"
+		| "alwaysApproveResubmit"
+		| "requestDelaySeconds"
+		| "setApiConfigPassword"
+		| "mode"
+		| "updatePrompt"
+		| "updateSupportPrompt"
+		| "resetSupportPrompt"
+		| "getSystemPrompt"
+		| "copySystemPrompt"
+		| "systemPrompt"
+		| "enhancementApiConfigId"
+		| "updateExperimental"
+		| "autoApprovalEnabled"
+		| "updateCustomMode"
+		| "deleteCustomMode"
+		| "setopenAiCustomModelInfo"
+		| "openCustomModesSettings"
 		| "checkpointDiff"
 		| "checkpointRestore"
-		| "taskCompletionViewChanges"
-		| "openExtensionSettings"
-		| "requestVsCodeLmModels"
-		| "toggleToolAutoApprove"
-		| "toggleMcpServer"
-		| "getLatestState"
-		| "accountLoginClicked"
-		| "accountLogoutClicked"
-		| "showAccountViewClicked"
-		| "authStateChanged"
-		| "authCallback"
-		| "fetchMcpMarketplace"
-		| "downloadMcp"
-		| "silentlyRefreshMcpMarketplace"
-		| "searchCommits"
-		| "showMcpView"
-		| "fetchLatestMcpServersFromHub"
+		| "deleteMcpServer"
+		| "maxOpenTabsContext"
+		| "maxWorkspaceFiles"
+		| "humanRelayResponse"
+		| "humanRelayCancel"
+		| "browserToolEnabled"
 		| "telemetrySetting"
-		| "openSettings"
-		| "updateMcpTimeout"
-		| "fetchOpenGraphData"
-		| "checkIsImageUrl"
-		| "invoke"
-		| "updateSettings"
-		| "clearAllTaskHistory"
-		| "fetchUserCreditsData"
-		| "optionsResponse"
-		| "requestTotalTasksSize"
-		| "initializePrompt" // Added for ExtensionView -> AutoGenProvider communication
-		// Native Filesystem Operations
-		| "nativeFsReadFile"
-		| "nativeFsWriteFile"
-		| "nativeFsListDirectory"
-		| "nativeFsCreateDirectory"
-		| "nativeFsGetFileInfo"
-		| "nativeFsRename"
-		| "nativeFsDelete"
-	// | "relaunchChromeDebugMode"
+		| "showRooIgnoredFiles"
+		| "testBrowserConnection"
+		| "browserConnectionResult"
+		| "remoteBrowserEnabled"
+		| "language"
+		| "maxReadFileLine"
+		| "searchFiles"
+		| "toggleApiConfigPin"
+		| "setHistoryPreviewCollapsed"
+		| "condenseTaskContextRequest"
+		| "auth:login"
+		| "auth:register"
+		| "auth:logout"
 	text?: string
-	prompt?: string // Added for initializePrompt message
 	disabled?: boolean
-	askResponse?: AutoGenAskResponse
-	apiConfiguration?: ApiConfiguration
+	askResponse?: ClineAskResponse
+	apiConfiguration?: ProviderSettings
 	images?: string[]
 	bool?: boolean
-	number?: number
-	autoApprovalSettings?: AutoApprovalSettings
-	browserSettings?: BrowserSettings
-	chatSettings?: ChatSettings
-	chatContent?: ChatContent
-	mcpId?: string
-	timeout?: number
-	// For toggleToolAutoApprove
+	value?: number
+	commands?: string[]
+	audioType?: AudioType
 	serverName?: string
 	toolName?: string
-	autoApprove?: boolean
-	
-	// For selected context items
-	selectedItems?: { type: string; path: string }[]
-
-	// For auth
-	user?: UserInfo | null
-	customToken?: string
-	// For openInBrowser
-	url?: string
-	planActSeparateModelsSetting?: boolean
-	telemetrySetting?: TelemetrySetting
-	customInstructionsSetting?: string
-
-	// --- Native Filesystem Payload ---
-	path?: string // Used by most nativeFs operations
-	content?: string // Used by nativeFsWriteFile
-	newPath?: string // Used by nativeFsRename
-	recursive?: boolean // Used by nativeFsDelete
-	useTrash?: boolean // Used by nativeFsDelete
-	overwrite?: boolean // Used by nativeFsRename
-	// --- End Native Filesystem Payload ---
+	alwaysAllow?: boolean
+	mode?: Mode
+	promptMode?: PromptMode
+	customPrompt?: PromptComponent
+	dataUrls?: string[]
+	values?: Record<string, any>
+	query?: string
+	setting?: string
+	slug?: string
+	modeConfig?: ModeConfig
+	timeout?: number
+	payload?: WebViewMessagePayload
+	source?: "global" | "project"
+	requestId?: string
+	ids?: string[]
+	hasSystemPromptOverride?: boolean
+	terminalOperation?: "continue" | "abort"
+	historyPreviewCollapsed?: boolean
+	data?: Record<string, any>
 }
 
-export type AutoGenAskResponse = "yesButtonClicked" | "noButtonClicked" | "messageResponse"
+export const checkoutDiffPayloadSchema = z.object({
+	ts: z.number(),
+	previousCommitHash: z.string().optional(),
+	commitHash: z.string(),
+	mode: z.enum(["full", "checkpoint"]),
+})
 
-export type AutoGenCheckpointRestore = "task" | "workspace" | "taskAndWorkspace"
+export type CheckpointDiffPayload = z.infer<typeof checkoutDiffPayloadSchema>
+
+export const checkoutRestorePayloadSchema = z.object({
+	ts: z.number(),
+	commitHash: z.string(),
+	mode: z.enum(["preview", "restore"]),
+})
+
+export type CheckpointRestorePayload = z.infer<typeof checkoutRestorePayloadSchema>
+
+export type WebViewMessagePayload = CheckpointDiffPayload | CheckpointRestorePayload

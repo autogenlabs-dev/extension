@@ -1,15 +1,21 @@
 import { Anthropic } from "@anthropic-ai/sdk"
-import * as diff from "diff"
 import * as path from "path"
-import { AutoGenIgnoreController, LOCK_TEXT_SYMBOL } from "../ignore/AutoGenIgnoreController"
+import * as diff from "diff"
+import { RooIgnoreController, LOCK_TEXT_SYMBOL } from "../ignore/RooIgnoreController"
 
 export const formatResponse = {
 	toolDenied: () => `The user denied this operation.`,
 
+	toolDeniedWithFeedback: (feedback?: string) =>
+		`The user denied this operation and provided the following feedback:\n<feedback>\n${feedback}\n</feedback>`,
+
+	toolApprovedWithFeedback: (feedback?: string) =>
+		`The user approved this operation and provided the following context:\n<feedback>\n${feedback}\n</feedback>`,
+
 	toolError: (error?: string) => `The tool execution failed with the following error:\n<error>\n${error}\n</error>`,
 
-	autogenIgnoreError: (path: string) =>
-		`Access to ${path} is blocked by the .autogenignore file settings. You must try to continue in the task without using this file, or ask the user to update the .autogenignore file.`,
+	rooIgnoreError: (path: string) =>
+		`Access to ${path} is blocked by the .rooignore file settings. You must try to continue in the task without using this file, or ask the user to update the .rooignore file.`,
 
 	noToolsUsed: () =>
 		`[ERROR] You did not use a tool in your previous response! Please retry with a tool use.
@@ -29,10 +35,46 @@ Otherwise, if you have not completed the task and do not need additional informa
 	missingToolParameterError: (paramName: string) =>
 		`Missing value for required parameter '${paramName}'. Please retry with complete response.\n\n${toolUseInstructionsReminder}`,
 
+	lineCountTruncationError: (actualLineCount: number, isNewFile: boolean, diffStrategyEnabled: boolean = false) => {
+		const truncationMessage = `Note: Your response may have been truncated because it exceeded your output limit. You wrote ${actualLineCount} lines of content, but the line_count parameter was either missing or not included in your response.`
+
+		const newFileGuidance =
+			`This appears to be a new file.\n` +
+			`${truncationMessage}\n\n` +
+			`RECOMMENDED APPROACH:\n` +
+			`1. Try again with the line_count parameter in your response if you forgot to include it\n` +
+			`2. Or break your content into smaller chunks - first use write_to_file with the initial chunk\n` +
+			`3. Then use insert_content to append additional chunks\n`
+
+		let existingFileApproaches = [
+			`1. Try again with the line_count parameter in your response if you forgot to include it`,
+		]
+
+		if (diffStrategyEnabled) {
+			existingFileApproaches.push(`2. Or try using apply_diff instead of write_to_file for targeted changes`)
+		}
+
+		existingFileApproaches.push(
+			`${diffStrategyEnabled ? "3" : "2"}. Or use search_and_replace for specific text replacements`,
+			`${diffStrategyEnabled ? "4" : "3"}. Or use insert_content to add specific content at particular lines`,
+		)
+
+		const existingFileGuidance =
+			`This appears to be content for an existing file.\n` +
+			`${truncationMessage}\n\n` +
+			`RECOMMENDED APPROACH:\n` +
+			`${existingFileApproaches.join("\n")}\n`
+
+		return `${isNewFile ? newFileGuidance : existingFileGuidance}\n${toolUseInstructionsReminder}`
+	},
+
 	invalidMcpToolArgumentError: (serverName: string, toolName: string) =>
 		`Invalid JSON argument used with ${serverName} for ${toolName}. Please retry with a properly formatted JSON argument.`,
 
-	toolResult: (text: string, images?: string[]): string | Array<Anthropic.TextBlockParam | Anthropic.ImageBlockParam> => {
+	toolResult: (
+		text: string,
+		images?: string[],
+	): string | Array<Anthropic.TextBlockParam | Anthropic.ImageBlockParam> => {
 		if (images && images.length > 0) {
 			const textBlock: Anthropic.TextBlockParam = { type: "text", text }
 			const imageBlocks: Anthropic.ImageBlockParam[] = formatImagesIntoBlocks(images)
@@ -51,7 +93,8 @@ Otherwise, if you have not completed the task and do not need additional informa
 		absolutePath: string,
 		files: string[],
 		didHitLimit: boolean,
-		autogenIgnoreController?: AutoGenIgnoreController,
+		rooIgnoreController: RooIgnoreController | undefined,
+		showRooIgnoredFiles: boolean,
 	): string => {
 		const sorted = files
 			.map((file) => {
@@ -59,7 +102,7 @@ Otherwise, if you have not completed the task and do not need additional informa
 				const relativePath = path.relative(absolutePath, file).toPosix()
 				return file.endsWith("/") ? relativePath + "/" : relativePath
 			})
-			// Sort so files are listed under their respective directories to make it clear what files are children of what directories. Since we build file list top down, even if file list is truncated it will show directories that AutoGen can then explore further.
+			// Sort so files are listed under their respective directories to make it clear what files are children of what directories. Since we build file list top down, even if file list is truncated it will show directories that cline can then explore further.
 			.sort((a, b) => {
 				const aParts = a.split("/") // only works if we use toPosix first
 				const bParts = b.split("/")
@@ -73,10 +116,7 @@ Otherwise, if you have not completed the task and do not need additional informa
 							return 1
 						}
 						// Otherwise, sort alphabetically
-						return aParts[i].localeCompare(bParts[i], undefined, {
-							numeric: true,
-							sensitivity: "base",
-						})
+						return aParts[i].localeCompare(bParts[i], undefined, { numeric: true, sensitivity: "base" })
 					}
 				}
 				// If all parts are the same up to the length of the shorter path,
@@ -84,55 +124,37 @@ Otherwise, if you have not completed the task and do not need additional informa
 				return aParts.length - bParts.length
 			})
 
-		const autogenIgnoreParsed = autogenIgnoreController
-			? sorted.map((filePath) => {
-					// path is relative to absolute path, not cwd
-					// validateAccess expects either path relative to cwd or absolute path
-					// otherwise, for validating against ignore patterns like "assets/icons", we would end up with just "icons", which would result in the path not being ignored.
-					const absoluteFilePath = path.resolve(absolutePath, filePath)
-					const isIgnored = !autogenIgnoreController.validateAccess(absoluteFilePath)
-					if (isIgnored) {
-						return LOCK_TEXT_SYMBOL + " " + filePath
+		let rooIgnoreParsed: string[] = sorted
+
+		if (rooIgnoreController) {
+			rooIgnoreParsed = []
+			for (const filePath of sorted) {
+				// path is relative to absolute path, not cwd
+				// validateAccess expects either path relative to cwd or absolute path
+				// otherwise, for validating against ignore patterns like "assets/icons", we would end up with just "icons", which would result in the path not being ignored.
+				const absoluteFilePath = path.resolve(absolutePath, filePath)
+				const isIgnored = !rooIgnoreController.validateAccess(absoluteFilePath)
+
+				if (isIgnored) {
+					// If file is ignored and we're not showing ignored files, skip it
+					if (!showRooIgnoredFiles) {
+						continue
 					}
-
-					return filePath
-				})
-			: sorted
-
+					// Otherwise, mark it with a lock symbol
+					rooIgnoreParsed.push(LOCK_TEXT_SYMBOL + " " + filePath)
+				} else {
+					rooIgnoreParsed.push(filePath)
+				}
+			}
+		}
 		if (didHitLimit) {
-			return `${autogenIgnoreParsed.join(
+			return `${rooIgnoreParsed.join(
 				"\n",
 			)}\n\n(File list truncated. Use list_files on specific subdirectories if you need to explore further.)`
-		} else if (autogenIgnoreParsed.length === 0 || (autogenIgnoreParsed.length === 1 && autogenIgnoreParsed[0] === "")) {
+		} else if (rooIgnoreParsed.length === 0 || (rooIgnoreParsed.length === 1 && rooIgnoreParsed[0] === "")) {
 			return "No files found."
 		} else {
-			return autogenIgnoreParsed.join("\n")
-		}
-	},
-
-	formatNativeFsDirectoryEntries: (
-		cwd: string, // Need cwd to resolve absolute paths for ignore checking
-		absoluteDirPath: string, // The absolute path of the directory listed
-		entries: { name: string; type: 'file' | 'directory' | 'unknown' }[],
-		autogenIgnoreController?: AutoGenIgnoreController,
-	): string => {
-		const sorted = entries
-			.map(entry => {
-				const entryPath = path.join(absoluteDirPath, entry.name).toPosix(); // Get absolute path for ignore check
-				const relativePath = path.relative(cwd, entryPath).toPosix(); // Path relative to CWD for display
-				const isIgnored = autogenIgnoreController ? !autogenIgnoreController.validateAccess(entryPath) : false;
-				const prefix = isIgnored ? LOCK_TEXT_SYMBOL + " " : "";
-				return prefix + (entry.type === 'directory' ? relativePath + "/" : relativePath);
-			})
-			.sort((a, b) => {
-				// Basic sort, could be enhanced like formatFilesList if needed
-				return a.localeCompare(b, undefined, { numeric: true, sensitivity: "base" });
-			});
-
-		if (sorted.length === 0) {
-			return "No files or directories found.";
-		} else {
-			return sorted.join("\n");
+			return rooIgnoreParsed.join("\n")
 		}
 	},
 
@@ -154,11 +176,7 @@ const formatImagesIntoBlocks = (images?: string[]): Anthropic.ImageBlockParam[] 
 				const mimeType = rest.split(":")[1].split(";")[0]
 				return {
 					type: "image",
-					source: {
-						type: "base64",
-						media_type: mimeType,
-						data: base64,
-					},
+					source: { type: "base64", media_type: mimeType, data: base64 },
 				} as Anthropic.ImageBlockParam
 			})
 		: []
@@ -166,15 +184,15 @@ const formatImagesIntoBlocks = (images?: string[]): Anthropic.ImageBlockParam[] 
 
 const toolUseInstructionsReminder = `# Reminder: Instructions for Tool Use
 
-Tool uses are formatted using XML-style tags. The tool name is enclosed in opening and closing tags, and each parameter is similarly enclosed within its own set of tags. Here's the structure:
+Tool uses are formatted using XML-style tags. The tool name itself becomes the XML tag name. Each parameter is enclosed within its own set of tags. Here's the structure:
 
-<tool_name>
+<actual_tool_name>
 <parameter1_name>value1</parameter1_name>
 <parameter2_name>value2</parameter2_name>
 ...
-</tool_name>
+</actual_tool_name>
 
-For example:
+For example, to use the attempt_completion tool:
 
 <attempt_completion>
 <result>
@@ -182,4 +200,4 @@ I have completed the task...
 </result>
 </attempt_completion>
 
-Always adhere to this format for all tool uses to ensure proper parsing and execution.`
+Always use the actual tool name as the XML tag name for proper parsing and execution.`

@@ -1,119 +1,65 @@
-import { PostHog } from "posthog-node"
-import * as vscode from "vscode"
-import { version as extensionVersion } from "../../../package.json"
+import { ZodError } from "zod"
+
+import { logger } from "../../utils/logging"
+import { PostHogClient, ClineProviderInterface } from "./PostHogClient"
 
 /**
- * PostHogClient handles telemetry event tracking for the AutoGen extension
- * Uses PostHog analytics to track user interactions and system events
- * Respects user privacy settings and VSCode's global telemetry configuration
+ * TelemetryService wrapper class that defers PostHogClient initialization
+ * This ensures that we only create the PostHogClient after environment variables are loaded
  */
-class PostHogClient {
-	// Event constants for tracking user interactions and system events
-	private static readonly EVENTS = {
-		// Task-related events for tracking conversation and execution flow
-		TASK: {
-			// Tracks when a new task/conversation is started
-			CREATED: "task.created",
-			// Tracks when a task is reopened
-			RESTARTED: "task.restarted",
-			// Tracks when a task is finished, with acceptance or rejection status
-			COMPLETED: "task.completed",
-			// Tracks when a message is sent in a conversation
-			CONVERSATION_TURN: "task.conversation_turn",
-			// Tracks token consumption for cost and usage analysis
-			TOKEN_USAGE: "task.tokens",
-			// Tracks switches between chat and Agent modes
-			MODE_SWITCH: "task.mode",
-			// Tracks usage of the git-based checkpoint system (shadow_git_initialized, commit_created, branch_created, branch_deleted_active, branch_deleted_inactive, restored)
-			CHECKPOINT_USED: "task.checkpoint_used",
-			// Tracks when tools (like file operations, commands) are used
-			TOOL_USED: "task.tool_used",
-			// Tracks when a historical task is loaded from storage
-			HISTORICAL_LOADED: "task.historical_loaded",
-			// Tracks when the retry button is clicked for failed operations
-			RETRY_CLICKED: "task.retry_clicked",
-		},
-		// UI interaction events for tracking user engagement
-		UI: {
-			// Tracks when user switches between API providers
-			PROVIDER_SWITCH: "ui.provider_switch",
-			// Tracks when images are attached to a conversation
-			IMAGE_ATTACHED: "ui.image_attached",
-			// Tracks general button click interactions
-			BUTTON_CLICK: "ui.button_click",
-			// Tracks when the marketplace view is opened
-			MARKETPLACE_OPENED: "ui.marketplace_opened",
-			// Tracks when settings panel is opened
-			SETTINGS_OPENED: "ui.settings_opened",
-			// Tracks when task history view is opened
-			HISTORY_OPENED: "ui.history_opened",
-			// Tracks when a task is removed from history
-			TASK_POPPED: "ui.task_popped",
-			// Tracks when a different model is selected
-			MODEL_SELECTED: "ui.model_selected",
-			// Tracks when planning mode is toggled on
-			PLAN_MODE_TOGGLED: "ui.plan_mode_toggled",
-			// Tracks when action mode is toggled on
-			ACT_MODE_TOGGLED: "ui.act_mode_toggled",
-		},
-	}
-
-	/** Singleton instance of the PostHogClient */
-	private static instance: PostHogClient
-	/** PostHog client instance for sending analytics events */
-	private client: PostHog
-	/** Unique identifier for the current VSCode instance */
-	private distinctId: string = vscode.env.machineId
-	/** Whether telemetry is currently enabled based on user and VSCode settings */
-	private telemetryEnabled: boolean = false
-	/** Current version of the extension */
-	private readonly version: string = extensionVersion
+class TelemetryService {
+	private client: PostHogClient | null = null
+	private initialized = false
 
 	/**
-	 * Private constructor to enforce singleton pattern
-	 * Initializes PostHog client with configuration
+	 * Initialize the telemetry service with the PostHog client
+	 * This should be called after environment variables are loaded
 	 */
-	private constructor() {
-		this.client = new PostHog("phc_qfOAGxZw2TL5O8p9KYd9ak3bPBFzfjC8fy5L6jNWY7K", {
-			host: "https://us.i.posthog.com",
-			enableExceptionAutocapture: false,
-		})
+	public initialize(): void {
+		if (this.initialized) {
+			return
+		}
+
+		try {
+			this.client = PostHogClient.getInstance()
+			this.initialized = true
+		} catch (error) {
+			console.warn("Failed to initialize telemetry service:", error)
+		}
+	}
+
+	/**
+	 * Sets the ClineProvider reference to use for global properties
+	 * @param provider A ClineProvider instance to use
+	 */
+	public setProvider(provider: ClineProviderInterface): void {
+		// If client is initialized, pass the provider reference
+		if (this.isReady) {
+			this.client!.setProvider(provider)
+		}
+
+		logger.debug("TelemetryService: ClineProvider reference set")
+	}
+
+	/**
+	 * Base method for all telemetry operations
+	 * Checks if the service is initialized before performing any operation
+	 * @returns Whether the service is ready to use
+	 */
+	private get isReady(): boolean {
+		return this.initialized && this.client !== null
 	}
 
 	/**
 	 * Updates the telemetry state based on user preferences and VSCode settings
-	 * Only enables telemetry if both VSCode global telemetry is enabled and user has opted in
 	 * @param didUserOptIn Whether the user has explicitly opted into telemetry
 	 */
 	public updateTelemetryState(didUserOptIn: boolean): void {
-		this.telemetryEnabled = false
-
-		// First check global telemetry level - telemetry should only be enabled when level is "all"
-		const telemetryLevel = vscode.workspace.getConfiguration("telemetry").get<string>("telemetryLevel", "all")
-		const globalTelemetryEnabled = telemetryLevel === "all"
-
-		// We only enable telemetry if global vscode telemetry is enabled
-		if (globalTelemetryEnabled) {
-			this.telemetryEnabled = didUserOptIn
+		if (!this.isReady) {
+			return
 		}
 
-		// Update PostHog client state based on telemetry preference
-		if (this.telemetryEnabled) {
-			this.client.optIn()
-		} else {
-			this.client.optOut()
-		}
-	}
-
-	/**
-	 * Gets or creates the singleton instance of PostHogClient
-	 * @returns The PostHogClient instance
-	 */
-	public static getInstance(): PostHogClient {
-		if (!PostHogClient.instance) {
-			PostHogClient.instance = new PostHogClient()
-		}
-		return PostHogClient.instance
+		this.client!.updateTelemetryState(didUserOptIn)
 	}
 
 	/**
@@ -121,312 +67,119 @@ class PostHogClient {
 	 * @param event The event to capture with its properties
 	 */
 	public capture(event: { event: string; properties?: any }): void {
-		// Only send events if telemetry is enabled
-		if (this.telemetryEnabled) {
-			// Include extension version in all event properties
-			const propertiesWithVersion = {
-				...event.properties,
-				extension_version: this.version,
-			}
-			this.client.capture({ distinctId: this.distinctId, event: event.event, properties: propertiesWithVersion })
-		}
-	}
-
-	// Task events
-	/**
-	 * Records when a new task/conversation is started
-	 * @param taskId Unique identifier for the new task
-	 */
-	public captureTaskCreated(taskId: string, apiProvider?: string) {
-		this.capture({
-			event: PostHogClient.EVENTS.TASK.CREATED,
-			properties: { taskId, apiProvider },
-		})
-	}
-
-	/**
-	 * Records when a task/conversation is restarted
-	 * @param taskId Unique identifier for the new task
-	 */
-	public captureTaskRestarted(taskId: string, apiProvider?: string) {
-		this.capture({
-			event: PostHogClient.EVENTS.TASK.RESTARTED,
-			properties: { taskId, apiProvider },
-		})
-	}
-
-	/**
-	 * Records when AutoGen calls the task completion_result tool signifying that AutoGen is done with the task
-	 * @param taskId Unique identifier for the task
-	 */
-	public captureTaskCompleted(taskId: string) {
-		this.capture({
-			event: PostHogClient.EVENTS.TASK.COMPLETED,
-			properties: { taskId },
-		})
-	}
-
-	/**
-	 * Captures that a message was sent, and includes the API provider and model used
-	 * @param taskId Unique identifier for the task
-	 * @param provider The API provider (e.g., OpenAI, Anthropic)
-	 * @param model The specific model used (e.g., GPT-4, Claude)
-	 * @param source The source of the message ("user" | "model"). Used to track message patterns and identify when users need to correct the model's responses.
-	 */
-	public captureConversationTurnEvent(
-		taskId: string,
-		provider: string = "unknown",
-		model: string = "unknown",
-		source: "user" | "assistant",
-	) {
-		// Ensure required parameters are provided
-		if (!taskId || !provider || !model || !source) {
-			console.warn("TelemetryService: Missing required parameters for message capture")
+		if (!this.isReady) {
 			return
 		}
 
-		const properties: Record<string, any> = {
-			taskId,
-			provider,
-			model,
-			source,
-			timestamp: new Date().toISOString(), // Add timestamp for message sequencing
+		this.client!.capture(event)
+	}
+
+	/**
+	 * Generic method to capture any type of event with specified properties
+	 * @param eventName The event name to capture
+	 * @param properties The event properties
+	 */
+	public captureEvent(eventName: string, properties?: any): void {
+		this.capture({ event: eventName, properties })
+	}
+
+	// Task events convenience methods
+	public captureTaskCreated(taskId: string): void {
+		this.captureEvent(PostHogClient.EVENTS.TASK.CREATED, { taskId })
+	}
+
+	public captureTaskRestarted(taskId: string): void {
+		this.captureEvent(PostHogClient.EVENTS.TASK.RESTARTED, { taskId })
+	}
+
+	public captureTaskCompleted(taskId: string): void {
+		this.captureEvent(PostHogClient.EVENTS.TASK.COMPLETED, { taskId })
+	}
+
+	public captureConversationMessage(taskId: string, source: "user" | "assistant"): void {
+		this.captureEvent(PostHogClient.EVENTS.TASK.CONVERSATION_MESSAGE, { taskId, source })
+	}
+
+	public captureModeSwitch(taskId: string, newMode: string): void {
+		this.captureEvent(PostHogClient.EVENTS.TASK.MODE_SWITCH, { taskId, newMode })
+	}
+
+	public captureToolUsage(taskId: string, tool: string): void {
+		this.captureEvent(PostHogClient.EVENTS.TASK.TOOL_USED, { taskId, tool })
+	}
+
+	public captureCheckpointCreated(taskId: string): void {
+		this.captureEvent(PostHogClient.EVENTS.TASK.CHECKPOINT_CREATED, { taskId })
+	}
+
+	public captureCheckpointDiffed(taskId: string): void {
+		this.captureEvent(PostHogClient.EVENTS.TASK.CHECKPOINT_DIFFED, { taskId })
+	}
+
+	public captureCheckpointRestored(taskId: string): void {
+		this.captureEvent(PostHogClient.EVENTS.TASK.CHECKPOINT_RESTORED, { taskId })
+	}
+
+	public captureContextCondensed(taskId: string, isAutomaticTrigger: boolean): void {
+		this.captureEvent(PostHogClient.EVENTS.TASK.CONTEXT_CONDENSED, { taskId, isAutomaticTrigger })
+	}
+
+	public captureSlidingWindowTruncation(taskId: string): void {
+		this.captureEvent(PostHogClient.EVENTS.TASK.SLIDING_WINDOW_TRUNCATION, { taskId })
+	}
+
+	public captureCodeActionUsed(actionType: string): void {
+		this.captureEvent(PostHogClient.EVENTS.TASK.CODE_ACTION_USED, { actionType })
+	}
+
+	public capturePromptEnhanced(taskId?: string): void {
+		this.captureEvent(PostHogClient.EVENTS.TASK.PROMPT_ENHANCED, { ...(taskId && { taskId }) })
+	}
+
+	public captureSchemaValidationError({ schemaName, error }: { schemaName: string; error: ZodError }): void {
+		// https://zod.dev/ERROR_HANDLING?id=formatting-errors
+		this.captureEvent(PostHogClient.EVENTS.ERRORS.SCHEMA_VALIDATION_ERROR, { schemaName, error: error.format() })
+	}
+
+	public captureDiffApplicationError(taskId: string, consecutiveMistakeCount: number): void {
+		this.captureEvent(PostHogClient.EVENTS.ERRORS.DIFF_APPLICATION_ERROR, { taskId, consecutiveMistakeCount })
+	}
+
+	public captureShellIntegrationError(taskId: string): void {
+		this.captureEvent(PostHogClient.EVENTS.ERRORS.SHELL_INTEGRATION_ERROR, { taskId })
+	}
+
+	public captureConsecutiveMistakeError(taskId: string): void {
+		this.captureEvent(PostHogClient.EVENTS.ERRORS.CONSECUTIVE_MISTAKE_ERROR, { taskId })
+	}
+
+	/**
+	 * Captures a title button click event
+	 * @param button The button that was clicked
+	 */
+	public captureTitleButtonClicked(button: string): void {
+		this.captureEvent("Title Button Clicked", { button })
+	}
+
+	/**
+	 * Checks if telemetry is currently enabled
+	 * @returns Whether telemetry is enabled
+	 */
+	public isTelemetryEnabled(): boolean {
+		return this.isReady && this.client!.isTelemetryEnabled()
+	}
+
+	/**
+	 * Shuts down the PostHog client
+	 */
+	public async shutdown(): Promise<void> {
+		if (!this.isReady) {
+			return
 		}
 
-		this.capture({
-			event: PostHogClient.EVENTS.TASK.CONVERSATION_TURN,
-			properties,
-		})
-	}
-
-	/**
-	 * TODO
-	 * Records token usage metrics for cost tracking and usage analysis
-	 * @param taskId Unique identifier for the task
-	 * @param tokensIn Number of input tokens consumed
-	 * @param tokensOut Number of output tokens generated
-	 * @param model The model used for token calculation
-	 */
-	public captureTokenUsage(taskId: string, tokensIn: number, tokensOut: number, model: string) {
-		this.capture({
-			event: PostHogClient.EVENTS.TASK.TOKEN_USAGE,
-			properties: {
-				taskId,
-				tokensIn,
-				tokensOut,
-				model,
-			},
-		})
-	}
-
-	/**
-	 * Records when a task switches between chat and Agent modes
-	 * @param taskId Unique identifier for the task
-	 * @param mode The mode being switched to (chat or Agent)
-	 */
-	public captureModeSwitch(taskId: string, mode: "chat" | "Agent") {
-		this.capture({
-			event: PostHogClient.EVENTS.TASK.MODE_SWITCH,
-			properties: {
-				taskId,
-				mode,
-			},
-		})
-	}
-
-	// Tool events
-	/**
-	 * Records when a tool is used during task execution
-	 * @param taskId Unique identifier for the task
-	 * @param tool Name of the tool being used
-	 * @param autoApproved Whether the tool was auto-approved based on settings
-	 * @param success Whether the tool execution was successful
-	 */
-	public captureToolUsage(taskId: string, tool: string, autoApproved: boolean, success: boolean) {
-		this.capture({
-			event: PostHogClient.EVENTS.TASK.TOOL_USED,
-			properties: {
-				taskId,
-				tool,
-				autoApproved,
-				success,
-			},
-		})
-	}
-
-	/**
-	 * Records interactions with the git-based checkpoint system
-	 * @param taskId Unique identifier for the task
-	 * @param action The type of checkpoint action
-	 * @param durationMs Optional duration of the operation in milliseconds
-	 */
-	public captureCheckpointUsage(
-		taskId: string,
-		action: "shadow_git_initialized" | "commit_created" | "restored" | "diff_generated",
-		durationMs?: number,
-	) {
-		this.capture({
-			event: PostHogClient.EVENTS.TASK.CHECKPOINT_USED,
-			properties: {
-				taskId,
-				action,
-				durationMs,
-			},
-		})
-	}
-
-	// UI events
-	/**
-	 * Records when the user switches between different API providers
-	 * @param from Previous provider name
-	 * @param to New provider name
-	 * @param location Where the switch occurred (settings panel or bottom bar)
-	 * @param taskId Optional task identifier if switch occurred during a task
-	 */
-	public captureProviderSwitch(from: string, to: string, location: "settings" | "bottom", taskId?: string) {
-		this.capture({
-			event: PostHogClient.EVENTS.UI.PROVIDER_SWITCH,
-			properties: {
-				from,
-				to,
-				location,
-				taskId,
-			},
-		})
-	}
-
-	/**
-	 * Records when images are attached to a conversation
-	 * @param taskId Unique identifier for the task
-	 * @param imageCount Number of images attached
-	 */
-	public captureImageAttached(taskId: string, imageCount: number) {
-		this.capture({
-			event: PostHogClient.EVENTS.UI.IMAGE_ATTACHED,
-			properties: {
-				taskId,
-				imageCount,
-			},
-		})
-	}
-
-	/**
-	 * Records general button click interactions in the UI
-	 * @param button Identifier for the button that was clicked
-	 * @param taskId Optional task identifier if click occurred during a task
-	 */
-	public captureButtonClick(button: string, taskId?: string) {
-		this.capture({
-			event: PostHogClient.EVENTS.UI.BUTTON_CLICK,
-			properties: {
-				button,
-				taskId,
-			},
-		})
-	}
-
-	/**
-	 * Records when the marketplace view is opened
-	 * @param taskId Optional task identifier if marketplace was opened during a task
-	 */
-	public captureMarketplaceOpened(taskId?: string) {
-		this.capture({
-			event: PostHogClient.EVENTS.UI.MARKETPLACE_OPENED,
-			properties: {
-				taskId,
-			},
-		})
-	}
-
-	/**
-	 * Records when the settings panel is opened
-	 * @param taskId Optional task identifier if settings were opened during a task
-	 */
-	public captureSettingsOpened(taskId?: string) {
-		this.capture({
-			event: PostHogClient.EVENTS.UI.SETTINGS_OPENED,
-			properties: {
-				taskId,
-			},
-		})
-	}
-
-	/**
-	 * Records when the task history view is opened
-	 * @param taskId Optional task identifier if history was opened during a task
-	 */
-	public captureHistoryOpened(taskId?: string) {
-		this.capture({
-			event: PostHogClient.EVENTS.UI.HISTORY_OPENED,
-			properties: {
-				taskId,
-			},
-		})
-	}
-
-	/**
-	 * Records when a task is removed from the task history
-	 * @param taskId Unique identifier for the task being removed
-	 */
-	public captureTaskPopped(taskId: string) {
-		this.capture({
-			event: PostHogClient.EVENTS.UI.TASK_POPPED,
-			properties: {
-				taskId,
-			},
-		})
-	}
-
-	/**
-	 * Records when a different model is selected for use
-	 * @param model Name of the selected model
-	 * @param provider Provider of the selected model
-	 * @param taskId Optional task identifier if model was selected during a task
-	 */
-	public captureModelSelected(model: string, provider: string, taskId?: string) {
-		this.capture({
-			event: PostHogClient.EVENTS.UI.MODEL_SELECTED,
-			properties: {
-				model,
-				provider,
-				taskId,
-			},
-		})
-	}
-
-	/**
-	 * Records when a historical task is loaded from storage
-	 * @param taskId Unique identifier for the historical task
-	 */
-	public captureHistoricalTaskLoaded(taskId: string) {
-		this.capture({
-			event: PostHogClient.EVENTS.TASK.HISTORICAL_LOADED,
-			properties: {
-				taskId,
-			},
-		})
-	}
-
-	/**
-	 * Records when the retry button is clicked for failed operations
-	 * @param taskId Unique identifier for the task being retried
-	 */
-	public captureRetryClicked(taskId: string) {
-		this.capture({
-			event: PostHogClient.EVENTS.TASK.RETRY_CLICKED,
-			properties: {
-				taskId,
-			},
-		})
-	}
-
-	public isTelemetryEnabled(): boolean {
-		return this.telemetryEnabled
-	}
-
-	public async shutdown(): Promise<void> {
-		await this.client.shutdown()
+		await this.client!.shutdown()
 	}
 }
 
-export const telemetryService = PostHogClient.getInstance()
+// Export a singleton instance of the telemetry service wrapper
+export const telemetryService = new TelemetryService()

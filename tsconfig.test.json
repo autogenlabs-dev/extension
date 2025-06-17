@@ -1,0 +1,16 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noImplicitAny": false,
+    "strictNullChecks": false,
+    "module": "commonjs",
+    "moduleResolution": "Node",
+    "esModuleInterop": true,
+    "allowJs": true,
+    "types": ["jest", "node"],
+    "useUnknownInCatchVariables": false,
+    "noImplicitThis": false,
+    "typeRoots": ["./node_modules/@types", "./src/__tests__/types"]
+  },
+  "include": ["src/**/__tests__/**/*", "src/__tests__/types/*.d.ts"]
+}

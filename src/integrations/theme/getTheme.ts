@@ -3,6 +3,8 @@ import * as path from "path"
 import * as fs from "fs/promises"
 import { convertTheme } from "monaco-vscode-textmate-theme-converter/lib/cjs"
 
+import { Package } from "../../schemas"
+
 const defaultThemes: Record<string, string> = {
 	"Default Dark Modern": "dark_modern",
 	"Dark+": "dark_plus",
@@ -74,7 +76,11 @@ export async function getTheme() {
 		const converted = convertTheme(parsed)
 
 		converted.base = (
-			["vs", "hc-black"].includes(converted.base) ? converted.base : colorTheme.includes("Light") ? "vs" : "vs-dark"
+			["vs", "hc-black"].includes(converted.base)
+				? converted.base
+				: colorTheme.includes("Light")
+					? "vs"
+					: "vs-dark"
 		) as any
 
 		return converted
@@ -137,5 +143,5 @@ export function mergeJson(
 }
 
 function getExtensionUri(): vscode.Uri {
-	return vscode.extensions.getExtension("autogenlabs")!.extensionUri
+	return vscode.extensions.getExtension(`${Package.publisher}.${Package.name}`)!.extensionUri
 }

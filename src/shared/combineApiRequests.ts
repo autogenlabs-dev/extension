@@ -1,14 +1,14 @@
-import { AutoGenMessage } from "./ExtensionMessage"
+import { ClineMessage } from "./ExtensionMessage"
 
 /**
- * Combines API request start and finish messages in an array of AutoGenMessages.
+ * Combines API request start and finish messages in an array of ClineMessages.
  *
  * This function looks for pairs of 'api_req_started' and 'api_req_finished' messages.
  * When it finds a pair, it combines them into a single 'api_req_combined' message.
  * The JSON data in the text fields of both messages are merged.
  *
- * @param messages - An array of AutoGenMessage objects to process.
- * @returns A new array of AutoGenMessage objects with API requests combined.
+ * @param messages - An array of ClineMessage objects to process.
+ * @returns A new array of ClineMessage objects with API requests combined.
  *
  * @example
  * const messages = [
@@ -18,48 +18,67 @@ import { AutoGenMessage } from "./ExtensionMessage"
  * const result = combineApiRequests(messages);
  * // Result: [{ type: "say", say: "api_req_started", text: '{"request":"GET /api/data","cost":0.005}', ts: 1000 }]
  */
-export function combineApiRequests(messages: AutoGenMessage[]): AutoGenMessage[] {
-	const combinedApiRequests: AutoGenMessage[] = []
+export function combineApiRequests(messages: ClineMessage[]): ClineMessage[] {
+	if (messages.length === 0) {
+		return []
+	}
 
-	for (let i = 0; i < messages.length; i++) {
-		if (messages[i].type === "say" && messages[i].say === "api_req_started") {
-			let startedRequest = JSON.parse(messages[i].text || "{}")
-			let j = i + 1
+	if (messages.length === 1) {
+		return messages
+	}
 
-			while (j < messages.length) {
-				if (messages[j].type === "say" && messages[j].say === "api_req_finished") {
-					let finishedRequest = JSON.parse(messages[j].text || "{}")
-					let combinedRequest = {
-						...startedRequest,
-						...finishedRequest,
-					}
+	let isMergeNecessary = false
 
-					combinedApiRequests.push({
-						...messages[i],
-						text: JSON.stringify(combinedRequest),
-					})
-
-					i = j // Skip to the api_req_finished message
-					break
-				}
-				j++
-			}
-
-			if (j === messages.length) {
-				// If no matching api_req_finished found, keep the original api_req_started
-				combinedApiRequests.push(messages[i])
-			}
+	for (const msg of messages) {
+		if (msg.type === "say" && (msg.say === "api_req_started" || msg.say === "api_req_finished")) {
+			isMergeNecessary = true
+			break
 		}
 	}
 
-	// Replace original api_req_started and remove api_req_finished
-	return messages
-		.filter((msg) => !(msg.type === "say" && msg.say === "api_req_finished"))
-		.map((msg) => {
-			if (msg.type === "say" && msg.say === "api_req_started") {
-				const combinedRequest = combinedApiRequests.find((req) => req.ts === msg.ts)
-				return combinedRequest || msg
-			}
-			return msg
-		})
+	if (!isMergeNecessary) {
+		return messages
+	}
+
+	const result: ClineMessage[] = []
+	const startedIndices: number[] = []
+
+	for (const message of messages) {
+		if (message.type !== "say" || (message.say !== "api_req_started" && message.say !== "api_req_finished")) {
+			result.push(message)
+			continue
+		}
+
+		if (message.say === "api_req_started") {
+			// Add to result and track the index.
+			result.push(message)
+			startedIndices.push(result.length - 1)
+			continue
+		}
+
+		// Find the most recent api_req_started that hasn't been combined.
+		const startIndex = startedIndices.length > 0 ? startedIndices.pop() : undefined
+
+		if (startIndex !== undefined) {
+			const startMessage = result[startIndex]
+			let startData = {}
+			let finishData = {}
+
+			try {
+				if (startMessage.text) {
+					startData = JSON.parse(startMessage.text)
+				}
+			} catch (e) {}
+
+			try {
+				if (message.text) {
+					finishData = JSON.parse(message.text)
+				}
+			} catch (e) {}
+
+			result[startIndex] = { ...startMessage, text: JSON.stringify({ ...startData, ...finishData }) }
+		}
+	}
+
+	return result
 }

@@ -1,228 +1,273 @@
-// type that represents json data that is sent from extension to webview, called ExtensionMessage and has 'type' enum which can be 'plusButtonClicked' or 'settingsButtonClicked' or 'hello'
-
 import { GitCommit } from "../utils/git"
-import { ApiConfiguration, ModelInfo } from "./api"
-import { AutoApprovalSettings } from "./AutoApprovalSettings"
-import { BrowserSettings } from "./BrowserSettings"
-import { ChatSettings } from "./ChatSettings"
-import { BalanceResponse, PaymentTransaction, UsageTransaction } from "./AutoGenAccount"
-import { HistoryItem } from "./HistoryItem"
-import { McpServer, McpMarketplaceCatalog, McpMarketplaceItem, McpDownloadResponse } from "./mcp"
-import { TelemetrySetting } from "./TelemetrySetting"
 
-// webview will hold state
+import {
+	GlobalSettings,
+	ProviderSettingsEntry,
+	ProviderSettings,
+	HistoryItem,
+	ModeConfig,
+	TelemetrySetting,
+	ExperimentId,
+	ClineAsk,
+	ClineSay,
+	ToolProgressStatus,
+	ClineMessage,
+} from "../schemas"
+import { McpServer } from "./mcp"
+import { Mode } from "./modes"
+import { RouterModels } from "./api"
+
+export type { ProviderSettingsEntry, ToolProgressStatus }
+
+export interface LanguageModelChatSelector {
+	vendor?: string
+	family?: string
+	version?: string
+	id?: string
+}
+
+// Represents JSON data that is sent from extension to webview, called
+// ExtensionMessage and has 'type' enum which can be 'plusButtonClicked' or
+// 'settingsButtonClicked' or 'hello'. Webview will hold state.
 export interface ExtensionMessage {
 	type:
 		| "action"
 		| "state"
 		| "selectedImages"
-		| "ollamaModels"
-		| "lmStudioModels"
 		| "theme"
 		| "workspaceUpdated"
 		| "invoke"
 		| "partialMessage"
-		| "openRouterModels"
-		| "openAiModels"
 		| "mcpServers"
-		| "relinquishControl"
-		| "vsCodeLmModels"
-		| "requestVsCodeLmModels"
-		| "authCallback"
-		| "mcpMarketplaceCatalog"
-		| "mcpDownloadDetails"
+		| "enhancedPrompt"
 		| "commitSearchResults"
-		| "openGraphData"
-		| "isImageUrlResult"
-		| "didUpdateSettings"
-		| "userCreditsBalance"
-		| "userCreditsUsage"
-		| "userCreditsPayments"
-		| "totalTasksSize"
-		// Native Filesystem Results/Errors
-		| "nativeFsReadFileResult"
-		| "nativeFsWriteFileResult"
-		| "nativeFsListDirectoryResult"
-		| "nativeFsCreateDirectoryResult"
-		| "nativeFsGetFileInfoResult"
-		| "nativeFsRenameResult"
-		| "nativeFsDeleteResult"
-		| "nativeFsError"
+		| "listApiConfig"
+		| "routerModels"
+		| "openAiModels"
+		| "ollamaModels"
+		| "lmStudioModels"
+		| "vsCodeLmModels"
+		| "vsCodeLmApiAvailable"
+		| "updatePrompt"
+		| "systemPrompt"
+		| "autoApprovalEnabled"
+		| "updateCustomMode"
+		| "deleteCustomMode"
+		| "currentCheckpointUpdated"
+		| "showHumanRelayDialog"
+		| "humanRelayResponse"
+		| "humanRelayCancel"
+		| "browserToolEnabled"
+		| "browserConnectionResult"
+		| "remoteBrowserEnabled"
+		| "ttsStart"
+		| "ttsStop"
+		| "maxReadFileLine"
+		| "fileSearchResults"
+		| "toggleApiConfigPin"
+		| "acceptInput"
+		| "setHistoryPreviewCollapsed"
+		| "commandExecutionStatus"
+		| "vsCodeSetting"
+		| "condenseTaskContextResponse"
+		| "auth:loginSuccess"
+		| "auth:registerSuccess"
+		| "auth:logoutSuccess"
+		| "auth:error"
 	text?: string
 	action?:
 		| "chatButtonClicked"
 		| "mcpButtonClicked"
 		| "settingsButtonClicked"
 		| "historyButtonClicked"
+		| "promptsButtonClicked"
 		| "didBecomeVisible"
-		| "accountLoginClicked"
-		| "accountLogoutClicked"
-		| "accountButtonClicked"
-	invoke?: Invoke
+		| "focusInput"
+	invoke?: "newChat" | "sendMessage" | "primaryButtonClick" | "secondaryButtonClick" | "setChatBoxMessage"
 	state?: ExtensionState
 	images?: string[]
+	filePaths?: string[]
+	openedTabs?: Array<{
+		label: string
+		isActive: boolean
+		path?: string
+	}>
+	partialMessage?: ClineMessage
+	routerModels?: RouterModels
+	openAiModels?: string[]
 	ollamaModels?: string[]
 	lmStudioModels?: string[]
 	vsCodeLmModels?: { vendor?: string; family?: string; version?: string; id?: string }[]
-	filePaths?: string[]
-	partialMessage?: AutoGenMessage
-	openRouterModels?: Record<string, ModelInfo>
-	openAiModels?: string[]
 	mcpServers?: McpServer[]
-	customToken?: string
-	mcpMarketplaceCatalog?: McpMarketplaceCatalog
-	error?: string
-	mcpDownloadDetails?: McpDownloadResponse
 	commits?: GitCommit[]
-	openGraphData?: {
-		title?: string
-		description?: string
-		image?: string
-		url?: string
-		siteName?: string
-		type?: string
-	}
-	url?: string
-	isImage?: boolean
-	userCreditsBalance?: BalanceResponse
-	userCreditsUsage?: UsageTransaction[]
-	userCreditsPayments?: PaymentTransaction[]
-	totalTasksSize?: number | null
-
-	// --- Native Filesystem Payload (Extension -> Webview) ---
-	path?: string // For results and errors
-	content?: string // For readFile result
-	entries?: { name: string; type: 'file' | 'directory' | 'unknown' }[] // For listDirectory result
-	stats?: SerializableFileStat // Use the serializable version
-	oldPath?: string // For rename result
-	newPath?: string // For rename result
-	operation?: string // For error messages
-	// error?: string // Already exists
-	// --- End Native Filesystem Payload ---
+	listApiConfig?: ProviderSettingsEntry[]
+	mode?: Mode
+	customMode?: ModeConfig
+	slug?: string
+	success?: boolean
+	values?: Record<string, any>
+	requestId?: string
+	promptText?: string
+	results?: { path: string; type: "file" | "folder"; label?: string }[]
+	error?: string
+	setting?: string
+	value?: any
+	user?: any
+	message?: string
 }
 
-/**
- * A serializable representation of file status information,
- * mirroring essential parts of vscode.FileStat.
- */
-export interface SerializableFileStat {
-	type: 'file' | 'directory' | 'symbolicLink' | 'unknown';
-	ctime: number; // Creation time in milliseconds since epoch
-	mtime: number; // Modification time in milliseconds since epoch
-	size: number;  // Size in bytes
-}
-
-export type Invoke = "sendMessage" | "primaryButtonClick" | "secondaryButtonClick"
-
-export type Platform = "aix" | "darwin" | "freebsd" | "linux" | "openbsd" | "sunos" | "win32" | "unknown"
-
-export const DEFAULT_PLATFORM = "unknown"
-
-export interface ExtensionState {
-	apiConfiguration?: ApiConfiguration
-	mcpServers?: McpServer[] // Add MCP servers list
-	autoApprovalSettings: AutoApprovalSettings
-	browserSettings: BrowserSettings
-	chatSettings: ChatSettings
-	checkpointTrackerErrorMessage?: string
-	autogenMessages: AutoGenMessage[]
-	currentTaskItem?: HistoryItem
-	customInstructions?: string
-	mcpMarketplaceEnabled?: boolean
-	planActSeparateModelsSetting: boolean
-	platform: Platform
-	shouldShowAnnouncement: boolean
-	taskHistory: HistoryItem[]
-	telemetrySetting: TelemetrySetting
-	uriScheme?: string
-	userInfo?: {
-		displayName: string | null
-		email: string | null
-		photoURL: string | null
-	}
+export type ExtensionState = Pick<
+	GlobalSettings,
+	| "currentApiConfigName"
+	| "listApiConfigMeta"
+	| "pinnedApiConfigs"
+	// | "lastShownAnnouncementId"
+	| "customInstructions"
+	// | "taskHistory" // Optional in GlobalSettings, required here.
+	| "autoApprovalEnabled"
+	| "alwaysAllowReadOnly"
+	| "alwaysAllowReadOnlyOutsideWorkspace"
+	| "alwaysAllowWrite"
+	| "alwaysAllowWriteOutsideWorkspace"
+	// | "writeDelayMs" // Optional in GlobalSettings, required here.
+	| "alwaysAllowBrowser"
+	| "alwaysApproveResubmit"
+	// | "requestDelaySeconds" // Optional in GlobalSettings, required here.
+	| "alwaysAllowMcp"
+	| "alwaysAllowModeSwitch"
+	| "alwaysAllowSubtasks"
+	| "alwaysAllowExecute"
+	| "allowedCommands"
+	| "allowedMaxRequests"
+	| "browserToolEnabled"
+	| "browserViewportSize"
+	| "screenshotQuality"
+	| "remoteBrowserEnabled"
+	| "remoteBrowserHost"
+	// | "enableCheckpoints" // Optional in GlobalSettings, required here.
+	| "ttsEnabled"
+	| "ttsSpeed"
+	| "soundEnabled"
+	| "soundVolume"
+	// | "maxOpenTabsContext" // Optional in GlobalSettings, required here.
+	// | "maxWorkspaceFiles" // Optional in GlobalSettings, required here.
+	// | "showRooIgnoredFiles" // Optional in GlobalSettings, required here.
+	// | "maxReadFileLine" // Optional in GlobalSettings, required here.
+	| "terminalOutputLineLimit"
+	| "terminalShellIntegrationTimeout"
+	| "terminalShellIntegrationDisabled"
+	| "terminalCommandDelay"
+	| "terminalPowershellCounter"
+	| "terminalZshClearEolMark"
+	| "terminalZshOhMy"
+	| "terminalZshP10k"
+	| "terminalZdotdir"
+	| "terminalCompressProgressBar"
+	| "diffEnabled"
+	| "fuzzyMatchThreshold"
+	// | "experiments" // Optional in GlobalSettings, required here.
+	| "language"
+	// | "telemetrySetting" // Optional in GlobalSettings, required here.
+	// | "mcpEnabled" // Optional in GlobalSettings, required here.
+	// | "enableMcpServerCreation" // Optional in GlobalSettings, required here.
+	// | "mode" // Optional in GlobalSettings, required here.
+	| "modeApiConfigs"
+	// | "customModes" // Optional in GlobalSettings, required here.
+	| "customModePrompts"
+	| "customSupportPrompts"
+	| "enhancementApiConfigId"
+> & {
 	version: string
-	vscMachineId: string
+	clineMessages: ClineMessage[]
+	currentTaskItem?: HistoryItem
+	apiConfiguration?: ProviderSettings
+	uriScheme?: string
+	shouldShowAnnouncement: boolean
+
+	taskHistory: HistoryItem[]
+
+	writeDelayMs: number
+	requestDelaySeconds: number
+
+	enableCheckpoints: boolean
+	maxOpenTabsContext: number // Maximum number of VSCode open tabs to include in context (0-500)
+	maxWorkspaceFiles: number // Maximum number of files to include in current working directory details (0-500)
+	showRooIgnoredFiles: boolean // Whether to show .rooignore'd files in listings
+	maxReadFileLine: number // Maximum number of lines to read from a file before truncating
+
+	experiments: Record<ExperimentId, boolean> // Map of experiment IDs to their enabled state
+
+	mcpEnabled: boolean
+	enableMcpServerCreation: boolean
+
+	mode: Mode
+	customModes: ModeConfig[]
+	toolRequirements?: Record<string, boolean> // Map of tool names to their requirements (e.g. {"apply_diff": true} if diffEnabled)
+
+	cwd?: string // Current working directory
+	telemetrySetting: TelemetrySetting
+	telemetryKey?: string
+	machineId?: string
+
+	renderContext: "sidebar" | "editor"
+	settingsImportedAt?: number
+	historyPreviewCollapsed?: boolean
+	autoCondenseContextPercent: number
 }
 
-export interface AutoGenMessage {
-	ts: number
-	type: "ask" | "say"
-	ask?: AutoGenAsk
-	say?: AutoGenSay
-	text?: string
-	reasoning?: string
-	images?: string[]
-	partial?: boolean
-	lastCheckpointHash?: string
-	isCheckpointCheckedOut?: boolean
-	conversationHistoryIndex?: number
-	conversationHistoryDeletedRange?: [number, number] // for when conversation history is truncated for API requests
-}
+export type { ClineMessage, ClineAsk, ClineSay }
 
-export type AutoGenAsk =
-	| "followup"
-	| "plan_mode_response"
-	| "command"
-	| "command_output"
-	| "completion_result"
-	| "tool"
-	| "api_req_failed"
-	| "resume_task"
-	| "resume_completed_task"
-	| "mistake_limit_reached"
-	| "auto_approval_max_req_reached"
-	| "browser_action_launch"
-	| "use_mcp_server"
-
-export type AutoGenSay =
-	| "task"
-	| "error"
-	| "api_req_started"
-	| "api_req_finished"
-	| "text"
-	| "reasoning"
-	| "completion_result"
-	| "user_feedback"
-	| "user_feedback_diff"
-	| "api_req_retried"
-	| "command"
-	| "command_output"
-	| "tool"
-	| "shell_integration_warning"
-	| "browser_action_launch"
-	| "browser_action"
-	| "browser_action_result"
-	| "mcp_server_request_started"
-	| "mcp_server_response"
-	| "use_mcp_server"
-	| "diff_error"
-	| "deleted_api_reqs"
-	| "autogenignore_error"
-	| "checkpoint_created"
-
-export interface AutoGenSayTool {
+export interface ClineSayTool {
 	tool:
 		| "editedExistingFile"
+		| "appliedDiff"
 		| "newFileCreated"
 		| "readFile"
+		| "fetchInstructions"
 		| "listFilesTopLevel"
 		| "listFilesRecursive"
 		| "listCodeDefinitionNames"
 		| "searchFiles"
+		| "switchMode"
+		| "newTask"
+		| "finishTask"
+		| "searchAndReplace"
+		| "insertContent"
 	path?: string
 	diff?: string
 	content?: string
 	regex?: string
 	filePattern?: string
+	mode?: string
+	reason?: string
+	isOutsideWorkspace?: boolean
+	search?: string
+	replace?: string
+	useRegex?: boolean
+	ignoreCase?: boolean
+	startLine?: number
+	endLine?: number
+	lineNumber?: number
 }
 
-// must keep in sync with system prompt
-export const browserActions = ["launch", "click", "type", "scroll_down", "scroll_up", "close"] as const
+// Must keep in sync with system prompt.
+export const browserActions = [
+	"launch",
+	"click",
+	"hover",
+	"type",
+	"scroll_down",
+	"scroll_up",
+	"resize",
+	"close",
+] as const
+
 export type BrowserAction = (typeof browserActions)[number]
 
-export interface AutoGenSayBrowserAction {
+export interface ClineSayBrowserAction {
 	action: BrowserAction
 	coordinate?: string
+	size?: string
 	text?: string
 }
 
@@ -233,7 +278,7 @@ export type BrowserActionResult = {
 	currentMousePosition?: string
 }
 
-export interface AutoGenAskUseMcpServer {
+export interface ClineAskUseMcpServer {
 	serverName: string
 	type: "use_mcp_tool" | "access_mcp_resource"
 	toolName?: string
@@ -241,29 +286,15 @@ export interface AutoGenAskUseMcpServer {
 	uri?: string
 }
 
-export interface AutoGenPlanModeResponse {
-	response: string
-	options?: string[]
-	selected?: string
-}
-
-export interface AutoGenAskQuestion {
-	question: string
-	options?: string[]
-	selected?: string
-}
-
-export interface AutoGenApiReqInfo {
+export interface ClineApiReqInfo {
 	request?: string
 	tokensIn?: number
 	tokensOut?: number
 	cacheWrites?: number
 	cacheReads?: number
 	cost?: number
-	cancelReason?: AutoGenApiReqCancelReason
+	cancelReason?: ClineApiReqCancelReason
 	streamingFailedMessage?: string
 }
 
-export type AutoGenApiReqCancelReason = "streaming_failed" | "user_cancelled"
-
-export const COMPLETION_RESULT_CHANGES_FLAG = "HAS_CHANGES"
+export type ClineApiReqCancelReason = "streaming_failed" | "user_cancelled"

@@ -3,6 +3,7 @@
 ## Current Extension Structure Analysis
 
 Your extension has these key components:
+
 1. **Extension View** (`src/extentionView/`) - Custom UI builder interface
 2. **Core AutoGen** (`src/core/`) - AI-powered code generation engine
 3. **Webview UI** (`webview-ui/`) - React frontend with Vite
@@ -12,6 +13,7 @@ Your extension has these key components:
 ## Integration Strategies
 
 ### Strategy 1: Modular Package Extraction
+
 Extract reusable components into separate packages:
 
 ```
@@ -38,6 +40,7 @@ your-ide/              # Your other IDE integration
 ```
 
 ### Strategy 2: Webview Component Integration
+
 Extract just the webview UI as a standalone component:
 
 ```
@@ -54,6 +57,7 @@ autogen-webview/
 ```
 
 ### Strategy 3: API-First Integration
+
 Create an API server that both IDEs can communicate with:
 
 ```
@@ -78,21 +82,26 @@ For your use case, I recommend **Strategy 1 + Strategy 2 combined**:
 ## Implementation Steps
 
 ### Step 1: Create Shared Core Package
+
 - Extract `src/core/Autogen.ts` and related files
 - Remove VS Code dependencies
 - Create platform-agnostic interfaces
 
 ### Step 2: Extract UI Components
+
 - Move `webview-ui/` to standalone package
 - Create communication interface
 - Remove VS Code specific code
 
 ### Step 3: Create Platform Adapters
+
 - VS Code adapter (your current extension)
 - Your IDE adapter (new implementation)
 
 ### Step 4: Integration Points
+
 Define these interfaces:
+
 - File system operations
 - Terminal/shell access
 - Editor integration
@@ -102,6 +111,7 @@ Define these interfaces:
 ## Files to Extract
 
 ### Core Components (Platform Agnostic):
+
 - `src/core/Autogen.ts` - Main AI logic
 - `src/core/assistant-message/` - Message handling
 - `src/core/context-management/` - Context management
@@ -110,6 +120,7 @@ Define these interfaces:
 - `webview-ui/src/` - React UI components
 
 ### Platform Specific (Keep Separate):
+
 - `src/integrations/` - VS Code specific integrations
 - `src/services/auth/` - May need platform adapters
 - `src/extension.ts` - VS Code entry point

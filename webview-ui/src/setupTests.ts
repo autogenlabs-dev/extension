@@ -1,19 +1,32 @@
 import "@testing-library/jest-dom"
-import { vi } from "vitest"
+import { setupI18nForTests } from "./i18n/test-utils"
 
-// "Official" jest workaround for mocking window.matchMedia()
-// https://jestjs.io/docs/manual-mocks#mocking-methods-which-are-not-implemented-in-jsdom
+// Set up i18n for all tests
+setupI18nForTests()
 
+// Mock crypto.getRandomValues
+Object.defineProperty(window, "crypto", {
+	value: {
+		getRandomValues: function (buffer: Uint8Array) {
+			for (let i = 0; i < buffer.length; i++) {
+				buffer[i] = Math.floor(Math.random() * 256)
+			}
+			return buffer
+		},
+	},
+})
+
+// Mock matchMedia
 Object.defineProperty(window, "matchMedia", {
 	writable: true,
-	value: vi.fn().mockImplementation((query) => ({
+	value: jest.fn().mockImplementation((query) => ({
 		matches: false,
 		media: query,
 		onchange: null,
-		addListener: vi.fn(), // Deprecated
-		removeListener: vi.fn(), // Deprecated
-		addEventListener: vi.fn(),
-		removeEventListener: vi.fn(),
-		dispatchEvent: vi.fn(),
+		addListener: jest.fn(), // deprecated
+		removeListener: jest.fn(), // deprecated
+		addEventListener: jest.fn(),
+		removeEventListener: jest.fn(),
+		dispatchEvent: jest.fn(),
 	})),
 })
