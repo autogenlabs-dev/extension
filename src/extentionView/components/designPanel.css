@@ -1,0 +1,246 @@
+/* Design panel specific styles */
+.design-card {
+	background: var(--surface-2);
+	border-radius: 14px;
+	overflow: hidden;
+	transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+	box-shadow: var(--shadow-sm);
+	border: 1px solid var(--border-color);
+	margin-bottom: 2rem;
+}
+
+.design-card:hover {
+	transform: translateY(-6px);
+	box-shadow: var(--shadow-lg);
+	border-color: rgba(95, 111, 255, 0.3);
+}
+
+.design-preview {
+	width: 100%;
+	background: var(--surface-3);
+	position: relative;
+	aspect-ratio: 16/10;
+	overflow: hidden;
+}
+
+.design-preview:after {
+	content: "";
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	background: linear-gradient(to bottom, rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.4));
+	opacity: 0;
+	transition: opacity 0.3s ease;
+}
+
+.design-card:hover .design-preview:after {
+	opacity: 1;
+}
+
+.design-preview img {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	transition: transform 0.7s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.design-card:hover .design-preview img {
+	transform: scale(1.08);
+}
+
+.design-info {
+	padding: 1.25rem;
+	background: var(--surface-2);
+	position: relative;
+}
+
+.design-info:before {
+	content: "";
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 2px;
+	background: linear-gradient(90deg, var(--primary-dark), var(--primary), var(--accent));
+	transform: scaleX(0);
+	transform-origin: left;
+	transition: transform 0.4s ease;
+}
+
+.design-card:hover .design-info:before {
+	transform: scaleX(1);
+}
+
+.design-title {
+	font-size: 1.1rem;
+	font-weight: 600;
+	margin-bottom: 0.5rem;
+	color: var(--text-primary);
+	transition: color 0.3s ease;
+}
+
+.design-card:hover .design-title {
+	color: var(--primary-light);
+}
+
+.design-description {
+	font-size: 0.9rem;
+	color: var(--text-secondary);
+	margin-bottom: 0.75rem;
+	line-height: 1.5;
+}
+
+.design-meta {
+	display: flex;
+	flex-direction: column;
+	gap: 0.5rem;
+	margin-top: 1rem;
+}
+
+.component-list,
+.color-palette {
+	margin-top: 1rem;
+}
+
+.component-list h4,
+.color-palette h4 {
+	font-size: 0.9rem;
+	font-weight: 600;
+	color: var(--text-primary);
+	margin-bottom: 0.5rem;
+}
+
+.tag-container {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+}
+
+.tag {
+	display: inline-block;
+	padding: 4px 8px;
+	margin: 3px;
+	font-size: 12px;
+	color: var(--text-primary);
+	background-color: var(--surface-3);
+	border-radius: 4px;
+	border: 1px solid var(--border-color);
+	transition: all 0.2s ease;
+}
+
+.tag:hover {
+	background-color: var(--accent-color);
+	color: var(--surface-1);
+	transform: translateY(-2px);
+}
+
+.color-dots {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	margin-top: 0.5rem;
+}
+
+.color-dot {
+	display: inline-block;
+	width: 28px;
+	height: 28px;
+	border-radius: 50%;
+	cursor: pointer;
+	box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+	border: 2px solid var(--surface-1);
+	transition: all 0.3s ease;
+}
+
+.color-dot:hover {
+	transform: scale(1.2);
+	box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.design-apply-btn {
+	display: block;
+	width: 100%;
+	padding: 12px 0;
+	margin-top: 20px;
+	background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+	color: white;
+	font-weight: 600;
+	border: none;
+	border-radius: 8px;
+	cursor: pointer;
+	transition: all 0.3s ease;
+	position: relative;
+	overflow: hidden;
+}
+
+.design-apply-btn:after {
+	content: "";
+	position: absolute;
+	top: 0;
+	left: -100%;
+	width: 100%;
+	height: 100%;
+	background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+	transition: all 0.5s ease;
+}
+
+.design-apply-btn:hover {
+	transform: translateY(-3px);
+	box-shadow: 0 8px 16px rgba(95, 111, 255, 0.4);
+}
+
+.design-apply-btn:hover:after {
+	left: 100%;
+}
+
+.design-instructions {
+	margin-top: 2rem;
+	padding: 1.25rem;
+	border: 1px solid var(--border-color);
+	border-radius: 10px;
+	background-color: var(--surface-2);
+	transition: all 0.3s ease;
+}
+
+.design-instructions:hover {
+	box-shadow: var(--shadow-sm);
+	transform: translateY(-3px);
+}
+
+.design-instructions h4 {
+	font-size: 1rem;
+	font-weight: 600;
+	color: var(--text-primary);
+	margin-bottom: 0.75rem;
+}
+
+.design-instructions ol {
+	padding-left: 1.5rem;
+	margin: 0;
+}
+
+.design-instructions li {
+	font-size: 0.9rem;
+	color: var(--text-secondary);
+	margin-bottom: 0.5rem;
+	line-height: 1.5;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+	.design-info {
+		padding: 1rem;
+	}
+
+	.tag {
+		font-size: 11px;
+		padding: 3px 6px;
+	}
+
+	.color-dot {
+		width: 24px;
+		height: 24px;
+	}
+}

@@ -10,7 +10,7 @@
 	},
 	// Turn off tsc task auto detection since we have the necessary tasks as npm scripts
 	"typescript.tsc.autoDetect": "off",
-	
+
 	// TypeScript configuration for Stripe integration tests
 	"typescript.tsdk": "node_modules/typescript/lib",
 	"typescript.preferences.importModuleSpecifier": "relative",
@@ -23,9 +23,7 @@
 	"editor.codeActionsOnSave": {
 		"source.fixAll.eslint": "explicit"
 	},
-	"eslint.validate": [
-		"typescript"
-	],
+	"eslint.validate": ["typescript"],
 	"[typescript]": {
 		"editor.defaultFormatter": "vscode.typescript-language-features"
 	},

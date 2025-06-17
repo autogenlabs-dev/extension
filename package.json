@@ -12,7 +12,8 @@
 	"engines": {
 		"vscode": "^1.84.0",
 		"node": "20.18.1"
-	},	"author": {
+	},
+	"author": {
 		"name": "AutoGen Bot Inc."
 	},
 	"repository": {
@@ -27,7 +28,8 @@
 		"Education",
 		"Snippets",
 		"Testing"
-	],	"keywords": [
+	],
+	"keywords": [
 		"autogen",
 		"auto",
 		"gen",
@@ -48,7 +50,9 @@
 		"onLanguage",
 		"onStartupFinished"
 	],
-	"main": "./dist/extension.js",	"contributes": {		"viewsContainers": {
+	"main": "./dist/extension.js",
+	"contributes": {
+		"viewsContainers": {
 			"activitybar": [
 				{
 					"id": "auto-gen-code-builder-ActivityBar",
@@ -56,7 +60,8 @@
 					"icon": "assets/icons/icon.svg"
 				}
 			]
-		},		"views": {
+		},
+		"views": {
 			"auto-gen-code-builder-ActivityBar": [
 				{
 					"type": "webview",
@@ -64,7 +69,8 @@
 					"name": "%views.activitybar.title%"
 				}
 			]
-		},		"commands": [
+		},
+		"commands": [
 			{
 				"command": "auto-gen-code-builder.plusButtonClicked",
 				"title": "%command.newTask.title%",
@@ -149,7 +155,8 @@
 				"command": "auto-gen-code-builder.focusInput",
 				"title": "%command.focusInput.title%",
 				"category": "%configuration.title%"
-			},			{
+			},
+			{
 				"command": "auto-gen-code-builder.acceptInput",
 				"title": "%command.acceptInput.title%",
 				"category": "%configuration.title%"
@@ -163,7 +170,8 @@
 				"command": "auto-gen-code-builder.showCurrentSubscription",
 				"title": "%command.showCurrentSubscription.title%",
 				"category": "%configuration.title%"
-			},			{
+			},
+			{
 				"command": "auto-gen-code-builder.manageBilling",
 				"title": "%command.manageBilling.title%",
 				"category": "%configuration.title%"
@@ -171,6 +179,11 @@
 			{
 				"command": "auto-gen-code-builder.showUsageDashboard",
 				"title": "%command.showUsageDashboard.title%",
+				"category": "%configuration.title%"
+			},
+			{
+				"command": "auto-gen-code-builder.openExtensionView",
+				"title": "Open AutoGen Code Builder UI",
 				"category": "%configuration.title%"
 			}
 		],
@@ -214,7 +227,8 @@
 					"command": "auto-gen-code-builder.terminalExplainCommand",
 					"group": "1_actions@3"
 				}
-			],			"view/title": [
+			],
+			"view/title": [
 				{
 					"command": "auto-gen-code-builder.plusButtonClicked",
 					"group": "navigation@1",
@@ -245,7 +259,8 @@
 					"group": "navigation@6",
 					"when": "view == auto-gen-code-builder.SidebarProvider"
 				}
-			],			"editor/title": [
+			],
+			"editor/title": [
 				{
 					"command": "auto-gen-code-builder.plusButtonClicked",
 					"group": "navigation@1",
@@ -277,7 +292,8 @@
 					"when": "activeWebviewPanelId == auto-gen-code-builder.TabPanelProvider"
 				}
 			]
-		},		"submenus": [
+		},
+		"submenus": [
 			{
 				"id": "auto-gen-code-builder.contextMenu",
 				"label": "%views.contextMenu.label%"
@@ -286,8 +302,10 @@
 				"id": "auto-gen-code-builder.terminalMenu",
 				"label": "%views.terminalMenu.label%"
 			}
-		],		"configuration": {
-			"title": "%configuration.title%",			"properties": {
+		],
+		"configuration": {
+			"title": "%configuration.title%",
+			"properties": {
 				"auto-gen-code-builder.allowedCommands": {
 					"type": "array",
 					"items": {
@@ -316,7 +334,8 @@
 						}
 					},
 					"description": "%settings.vsCodeLmModelSelector.description%"
-				},				"auto-gen-code-builder.customStoragePath": {
+				},
+				"auto-gen-code-builder.customStoragePath": {
 					"type": "string",
 					"default": "",
 					"description": "%settings.customStoragePath.description%"
@@ -331,7 +350,11 @@
 						},
 						"plan": {
 							"type": "string",
-							"enum": ["free", "premium", "enterprise"],
+							"enum": [
+								"free",
+								"premium",
+								"enterprise"
+							],
 							"default": "free",
 							"description": "%settings.subscription.plan.description%"
 						},
@@ -347,12 +370,19 @@
 						}
 					},
 					"description": "%settings.subscription.description%"
-				},				"auto-gen-code-builder.payment": {
+				},
+				"auto-gen-code-builder.payment": {
 					"type": "object",
 					"properties": {
 						"currency": {
 							"type": "string",
-							"enum": ["USD", "EUR", "GBP", "CAD", "AUD"],
+							"enum": [
+								"USD",
+								"EUR",
+								"GBP",
+								"CAD",
+								"AUD"
+							],
 							"default": "USD",
 							"description": "%settings.payment.currency.description%"
 						},
@@ -397,7 +427,11 @@
 							"items": {
 								"type": "string"
 							},
-							"default": ["gpt-4", "claude-3-sonnet", "claude-3-haiku"],
+							"default": [
+								"gpt-4",
+								"claude-3-sonnet",
+								"claude-3-haiku"
+							],
 							"description": "%settings.a4f.models.description%"
 						}
 					},
@@ -566,4 +600,3 @@
 		]
 	}
 }
-

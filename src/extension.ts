@@ -29,6 +29,8 @@ import { SecureStorage } from "./utils/SecureStorage"
 import { BackendService } from "./services/auth/BackendService"
 import { SubscriptionService } from "./services/subscription/SubscriptionService"
 import { SubscriptionStatusBar } from "./services/subscription/SubscriptionStatusBar"
+// Import ExtensionView
+import { ExtensionView } from "./extentionView/extensionView"
 
 import {
 	handleUri,
@@ -130,31 +132,34 @@ export async function activate(context: vscode.ExtensionContext) {
 
 	// Initialize subscription services
 	// Initialize SecureStorage with the extension context
-	const secureStorage = SecureStorage.initialize(context);
-	const backendService = new BackendService(secureStorage);
-	const subscriptionService = new SubscriptionService(backendService);
-	
+	const secureStorage = SecureStorage.initialize(context)
+	const backendService = new BackendService(secureStorage)
+	const subscriptionService = new SubscriptionService(backendService)
+
 	// Initialize subscription status bar
-	const subscriptionStatusBar = new SubscriptionStatusBar(context, subscriptionService);
-	context.subscriptions.push(subscriptionStatusBar);	// Register subscription commands
+	const subscriptionStatusBar = new SubscriptionStatusBar(context, subscriptionService)
+	context.subscriptions.push(subscriptionStatusBar) // Register subscription commands
 	context.subscriptions.push(
-		vscode.commands.registerCommand('auto-gen-code-builder.showSubscriptionPlans', () => {
-			subscriptionService.showSubscriptionPlans();
+		vscode.commands.registerCommand("auto-gen-code-builder.showSubscriptionPlans", () => {
+			subscriptionService.showSubscriptionPlans()
 		}),
-		vscode.commands.registerCommand('auto-gen-code-builder.showCurrentSubscription', () => {
-			subscriptionService.showCurrentSubscription();
+		vscode.commands.registerCommand("auto-gen-code-builder.showCurrentSubscription", () => {
+			subscriptionService.showCurrentSubscription()
 		}),
-		vscode.commands.registerCommand('auto-gen-code-builder.manageBilling', () => {
-			subscriptionService.manageBilling();
+		vscode.commands.registerCommand("auto-gen-code-builder.manageBilling", () => {
+			subscriptionService.manageBilling()
 		}),
-		vscode.commands.registerCommand('auto-gen-code-builder.showUsageDashboard', () => {
-			const { UsageTrackingDashboard } = require('./services/subscription/UsageTrackingDashboard');
-			UsageTrackingDashboard.createOrShow(subscriptionService);
-		})
-	);
-	
+		vscode.commands.registerCommand("auto-gen-code-builder.showUsageDashboard", () => {
+			const { UsageTrackingDashboard } = require("./services/subscription/UsageTrackingDashboard")
+			UsageTrackingDashboard.createOrShow(subscriptionService)
+		}),
+		vscode.commands.registerCommand("auto-gen-code-builder.openExtensionView", () => {
+			new ExtensionView(context)
+		}),
+	)
+
 	// Update subscription status initially
-	subscriptionStatusBar.updateStatus();
+	subscriptionStatusBar.updateStatus()
 
 	// Allows other extensions to activate once Autogenlabs is ready.
 	vscode.commands.executeCommand(`${Package.name}.activationCompleted`)
